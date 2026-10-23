@@ -32,31 +32,27 @@ league start.
 ### 3.1 Current league
 
 - poe.ninja PoE 2 economy overview endpoints (documented, supported).
-- **Categories (decided)**: currency + common stackables — Currency, Fragments,
-  Essences, Omens, Runes, Soul Cores, Catalysts, Distilled Emotions, and the
-  league-mechanic stackables poe.ninja lists (Breach, Delirium, Ritual, Expedition,
-  Abyss…). Exact list confirmed by the M0 probe.
-- Fields: item id, name, icon, price (converted to divine), volume / listing count,
-  short-term sparkline if provided.
+- **Categories (decided)**: currency + common stackables = every poe.ninja PoE 2
+  currency-exchange category: Currency, Fragments, Abyss, UncutGems,
+  LineageSupportGems, Essences, SoulCores, Idols, Runes, Ritual (Omens), Expedition,
+  Delirium (Liquid Emotions), Breach (Catalysts), Verisium. Noise is handled by the
+  liquidity and min-price filters.
+- Fields: item id, name, icon, category, `primaryValue` (already in divine),
+  `volumePrimaryValue` (daily volume in divine), 7-day sparkline.
 
-### 3.2 Reference league history (Runes of Aldur) — backfill
+### 3.2 Reference & current league history — resolved (see `03-poe-ninja-api.md`)
 
-PoE 2 has had several leagues, so previous-league data exists; the question is only
-_how to obtain daily series_ without abusing poe.ninja. Order of preference, decided
-by the M0 probe:
+poe.ninja's exchange **details** endpoint returns the complete daily history of an item
+for a league (Runes of Aldur: 148 days) in one request. PoE 2 has no data dumps.
 
-1. **poe.ninja data dumps** for the league, if published for PoE 2.
-2. **One-time, throttled backfill** of the per-item history used by poe.ninja's charts
-   (a few hundred requests, ≥ 1 s apart, run once per league, results stored forever in
-   the `data` branch). Undocumented → used only for this one-shot backfill, never in
-   the recurring job.
-3. Another public PoE 2 economy source with history (e.g. poe2scout) as a fallback.
-4. From now on, our own daily snapshots make us independent of 1–3 for future leagues.
+- **Backfill**: once per league, one throttled request per liquid item (~200 requests,
+  ≈ 5 min), stored in the `data` branch.
+- **Daily refresh**: current-league histories updated incrementally by the daily job.
+- **Own snapshots** from the hourly overviews remain as a safety net if the details
+  route changes.
 
-Since Runes of Aldur is still live, we also snapshot it daily (cheap, extends the
-reference curve, and helps the league after Forbidden Rites).
-
-Stored per league/category: `{ itemId: [[day, priceDiv, volume], …] }`.
+Stored per league/category: `{ itemId: [[day, priceDiv, volumeDiv], …] }`, with
+`day` = UTC calendar day − league start UTC calendar day.
 
 ## 4. Suggestion engine (decided: suggestions are a must)
 

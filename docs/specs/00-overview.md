@@ -136,11 +136,8 @@ GitHub Actions (cron)                           Static hosting
 - **poe.ninja API unstable** (no SLA/versioning): all parsing isolated in one adapter
   with zod validation; the job fails loudly (workflow error) instead of publishing
   garbage.
-- **Endpoint shapes not yet verified**: poe.ninja was unreachable from the drafting
-  environment (sandbox network policy — unrelated to poe.ninja's backend rule).
-  First implementation step is a probe run from GitHub Actions to capture real
-  responses as test fixtures.
-- **Reference-league history backfill** (tool spec §3.2).
+- Endpoint shapes verified by the M0 probe (`03-poe-ninja-api.md`). History relies on
+  an undocumented economy route; own snapshots are the fallback.
 - Scheduled workflows are best-effort (delays of minutes) and are auto-disabled after
   60 days of repo inactivity — the job's own daily commits plus a monthly keep-alive
   mitigate this.

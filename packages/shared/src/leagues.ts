@@ -24,7 +24,7 @@ export const leaguesSchema = z.array(leagueSchema);
 
 /**
  * Source of truth for league metadata. A new league is added here (one PR per league).
- * `ninjaName` values are to be confirmed against poe.ninja's league list (M0 probe).
+ * `ninjaName` = league id in poe.ninja's `/poe2/api/economy/leagues` (verified 2026-10-23).
  */
 export const LEAGUES: readonly League[] = leaguesSchema.parse([
   {

@@ -21,4 +21,5 @@ Repository layout: `apps/web` (site), `packages/shared` (shared code), `packages
 - [App overview & shell](docs/specs/00-overview.md)
 - [Tool #1 — Currency Speculation Advisor](docs/specs/01-currency-speculation.md)
 - [Tool backlog](docs/specs/02-backlog.md)
+- [poe.ninja API — verified facts](docs/specs/03-poe-ninja-api.md)
 - [Decisions & open questions](docs/specs/open-questions.md)
