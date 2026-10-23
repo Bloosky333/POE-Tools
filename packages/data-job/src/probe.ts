@@ -3,9 +3,9 @@
  * written against actual payloads. Runs in GitHub Actions (poe.ninja is not reachable
  * from the development sandbox) and writes to `fixtures/poe-ninja/probe/`.
  *
- * Kept deliberately small (~22 throttled requests, run on demand only).
+ * Each round only adds its own files; kept small and run on demand only.
  */
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { LEAGUES } from '@poe-tools/shared';
 import { createNinjaClient, type NinjaResponse } from './poe-ninja/client.ts';
@@ -16,55 +16,21 @@ const MAX_BODY_CHARS = 400_000;
 const leagues = LEAGUES.filter((league) => league.game === 'poe2').map((l) => l.ninjaName);
 const q = encodeURIComponent;
 
-/** PoE 2 exchange overview categories, from the official docs (2026-10). */
-const POE2_EXCHANGE_TYPES = [
-  'Currency',
-  'Fragments',
-  'Abyss',
-  'UncutGems',
-  'LineageSupportGems',
-  'Essences',
-  'SoulCores',
-  'Idols',
-  'Runes',
-  'Ritual',
-  'Expedition',
-  'Delirium',
-  'Breach',
-  'Verisium',
-];
-
-const [current = '', reference = ''] = leagues;
+const [current = ''] = leagues;
 
 /**
- * Round 2: official docs, league list, every PoE 2 exchange category for the current
- * league, and candidate (undocumented) detail/history routes for the one-time backfill.
+ * Round 3: raw details of items whose converted history deviates from the overview
+ * (mostly exalted/chaos-paired), to pin down the pair-rate semantics.
  */
 const targets: { name: string; path: string }[] = [
-  { name: 'docs-api', path: '/docs/api' },
-  { name: 'poe2-leagues', path: '/poe2/api/economy/leagues' },
-  { name: 'poe1-data-dumps', path: '/poe1/data' },
-  ...POE2_EXCHANGE_TYPES.map((type) => ({
-    name: `exchange-overview-${type}-${current}`,
-    path: `/poe2/api/economy/exchange/current/overview?league=${q(current)}&type=${type}`,
-  })),
-  {
-    name: `exchange-overview-Currency-${reference}`,
-    path: `/poe2/api/economy/exchange/current/overview?league=${q(reference)}&type=Currency`,
-  },
-  {
-    name: `exchange-details-divine-orb-${reference}`,
-    path: `/poe2/api/economy/exchange/current/details?league=${q(reference)}&type=Currency&id=divine-orb`,
-  },
-  {
-    name: `exchange-details-chaos-orb-${reference}`,
-    path: `/poe2/api/economy/exchange/current/details?league=${q(reference)}&type=Currency&id=chaos-orb`,
-  },
-  {
-    name: `exchange-history-chaos-orb-${reference}`,
-    path: `/poe2/api/economy/exchange/current/history?league=${q(reference)}&type=Currency&id=chaos-orb`,
-  },
-];
+  ['UncutGems', 'uncut-skill-gem-level-19'],
+  ['LineageSupportGems', 'siones-temper'],
+  ['Currency', 'artificers-orb'],
+  ['Runes', 'adept-rune'],
+].map(([type, id]) => ({
+  name: `exchange-details-${id}-${current}`,
+  path: `/poe2/api/economy/exchange/current/details?league=${q(current)}&type=${type}&id=${id}`,
+}));
 
 function summarize(res: NinjaResponse): string {
   if (!res.contentType?.includes('json')) return `${res.body.length} chars (non-JSON)`;
@@ -93,7 +59,6 @@ function slug(name: string): string {
 
 async function main() {
   const client = createNinjaClient();
-  await rm(OUT_DIR, { recursive: true, force: true });
   await mkdir(OUT_DIR, { recursive: true });
 
   const lines = ['# poe.ninja probe', '', `Run at ${new Date().toISOString()}`, ''];
@@ -121,7 +86,7 @@ async function main() {
     );
     console.log(`${res.status} ${target.path}`);
   }
-  await writeFile(join(OUT_DIR, 'SUMMARY.md'), lines.join('\n'));
+  await appendFile(join(OUT_DIR, 'SUMMARY.md'), '\n' + lines.join('\n'));
 }
 
 await main();
