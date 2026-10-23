@@ -3,7 +3,7 @@
  * written against actual payloads. Runs in GitHub Actions (poe.ninja is not reachable
  * from the development sandbox) and writes to `fixtures/poe-ninja/probe/`.
  *
- * Kept deliberately small (~20 throttled requests, run on demand only).
+ * Kept deliberately small (~22 throttled requests, run on demand only).
  */
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -16,26 +16,53 @@ const MAX_BODY_CHARS = 400_000;
 const leagues = LEAGUES.filter((league) => league.game === 'poe2').map((l) => l.ninjaName);
 const q = encodeURIComponent;
 
-/** Candidate endpoints: official docs + community-reported PoE 2 economy paths. */
+/** PoE 2 exchange overview categories, from the official docs (2026-10). */
+const POE2_EXCHANGE_TYPES = [
+  'Currency',
+  'Fragments',
+  'Abyss',
+  'UncutGems',
+  'LineageSupportGems',
+  'Essences',
+  'SoulCores',
+  'Idols',
+  'Runes',
+  'Ritual',
+  'Expedition',
+  'Delirium',
+  'Breach',
+  'Verisium',
+];
+
+const [current = '', reference = ''] = leagues;
+
+/**
+ * Round 2: official docs, league list, every PoE 2 exchange category for the current
+ * league, and candidate (undocumented) detail/history routes for the one-time backfill.
+ */
 const targets: { name: string; path: string }[] = [
   { name: 'docs-api', path: '/docs/api' },
   { name: 'poe2-leagues', path: '/poe2/api/economy/leagues' },
-  { name: 'poe1-leagues', path: '/poe1/api/economy/leagues' },
-  { name: 'poe2-data-dumps', path: '/poe2/data' },
-  { name: 'data-dumps', path: '/data' },
-  ...leagues.flatMap((league) => [
-    {
-      name: `exchange-overview-currency-${league}`,
-      path: `/poe2/api/economy/exchange/current/overview?league=${q(league)}&type=Currency`,
-    },
-    {
-      name: `currencyexchange-overview-currency-${league}`,
-      path: `/poe2/api/economy/currencyexchange/overview?leagueName=${q(league)}&overviewName=Currency`,
-    },
-  ]),
+  { name: 'poe1-data-dumps', path: '/poe1/data' },
+  ...POE2_EXCHANGE_TYPES.map((type) => ({
+    name: `exchange-overview-${type}-${current}`,
+    path: `/poe2/api/economy/exchange/current/overview?league=${q(current)}&type=${type}`,
+  })),
   {
-    name: `exchange-details-divine-${leagues[0]}`,
-    path: `/poe2/api/economy/exchange/current/details?league=${q(leagues[0] ?? '')}&type=Currency&id=divine`,
+    name: `exchange-overview-Currency-${reference}`,
+    path: `/poe2/api/economy/exchange/current/overview?league=${q(reference)}&type=Currency`,
+  },
+  {
+    name: `exchange-details-divine-orb-${reference}`,
+    path: `/poe2/api/economy/exchange/current/details?league=${q(reference)}&type=Currency&id=divine-orb`,
+  },
+  {
+    name: `exchange-details-chaos-orb-${reference}`,
+    path: `/poe2/api/economy/exchange/current/details?league=${q(reference)}&type=Currency&id=chaos-orb`,
+  },
+  {
+    name: `exchange-history-chaos-orb-${reference}`,
+    path: `/poe2/api/economy/exchange/current/history?league=${q(reference)}&type=Currency&id=chaos-orb`,
   },
 ];
 
