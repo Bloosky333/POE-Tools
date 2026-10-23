@@ -1,123 +1,149 @@
-# POE-Tools — Application Spec (DRAFT v0.2)
+# POE-Tools — Application Spec (DRAFT v0.3)
 
-> Status: **draft, under discussion**. Items marked **[OPEN Qx]** are unresolved and
-> tracked in [`open-questions.md`](./open-questions.md). Items marked **[ASSUMPTION]**
-> are my proposed defaults until you say otherwise.
+> Status: **draft, under discussion**. Decisions are logged in
+> [`open-questions.md`](./open-questions.md); items marked **[OPEN Qx]** are still open.
 
 ## 1. Vision
-
-A web app that gathers small, focused tools for Path of Exile 1 and/or Path of Exile 2
-in one place. Tools are added incrementally; the shell (layout, navigation, shared
-services such as league selection and price data) is built once and reused.
+A web app that gathers small, focused, **decision-making** tools for Path of Exile 2
+(first) and Path of Exile 1 (later). Tools are added incrementally; the shell (layout,
+navigation, shared services such as league selection, exchange rates and price history)
+is built once and reused. All code is written and maintained by Claude.
 
 ## 2. Scope of the first milestone (M1)
+1. **App shell** — layout, navigation, game/league selector, settings.
+2. **Tool #1 — Currency Speculation Advisor** (with positions tracker and budget
+   basket) — see [`01-currency-speculation.md`](./01-currency-speculation.md).
 
-1. **App shell** — layout, navigation to tools, game/league selector, settings.
-2. **Tool #1 — Currency Speculation Advisor** — see
-   [`01-currency-speculation.md`](./01-currency-speculation.md).
+Next tools are listed in [`02-backlog.md`](./02-backlog.md) and influence the shared
+services designed now.
 
-Out of scope for M1: user accounts, notifications, any tool other than #1.
+Out of scope for M1: user accounts, server-side alerts (Discord, e-mail), PoE 1.
 
 ## 3. App shell
 
 ### 3.1 Layout
-- **Top bar**: app name/logo, game switch (PoE 2 / PoE 1 — **PoE 2 only in M1**, the
-  switch is built but PoE 1 is shown as "coming soon"), league
-  selector (current challenge league by default), data freshness indicator
-  ("prices updated 23 min ago").
-- **Side navigation** (collapsible; becomes a drawer on mobile): list of tools, grouped
-  by category (Economy, Crafting, Builds, …). Tools not available for the selected game
-  are hidden or greyed out.
-- **Home page**: grid of tool cards (name, short description, game badge, status:
-  *stable / beta / coming soon*).
-- **Footer**: data attribution ("Price data from poe.ninja"), disclaimer
-  ("Not affiliated with Grinding Gear Games"), link to repo.
+- **Top bar**: app name, game switch (PoE 2 active; PoE 1 shown as "coming soon"),
+  league selector (default: newest trade league — currently **Forbidden Rites**),
+  data freshness ("prices updated 23 min ago"), theme toggle.
+- **Side navigation** (collapsible; drawer on mobile): tools grouped by category
+  (Economy, Crafting, …). Tools not available for the selected game are greyed out.
+- **Home page**: grid of tool cards (name, one-line description, status
+  *stable / beta / coming soon*), plus a compact "Top suggestions now" widget from
+  tool #1.
+- **Footer**: "Price data from poe.ninja", "Not affiliated with Grinding Gear Games",
+  repo link.
 
-### 3.2 Tool plugin contract
-Each tool is a self-contained module registered in a single registry:
+### 3.2 Visual design (decided: clean & efficient)
+- English only.
+- Neutral, information-dense UI: system font stack, compact tables, tabular numbers,
+  minimal decoration, no game-art backgrounds. Light/dark following OS, toggleable.
+- Colour used only for meaning (gain / loss / warning) and always paired with a sign
+  or icon (colour-blind safe).
+- Keyboard friendly: `/` focuses search, sortable columns, URL reflects filters
+  (shareable/bookmarkable views).
 
+### 3.3 Tool plugin contract
 ```ts
 interface ToolDefinition {
   id: string;                 // "currency-speculation"
   name: string;
   description: string;
-  category: "economy" | "crafting" | "builds" | "misc";
+  category: "economy" | "crafting" | "misc";
   games: ("poe1" | "poe2")[];
   status: "stable" | "beta" | "coming-soon";
   route: string;              // "/tools/currency-speculation"
-  component: LazyComponent;   // lazy-loaded so tools don't bloat the shell
+  component: LazyComponent;   // lazy-loaded
 }
 ```
+Adding a tool = a folder under `apps/web/src/tools/<id>` + one registry entry.
 
-Adding a tool = adding a folder + one registry entry. No shell changes.
-
-### 3.3 Shared services
-- **League service**: list of leagues per game, current league, league start date.
-- **Price service**: fetches and caches poe.ninja data (via our backend, see §4).
-- **Settings**: preferred game, league, price unit (exalted/divine for PoE 2;
-  chaos/divine for PoE 1),
-  theme (dark default) — persisted in `localStorage`.
+### 3.4 Shared services (designed for tool #1 and the backlog)
+- **League service**: leagues per game with start/end dates, trade/event flags,
+  "reference league" mapping.
+- **Price service**: latest prices of all in-scope items, in divine.
+- **Exchange-rate service**: divine ⇄ exalted ⇄ chaos rates (needed by tool #1 and
+  backlog tools "flipping" and "cheapest currency path").
+- **History service**: daily price series per item per league, lazy-loaded.
+- **Local store**: settings, positions, alerts — `localStorage`, with JSON
+  export/import (no accounts).
 
 ## 4. Architecture — static site + scheduled data job (DECIDED)
 
 ```
-GitHub Actions (cron, hourly)                 GitHub Pages (static SPA)
- ├─ fetch poe.ninja economy overviews  ──►     reads /data/*.json
- ├─ append daily snapshot (history)            (no backend, no DB)
+GitHub Actions (cron)                           Static hosting
+ ├─ fetch poe.ninja PoE 2 economy overviews      SPA + /data/*.json
+ ├─ daily: append snapshot → `data` branch       (no backend, no DB)
  ├─ compute speculation tables
- └─ publish JSON to the `data` branch / Pages
+ └─ build + deploy site with fresh JSON
 ```
 
-- **No running server.** A scheduled GitHub Actions workflow is the only thing that
-  talks to poe.ninja: ~1 request per category per hour, descriptive `User-Agent`,
-  back-off on errors. Users' browsers never hit poe.ninja → no CORS issue, no risk of
-  being blocked for excessive use.
-- **Data layout** (versioned JSON, schema-validated):
-  - `data/{game}/leagues.json` — league list + start/end dates.
-  - `data/{game}/{league}/current.json` — latest prices (all in-scope categories).
-  - `data/{game}/{league}/history/{category}.json` — one point per item per day.
-  - `data/{game}/{league}/speculation.json` — pre-computed multipliers per
-    (reference league, mode, horizon) so the UI only filters/sorts.
-- **Where data is stored**: committed to a dedicated `data` branch (keeps `main` history
-  clean; hourly commits would otherwise flood it) and deployed to Pages together with
-  the SPA build. Daily snapshots are append-only and become our own long-term history.
-- **Trade-offs accepted**: data is at most ~1 h stale; any computation not pre-computed
-  must run in the browser (fine at this data size: a few hundred items × ~120 days).
+- **poe.ninja usage policy**: the docs ask third-party clients to call the economy
+  endpoints **from their own backend**, not from end-user machines, with caching, a
+  descriptive ASCII `User-Agent` (`POE-Tools/1.0 (+repo URL)`) and controlled volume.
+  The scheduled job *is* our backend: one fetch per category per run, PoE 2 data
+  refreshes ~hourly upstream so we never poll faster than that.
+- Only the documented economy endpoints are used for recurring fetches. The one-time
+  backfill of reference-league history is covered in tool spec §3.2.
 
-Stack **[ASSUMPTION — OPEN Q5]**:
-- TypeScript everywhere. Frontend: React + Vite, Tailwind, TanStack Query, Recharts
-  (or similar). Router: hash or base-path aware (GitHub Pages).
-- Data job: TypeScript script run with Node in Actions, sharing types/zod schemas with
-  the frontend.
-- Monorepo: `apps/web`, `packages/data-job`, `packages/shared`.
+### 4.1 Data storage (decided: Claude's best practice)
+- **No hourly commits.** Hourly prices go straight into the deployed site artifact.
+- **Daily snapshot** (first run after 00:00 UTC) is appended to history and committed
+  to an orphan **`data` branch** (~1 small commit/day; `main` stays clean). This is
+  our own long-term, source-independent history.
+- Layout (versioned, zod-validated, gzip/brotli served):
+  - `data/poe2/leagues.json` — leagues, start/end dates, reference mapping.
+  - `data/poe2/<league>/current.json` — latest prices + exchange rates (+ fetchedAt).
+  - `data/poe2/<league>/history/<category>.json` — `{ itemId: [[day, priceDiv, volume], …] }`.
+  - `data/poe2/<league>/speculation.json` — pre-computed suggestions per mode/horizon.
+- Startup payload target: < 300 KB compressed (current + speculation). History is
+  loaded per item/category on demand.
+
+### 4.2 Hosting — **[OPEN Q22]**
+The repo is **private**. GitHub Pages on a private repo requires a paid plan, and
+private repos have 2,000 free Actions minutes/month (an hourly ~1–2 min job uses
+~720–1,440). Options:
+- (a) Make the repo **public** → free Pages + unlimited Actions minutes. *(Recommended
+  if you don't mind the code being visible; nothing secret is stored.)*
+- (b) Keep private, deploy to **Cloudflare Pages** (free, private repos OK), run the job
+  every 2 h to stay within minutes.
+- (c) Keep private, use **Cloudflare Workers cron + R2/KV** for the job (no Actions
+  minutes), Cloudflare Pages for the site.
+
+### 4.3 Stack (decided: Claude's choice)
+- TypeScript (strict) everywhere, **pnpm** workspaces, Node 22.
+- Web: React + Vite, Tailwind CSS, React Router, TanStack Query (data), TanStack Table
+  (sort/filter/virtualised tables), Recharts (charts), zod (schemas).
+- Data job: plain TypeScript run by Node in Actions, sharing schemas/types and the
+  computation code with the web app.
+- Tests: Vitest (unit, especially the suggestion engine), Playwright (smoke e2e).
+- Lint/format: ESLint + Prettier; CI on every push.
+- Layout: `apps/web`, `packages/data-job`, `packages/shared` (schemas, engine).
 
 ## 5. Non-functional requirements
-- Respect poe.ninja: ≤ 1 request per endpoint per refresh cycle, cached server-side,
-  descriptive `User-Agent`, back-off on errors.
-- Works on desktop first, usable on mobile.
-- Graceful degradation: if poe.ninja is down, show last cached data with a warning.
-- No personal data collected in M1.
+- Respect poe.ninja policy (above); back-off and keep last good data on errors.
+- Graceful degradation: stale/missing data shown with an explicit warning.
+- Desktop first, usable on mobile.
+- No personal data collected; positions stay in the browser.
 
-## 6. Constraints & known risks
-- **poe.ninja API is not stable** — breaking changes may happen without notice.
-  Isolate all poe.ninja parsing in one adapter module with schema validation (zod)
-  so breakage is detected and contained.
-- **Historical data source** for previous leagues is the biggest unknown
-  (see tool spec §3 and **[OPEN Q6]**).
-- PoE 2 economy (first target) is currency-exchange based, priced in exalted/divine, and
-  has **few past leagues** — the reference history may be thin (see tool spec §3.2).
-- GitHub Actions cron is best-effort (runs can be delayed by minutes); scheduled
-  workflows are disabled after 60 days without repo activity — needs a keep-alive or
-  periodic commits (the data commits themselves count only if on the default branch
-  **[OPEN Q18]**).
-- Note: poe.ninja was not reachable from the environment used to draft this spec, so
-  exact response shapes still need to be verified against the live API.
+## 6. Risks
+- **poe.ninja API unstable** (no SLA/versioning): all parsing isolated in one adapter
+  with zod validation; the job fails loudly (workflow error) instead of publishing
+  garbage.
+- **Endpoint shapes not yet verified**: poe.ninja was unreachable from the drafting
+  environment (sandbox network policy — unrelated to poe.ninja's backend rule).
+  First implementation step is a probe run from GitHub Actions to capture real
+  responses as test fixtures.
+- **Reference-league history backfill** (tool spec §3.2).
+- Scheduled workflows are best-effort (delays of minutes) and are auto-disabled after
+  60 days of repo inactivity — the job's own daily commits plus a monthly keep-alive
+  mitigate this.
 
-## 7. Milestones (proposal)
+## 7. Milestones
 | Milestone | Content |
 |---|---|
-| M0 | Specs agreed, repo scaffolding, CI (lint, typecheck, tests) |
-| M1a | App shell + tool registry + league/price services, deployed to GitHub Pages |
-| M1b | Data job: snapshots of current league (start ASAP) + ingestion of previous league(s) |
-| M1c | Currency Speculation Advisor UI + scoring |
-| M2+ | Next tools (backlog to be defined) |
+| M0 | Specs agreed; repo scaffolding, CI; **probe workflow** capturing real poe.ninja responses |
+| M1a | Data job: hourly current prices, daily snapshots, reference-league backfill |
+| M1b | App shell + tool registry + shared services, deployed |
+| M1c | Speculation table, detail chart, suggestions |
+| M1d | Positions tracker, budget basket, in-app alerts |
+| M2+ | Backlog tools (`02-backlog.md`) |

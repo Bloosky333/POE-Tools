@@ -1,88 +1,40 @@
-# Open questions (to answer before implementation)
+# Decisions log & open questions
 
-Answer inline (edit this file) or in chat; decisions will be moved into the specs and
-recorded in the "Decision" line.
+## Decided
+| # | Topic | Decision |
+|---|---|---|
+| Q1 | Game | **PoE 2 first**; PoE 1 later via the game switch. |
+| Q3/Q21 | Leagues | Softcore trade. Current: **Forbidden Rites** (0.5.5, start 2026-09-04 20:00 UTC). Reference: **Runes of Aldur** (0.5.0, start 2026-05-29). Hardcore not in M1. |
+| Q4 | Architecture | **Static site + scheduled job** (no server). Hosting provider → Q22. |
+| Q5 | Stack | Claude's choice: TypeScript, React + Vite, Tailwind, TanStack, Recharts, zod, Vitest, pnpm monorepo. |
+| Q6/Q20 | History | Previous-league data exists (5th league). Source decided by M0 probe: dumps → one-time throttled backfill → alt source; own daily snapshots from now on. |
+| Q7 | Sell point | All modes: fixed horizon (7/14/30 d), peak, end of league. |
+| Q8 | Categories | Currency + common stackables. |
+| Q9 | League dates | `leagues.json`, maintained per league (+ auto-detect where possible). |
+| Q10 | Unit | **Divine only.** |
+| Q11 | Reference leagues | **Only the immediately previous league** (older economies irrelevant); manual override available. |
+| Q12 | Positions | M1, localStorage + export/import. |
+| Q13 | Budget basket | M1. |
+| Q14 | Alerts | M1 in-app/browser notifications; Discord later. |
+| Q15 | Language | English only. |
+| Q16 | Theme | Clean, efficient, information-dense; light/dark. |
+| Q17 | Next tools | Flipping suggester, cheapest-currency path, crafting recipes → `02-backlog.md`. |
+| Q18 | Data storage | No hourly commits; daily snapshots on orphan `data` branch; hourly data in deployed artifact. |
+| Q19 | Suggestions | Must-have: BUY NOW / WAIT / AVOID / NEUTRAL, HOLD / SELL for positions, with confidence. |
 
-## Product / scope
-- **Q1. Game coverage at launch**: PoE 1 only, PoE 2 only, or both? The economies differ
-  (base currency, poe.ninja endpoints). Supporting both doubles the data work for tool #1.
-  - Decision: ✅ **PoE 2 first.** PoE 1 later via the game switch.
-- **Q2. Audience**: just you / friends, or a public site? Drives hosting, cost, polish,
-  rate-limit concerns and whether we need a privacy notice.
+## Still open
+- **Q2. Audience**: just you (and friends), or a public site? Impacts hosting limits,
+  whether we need to protect against traffic, and if the data job can be personal
+  (e.g. your own Discord alerts).
   - Decision: _
-- **Q3. Leagues**: Softcore trade challenge league only, or also Hardcore / Standard /
-  SSF (SSF has no prices — irrelevant)? Private/event leagues?
+- **Q22. Hosting (repo is private)**: (a) make repo public → free GitHub Pages +
+  unlimited Actions minutes *(recommended)*; (b) stay private + Cloudflare Pages + job
+  every 2 h; (c) stay private + Cloudflare Workers cron + Pages.
   - Decision: _
-
-## Architecture
-- **Q4. Hosting**: Do you have a preference/budget (free tier like Vercel/Netlify +
-  serverless, Cloudflare Workers + D1, a small VPS, a home server, Docker)? A static-only
-  site is possible only if we pre-compute data in a scheduled job (e.g. GitHub Actions
-  committing JSON) — that's actually a cheap, viable option. Which way?
-  - Decision: ✅ **Static site + scheduled GitHub Actions job** publishing JSON (GitHub Pages).
-- **Q5. Stack**: OK with TypeScript + React + Vite (+ Node backend, SQLite)? Any
-  languages/frameworks you know or want to learn (Python, Vue, Svelte, Next.js…)?
-  Who will maintain the code — you, or mostly Claude?
+- **Q23. Action thresholds**: are the defaults OK — BUY NOW at ≥ ×1.3, WAIT if a ≥ 10 %
+  dip is expected first, SELL when < 5 % upside remains? (All tunable in settings.)
   - Decision: _
-
-## Data
-- **Q6. Previous-league history source**: OK to rely on poe.ninja data dumps for finished
-  leagues (to verify availability, esp. PoE2), and to start collecting our own daily
-  snapshots from now on? Are you aware of another source you'd prefer?
-  - Decision: _
-- **Q7. "Multiplied value" definition**: what exactly is the sell point?
-  (a) fixed horizon h days later, (b) peak price in the rest of the league,
-  (c) end of league, (d) all three as modes. And do you also want "best time to buy"
-  (prices that are expected to *drop* first)?
-  - Decision: ✅ **All modes, user-selectable**: fixed horizon (7/14/30 d), peak, end of league. ("Best time to buy" still open → Q19.)
-- **Q8. Item categories**: only `Currency`, or also Fragments, Scarabs, Essences, Fossils,
-  Oils, Divination cards, Omens, Catalysts, Delirium orbs…? (PoE2: Runes, Soul cores,
-  Omens, etc.)
-  - Decision: ✅ **Currency + common stackables** (see tool spec §3.1 for the PoE 2 list).
-- **Q9. League start date**: OK to maintain a small config file (league name + start
-  date) by hand each league, or must it be fully automatic?
-  - Decision: _
-- **Q10. Price unit**: compute in divine (PoE1) / exalted (PoE2) to neutralise chaos
-  inflation? Or chaos? Toggle?
-  - Decision: _
-- **Q11. Number of reference leagues**: only the immediately previous league, or an
-  average/median over the last N leagues (more robust, but mechanics change)?
-  - Decision: _
-
-## Features
-- **Q12. Positions tracker**: do you want to record what you bought (qty, price) and see
-  live profit? (Would need storage per user → localStorage is enough at first.)
-  - Decision: _
-- **Q13. Budget-aware suggestions**: e.g. "I have 50 div, what's the best basket?"
-  taking liquidity into account — M1 or later?
-  - Decision: _
-- **Q14. Alerts**: notify when a currency hits a target price (browser/Discord)? Later?
-  - Decision: _
-
-## UX
-- **Q15. Language(s)**: English only, or also French (or other)?
-  - Decision: _
-- **Q16. Look & feel**: dark PoE-inspired theme? Any existing site you like
-  (poe.ninja, poe.trade, craftofexile…) as reference?
-  - Decision: _
-- **Q17. Next tools**: list the tools you already have in mind (even roughly) so the
-  shell/navigation and shared services are designed for them (e.g. crafting cost
-  calculator, flip finder, map/atlas strategy profit, divination card EV…).
-  - Decision: _
-
-## New questions raised by the decisions above
-- **Q18. Data commits**: OK to commit hourly price snapshots to a dedicated `data`
-  branch of this repo (repo grows ~ a few MB per league)? Or would you rather store
-  data elsewhere (GitHub Releases assets, Cloudflare R2, …)?
-  - Decision: _
-- **Q19. Buy timing**: should the tool also say "wait, it usually drops further before
-  rising" (i.e. suggest the best buy day, not just "buy now")?
-  - Decision: _
-- **Q20. PoE 2 reference data**: if no previous-league history is obtainable for PoE 2,
-  is it acceptable that the tool shows only current prices/trends during the first league
-  while it collects its own history? Do you know of any PoE 2 history source
-  (poe.ninja dumps, poe2scout, your own records)?
-  - Decision: _
-- **Q21. Current PoE 2 league**: which league is current right now and its start date
-  (to seed the config)? Should we also track Hardcore?
+- **Q24. Runes of Aldur as a target league**: you might also trade in Runes of Aldur
+  itself. Should it be selectable as a *current* league (its reference would then be
+  0.4)?
   - Decision: _
