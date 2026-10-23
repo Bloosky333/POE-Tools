@@ -65,3 +65,10 @@ export function getDefaultLeague(game: League['game']): League | undefined {
 export function getReferenceLeague(league: League): League | undefined {
   return league.referenceLeagueId ? getLeague(league.referenceLeagueId) : undefined;
 }
+
+/** Leagues the data job follows: selectable leagues and the leagues they reference. */
+export function getTrackedLeagues(game: League['game']): League[] {
+  const selectable = LEAGUES.filter((league) => league.game === game && league.selectable);
+  const referenced = selectable.flatMap((league) => getReferenceLeague(league) ?? []);
+  return [...new Set([...selectable, ...referenced])];
+}

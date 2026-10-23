@@ -91,19 +91,26 @@ GitHub Actions (cron)                           Static hosting
 - Only the documented economy endpoints are used for recurring fetches. The one-time
   backfill of reference-league history is covered in tool spec §3.2.
 
-### 4.1 Data storage (decided: Claude's best practice)
+### 4.1 Data storage (decided: Claude's best practice — implemented in M1a)
 
-- **No hourly commits.** Hourly prices go straight into the deployed site artifact.
-- **Daily snapshot** (first run after 00:00 UTC) is appended to history and committed
-  to an orphan **`data` branch** (~1 small commit/day; `main` stays clean). This is
-  our own long-term, source-independent history.
-- Layout (versioned, zod-validated, gzip/brotli served):
-  - `data/poe2/leagues.json` — leagues, start/end dates, reference mapping.
-  - `data/poe2/<league>/current.json` — latest prices + exchange rates (+ fetchedAt).
-  - `data/poe2/<league>/history/<category>.json` — `{ itemId: [[day, priceDiv, volume], …] }`.
-  - `data/poe2/<league>/speculation.json` — pre-computed suggestions per mode/horizon.
+- **Hourly** (`.github/workflows/data.yml`, cron `:17`): current overviews of the
+  selectable league (14 requests) → `current.json`, deployed with the site, not committed.
+- **Once per UTC day** (first run after midnight): yesterday is closed with a snapshot
+  of every item and committed to the orphan **`data` branch** (~1 small commit/day;
+  `main` stays clean).
+- **Once per league**: full history backfill through the exchange details route
+  (items with ≥ 2 div daily volume); later, ≤ 30 newly liquid items per day.
+- Store (`data` branch), append-friendly CSV sorted by date:
+  - `poe2/<league>/history/<ExchangeType>.csv` — `date,item,price_div,volume_div,source`
+  - `poe2/<league>/fx.csv` — `date,exalted_per_div,chaos_per_div`
+  - `poe2/<league>/meta.json` — backfill state, last closed date, items with history.
+- Site data (`/data/`, schemas in `packages/shared/src/site-data.ts`):
+  - `poe2/leagues.json`
+  - `poe2/<league>/current.json` — latest prices + rates + `fetchedAt`.
+  - `poe2/<league>/history/<ExchangeType>.json` — `{ item: [[day, priceDiv, volumeDiv]] }`.
+  - `poe2/<league>/fx.json` — `[[day, exaltedPerDiv, chaosPerDiv]]`.
 - Startup payload target: < 300 KB compressed (current + speculation). History is
-  loaded per item/category on demand.
+  loaded per category on demand.
 
 ### 4.2 Hosting (decided)
 

@@ -18,6 +18,8 @@ decisions in `docs/specs/open-questions.md`.
 - `pnpm check` — format check, lint, typecheck, tests (run before every push).
 - `pnpm build`, `pnpm dev`.
 - `pnpm probe` — needs network access to poe.ninja; run via the "poe.ninja probe" workflow.
+- `pnpm job --data-dir <abs> --out <abs>` — data job (run hourly by the "Data" workflow;
+  store on the orphan `data` branch, site data in `apps/web/public/data`, both gitignored).
 
 ## Rules
 

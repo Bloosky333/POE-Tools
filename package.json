@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
-    "probe": "pnpm --filter @poe-tools/data-job probe"
+    "probe": "pnpm --filter @poe-tools/data-job probe",
+    "job": "pnpm --filter @poe-tools/data-job job"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
