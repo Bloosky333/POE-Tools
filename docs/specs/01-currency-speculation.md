@@ -1,4 +1,6 @@
-# Tool #1 — Currency Speculation Advisor (DRAFT v0.1)
+# Tool #1 — Currency Speculation Advisor (DRAFT v0.2)
+
+Game: **PoE 2 first** (M1). PoE 1 added later behind the same game switch.
 
 ## 1. Goal
 Help the player decide **which currencies to buy now and sell later for profit**, based
@@ -19,9 +21,9 @@ multiplier(c, d, h) = P_prev(c, d + h) / P_prev(c, d)
 ```
 
 i.e. "in the last league, if you had bought on the same day `d` and sold `h` days later,
-how much would your money have multiplied?" **[OPEN Q7: definition of the sell point]**
+how much would your money have multiplied?"
 
-Proposed variants (user selectable):
+**Decided**: all three modes are available, user-selectable:
 | Mode | Sell point | Meaning |
 |---|---|---|
 | Fixed horizon | `d + h` (h = 7, 14, 30 days) | "Hold for h days" |
@@ -38,8 +40,13 @@ The current price `P_now(c)` is then used to:
 ## 3. Data
 
 ### 3.1 Current league
-- poe.ninja economy overview endpoints (supported public API), for the categories in
-  scope **[OPEN Q8]**.
+- poe.ninja PoE 2 economy overview endpoints (supported public API).
+- **Categories in scope (decided)**: currency + common stackables. For PoE 2 this means
+  the poe.ninja categories for Currency, Fragments, Essences, Omens, Runes, Soul Cores,
+  Catalysts, Distilled Emotions, and the league-mechanic stackables poe.ninja lists
+  (Breach, Delirium, Ritual, Expedition, Abyss…) — exact list to be confirmed against the
+  live API. PoE 1 later: Currency, Fragments, Scarabs, Essences, Fossils, Oils, Delirium
+  Orbs, Omens.
 - Fields used: id/name, icon, price in base unit, listing count / volume (liquidity),
   sparkline (last 7 days trend) if available.
 - Refreshed ~hourly by the backend, also stored as **daily snapshots** so we build our
@@ -54,17 +61,24 @@ Options for getting daily prices of a finished league:
    their docs, so **not** preferred.
 3. Self-collected snapshots — only works from the league after we start collecting.
 
-Ingested once per league into SQLite: `(game, league, item_id, day, price_chaos,
-price_divine, volume)`.
+For PoE 2 specifically, poe.ninja history is only available for a few leagues, and
+dumps may not exist for it — **if no usable source exists, the tool will be "collecting
+data" for its first league** and the snapshots collected by our job become the reference
+for the next one. This is why the data job should start running as early as possible
+(M1b before UI polish).
+
+Stored as JSON per league/category: `{ itemId, day, priceExalted, priceDivine, volume }`.
 
 ### 3.3 League metadata
 League name and **start date** per game. Source **[OPEN Q9]**: manual config file
 (simple, reliable) vs. automatic detection.
 
 ## 4. Price unit & inflation
-Raw chaos prices are distorted by chaos/divine ratio changes during a league.
-**[ASSUMPTION — OPEN Q10]**: compute multipliers in **divine** (PoE1) or **exalted**
-(PoE2) terms, with a toggle. Divine Orb itself is then excluded (or shown vs chaos).
+Raw prices are distorted by the base currency's own value drifting during a league
+(PoE 2: exalted vs divine; PoE 1: chaos vs divine).
+**[ASSUMPTION — OPEN Q10]**: compute multipliers in **divine** terms by default (more
+stable over a league), with a toggle to exalted (PoE 2) / chaos (PoE 1). The unit
+currency itself is then shown against the other unit.
 
 ## 5. Filtering & ranking
 - **Liquidity filter**: hide items with too few listings / low volume (default threshold
@@ -77,7 +91,7 @@ Raw chaos prices are distorted by chaos/divine ratio changes during a league.
 ## 6. UI
 
 ### 6.1 Main table
-| Icon | Currency | Now | Prev @ day d | Prev @ sell point | Multiplier | Sell day | Projected price | Liquidity | Trend 7d | Confidence |
+| Icon | Item | Category | Now | Prev @ day d | Prev @ sell point | Multiplier | Sell day | Projected price | Liquidity | Trend 7d | Confidence |
 
 - Header shows: "Current league: *X*, day 12. Compared with: *Y* (day 12)".
 - Controls: game, league(s) to compare, mode (fixed horizon / peak / end), horizon `h`,
