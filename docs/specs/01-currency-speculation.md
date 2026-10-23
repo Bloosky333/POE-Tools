@@ -1,4 +1,4 @@
-# Tool #1 — Currency Speculation Advisor (DRAFT v0.3)
+# Tool #1 — Currency Speculation Advisor (v1.0 — agreed)
 
 Game: **PoE 2** (M1). Unit: **divine only** (decided — the goal is big profits; lesser
 units are noise).
@@ -22,7 +22,8 @@ league start.
   reference league in the UI (advanced setting) for odd cases.
 - League dates live in `leagues.json`, maintained by Claude/manually per league
   (a new league = one PR). Auto-detect via poe.ninja's league list where possible.
-- Softcore trade leagues only (Hardcore not in M1).
+- Softcore trade leagues only (Hardcore not in M1). Only the newest league is a
+  selectable *current* league; Runes of Aldur is used purely as reference.
 
 ## 3. Data
 
@@ -72,7 +73,7 @@ price; `d` = today.
 (with the expected discount). The multiplier is then also shown from `b`.
 
 ### 4.3 Actions
-| Action | Rule (defaults, tunable) |
+| Action | Rule (defaults agreed, tunable in settings) |
 |---|---|
 | **BUY NOW** | `M ≥ 1.3`, no significant dip ahead, liquidity OK |
 | **WAIT** | significant dip expected before the rise (4.2) |

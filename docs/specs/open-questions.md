@@ -20,21 +20,11 @@
 | Q16 | Theme | Clean, efficient, information-dense; light/dark. |
 | Q17 | Next tools | Flipping suggester, cheapest-currency path, crafting recipes → `02-backlog.md`. |
 | Q18 | Data storage | No hourly commits; daily snapshots on orphan `data` branch; hourly data in deployed artifact. |
+| Q2 | Audience | **Personal use** for now. |
+| Q22 | Hosting | Repo made **public** → GitHub Pages + GitHub Actions. |
+| Q23 | Thresholds | Defaults OK: BUY NOW ≥ ×1.3, WAIT if ≥ 10 % dip expected first, SELL when < 5 % upside left; tunable. |
+| Q24 | Runes of Aldur as current league | **No** — reference only. |
 | Q19 | Suggestions | Must-have: BUY NOW / WAIT / AVOID / NEUTRAL, HOLD / SELL for positions, with confidence. |
 
 ## Still open
-- **Q2. Audience**: just you (and friends), or a public site? Impacts hosting limits,
-  whether we need to protect against traffic, and if the data job can be personal
-  (e.g. your own Discord alerts).
-  - Decision: _
-- **Q22. Hosting (repo is private)**: (a) make repo public → free GitHub Pages +
-  unlimited Actions minutes *(recommended)*; (b) stay private + Cloudflare Pages + job
-  every 2 h; (c) stay private + Cloudflare Workers cron + Pages.
-  - Decision: _
-- **Q23. Action thresholds**: are the defaults OK — BUY NOW at ≥ ×1.3, WAIT if a ≥ 10 %
-  dip is expected first, SELL when < 5 % upside remains? (All tunable in settings.)
-  - Decision: _
-- **Q24. Runes of Aldur as a target league**: you might also trade in Runes of Aldur
-  itself. Should it be selectable as a *current* league (its reference would then be
-  0.4)?
-  - Decision: _
+None — specs agreed. New questions will be added here as implementation progresses.

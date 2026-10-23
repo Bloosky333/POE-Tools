@@ -1,7 +1,6 @@
-# POE-Tools — Application Spec (DRAFT v0.3)
+# POE-Tools — Application Spec (v1.0 — agreed)
 
-> Status: **draft, under discussion**. Decisions are logged in
-> [`open-questions.md`](./open-questions.md); items marked **[OPEN Qx]** are still open.
+> Status: **agreed**. Decisions are logged in [`open-questions.md`](./open-questions.md).
 
 ## 1. Vision
 A web app that gathers small, focused, **decision-making** tools for Path of Exile 2
@@ -98,16 +97,12 @@ GitHub Actions (cron)                           Static hosting
 - Startup payload target: < 300 KB compressed (current + speculation). History is
   loaded per item/category on demand.
 
-### 4.2 Hosting — **[OPEN Q22]**
-The repo is **private**. GitHub Pages on a private repo requires a paid plan, and
-private repos have 2,000 free Actions minutes/month (an hourly ~1–2 min job uses
-~720–1,440). Options:
-- (a) Make the repo **public** → free Pages + unlimited Actions minutes. *(Recommended
-  if you don't mind the code being visible; nothing secret is stored.)*
-- (b) Keep private, deploy to **Cloudflare Pages** (free, private repos OK), run the job
-  every 2 h to stay within minutes.
-- (c) Keep private, use **Cloudflare Workers cron + R2/KV** for the job (no Actions
-  minutes), Cloudflare Pages for the site.
+### 4.2 Hosting (decided)
+- Repo is **public** → **GitHub Pages** for the site, GitHub Actions for the data job
+  (no minutes limit on public repos).
+- Audience: **personal use for now** — no traffic protection, analytics or privacy
+  notice needed. Being personal, the data job may later send the owner's own alerts
+  (e.g. Discord webhook stored as a repo secret).
 
 ### 4.3 Stack (decided: Claude's choice)
 - TypeScript (strict) everywhere, **pnpm** workspaces, Node 22.
