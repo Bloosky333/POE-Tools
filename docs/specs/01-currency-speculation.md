@@ -67,7 +67,7 @@ price; `d` = today.
 | Peak          | `argmax R(t)`, `t > d`     | best case, with the peak day |
 | End of league | last day of reference data | "hold to the end"            |
 
-`projected sell = N(d) × M`, `profit/unit = projected − N(d)`.
+`projected sell = N(d) × M_eff`, `profit/unit = projected − N(d)` (`M_eff`: §4.2b).
 
 ### 4.2 Buy timing
 
@@ -75,11 +75,26 @@ price; `d` = today.
 10 %), the item will likely get cheaper first → suggestion **WAIT, buy around day b**
 (with the expected discount). The multiplier is then also shown from `b`.
 
+### 4.2b Price level vs the reference league
+
+The multiplier only describes the _shape_ of the reference curve. An item already priced
+well above last league's level on the same day has partly "used up" that rise.
+
+- **Market factor** `f(d)` = median of `N(d) / R(d)` over liquid items (volume ≥ 5 div/day,
+  price ≥ 0.05 div, ≥ 10 items; else none). Divine's own value differs between leagues
+  (Forbidden Rites vs Runes of Aldur: `f` ≈ 1.3 on day 7, ≈ 2.1 on days 20–23, ≈ 1.4 on
+  day 35), so being 2× last league's price is only expensive if the market is not.
+- **Premium** `π = N(d) / (f × R(d))`.
+- **Level adjustment** `a = π^−β` when `π > 1`, else 1 (a discount does not boost the
+  expected rise); `β` = `premiumDamping`, default 1.
+- **Expected multiplier** `M_eff = (R(s) / R(b)) × a`, used for BUY NOW / WAIT, projected
+  price and score. AVOID still uses the raw reference curve.
+
 ### 4.3 Actions
 
 | Action                      | Rule (defaults agreed, tunable in settings)                                                                  |
 | --------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **BUY NOW**                 | `M ≥ 1.3`, no significant dip ahead, liquidity OK                                                            |
+| **BUY NOW**                 | `M_eff ≥ 1.3`, no significant dip ahead, liquidity OK                                                        |
 | **WAIT**                    | significant dip expected before the rise (4.2)                                                               |
 | **AVOID**                   | `M < 1.0` (expected to lose value)                                                                           |
 | **NEUTRAL**                 | everything else                                                                                              |
@@ -96,7 +111,7 @@ Combines:
 - **Data completeness** (missing days around `d` and `s`).
 - **League phase**: low confidence on days 0–3 (launch chaos).
 
-**Score** used for ranking = `(M − 1) × confidence / 100`.
+**Score** used for ranking = `(M_eff − 1) × confidence / 100`.
 
 ### 4.5 Filters
 

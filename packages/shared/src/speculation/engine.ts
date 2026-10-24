@@ -19,6 +19,11 @@ export interface EngineSettings {
   minVolume: number;
   /** Days of history compared to judge trajectory similarity. */
   similarityWindow: number;
+  /**
+   * β in `premium^−β`: how much of an item's price premium over the market level of the
+   * reference league is expected to fade by the sell day (0 = ignore, 1 = fully).
+   */
+  premiumDamping: number;
 }
 
 export const DEFAULT_ENGINE_SETTINGS: EngineSettings = {
@@ -26,7 +31,13 @@ export const DEFAULT_ENGINE_SETTINGS: EngineSettings = {
   dipThreshold: 0.1,
   minVolume: 5,
   similarityWindow: 14,
+  premiumDamping: 1,
 };
+
+/** Items needed to estimate the market factor. */
+const MARKET_MIN_ITEMS = 10;
+/** Minimum price (div) of an item counted in the market factor. */
+const MARKET_MIN_PRICE = 0.05;
 
 export interface ConfidenceBreakdown {
   /** 0–1: how closely the current league follows the reference recently. */
@@ -55,14 +66,23 @@ export interface Suggestion {
     multiplier: number;
     /** R(sell) / R(buy): the gain when waiting for the dip. */
     multiplierFromBuy: number;
+    /**
+     * N(today) / (marketFactor × R(today)): the item's price relative to last league's on
+     * the same day, after removing the market-wide difference. Null without market factor.
+     */
+    premium: number | null;
+    /** premium^−β when premium > 1, else 1: the share of the reference rise still expected. */
+    levelAdjustment: number;
+    /** multiplierFromBuy × levelAdjustment: the gain this suggestion expects. */
+    expectedMultiplier: number;
     /** Sell day had to be clipped to the end of the reference data. */
     clipped: boolean;
   } | null;
-  /** Current price × multiplier from the buy day. */
+  /** Current price × expected multiplier. */
   projectedSellPrice: number | null;
   confidence: number;
   breakdown: ConfidenceBreakdown;
-  /** Ranking score: (multiplier − 1) × confidence. */
+  /** Ranking score: (expected multiplier − 1) × confidence. */
   score: number;
 }
 
@@ -75,7 +95,37 @@ export interface EngineInput {
   /** Current league day (fractional allowed, floored for the reference). */
   today: number;
   mode: SellMode;
+  /** Market-wide N/R price ratio today (see `marketFactor`); null/absent disables it. */
+  marketFactor?: number | null;
   settings?: EngineSettings;
+}
+
+/**
+ * Market-wide price level of the current league relative to the reference league on the
+ * same day: median of N(today) / R(today) over liquid items. Divine's own value differs
+ * between leagues, so an item at 2× last league's price is only expensive if the market
+ * as a whole is not. Null when too few items can be compared.
+ */
+export function marketFactor(
+  items: readonly CurrentItem[],
+  referenceHistory: Readonly<Record<string, readonly HistoryPoint[]>>,
+  today: number,
+  minVolume: number = DEFAULT_ENGINE_SETTINGS.minVolume,
+): number | null {
+  const d = Math.floor(today);
+  const ratios: number[] = [];
+  for (const item of items) {
+    if (item.id === 'divine' || item.price < MARKET_MIN_PRICE || item.volume < minVolume) continue;
+    const history = referenceHistory[item.id];
+    const ref = history && new Series(history).priceAt(d);
+    if (ref) ratios.push(item.price / ref);
+  }
+  if (ratios.length < MARKET_MIN_ITEMS) return null;
+  ratios.sort((a, b) => a - b);
+  const mid = ratios.length >> 1;
+  return ratios.length % 2
+    ? (ratios[mid] ?? null)
+    : ((ratios[mid - 1] ?? 0) + (ratios[mid] ?? 0)) / 2;
 }
 
 export function suggest(input: EngineInput): Suggestion {
@@ -133,6 +183,13 @@ export function suggest(input: EngineInput): Suggestion {
   const multiplier = sellPrice / refToday;
   const multiplierFromBuy = sellPrice / buyPrice;
 
+  // Price level: a premium over last league's (market-adjusted) price is expected to fade,
+  // eating into the reference rise. A discount is not expected to add to it (backtest).
+  const factor = input.marketFactor ?? null;
+  const premium = factor && factor > 0 ? item.price / (factor * refToday) : null;
+  const levelAdjustment = premium !== null && premium > 1 ? premium ** -settings.premiumDamping : 1;
+  const expectedMultiplier = multiplierFromBuy * levelAdjustment;
+
   // Confidence.
   const breakdown: ConfidenceBreakdown = {
     similarity: similarity(ref, cur, d, settings.similarityWindow),
@@ -150,15 +207,16 @@ export function suggest(input: EngineInput): Suggestion {
   const liquid = item.volume >= settings.minVolume;
   const reasons: string[] = [];
   let action: Action;
+  // AVOID stays on the raw reference curve: a premium alone did not predict losses.
   if (multiplierFromBuy < 1 || (!dipAhead && multiplier < 1)) {
     action = 'avoid';
     reasons.push(`Fell to ×${fmt(multiplier)} by day ${sellDay} last league`);
-  } else if (dipAhead && multiplierFromBuy >= settings.buyMultiplier) {
+  } else if (dipAhead && expectedMultiplier >= settings.buyMultiplier) {
     action = 'wait';
     reasons.push(
       `Dipped ${Math.round((1 - lowPrice / refToday) * 100)}% until day ${lowDay} last league, then ×${fmt(multiplierFromBuy)}`,
     );
-  } else if (!dipAhead && multiplier >= settings.buyMultiplier) {
+  } else if (!dipAhead && expectedMultiplier >= settings.buyMultiplier) {
     action = liquid ? 'buy' : 'neutral';
     reasons.push(`Rose ×${fmt(multiplier)} by day ${sellDay} last league`);
     if (!liquid) reasons.push(`Low volume (${fmt(item.volume)} div/day)`);
@@ -166,6 +224,12 @@ export function suggest(input: EngineInput): Suggestion {
     action = 'neutral';
     reasons.push(
       `×${fmt(dipAhead ? multiplierFromBuy : multiplier)} by day ${sellDay} last league`,
+    );
+  }
+  if (premium !== null && levelAdjustment < 1) {
+    reasons.push(
+      `Already ${fmt(item.price / refToday)}× last league's day-${d} price (market ${fmt(factor ?? 0)}×): ` +
+        `${Math.round((premium - 1) * 100)}% premium, expecting ×${fmt(expectedMultiplier)}`,
     );
   }
   if (clipped) reasons.push('Reference league data ends before the sell day');
@@ -184,12 +248,15 @@ export function suggest(input: EngineInput): Suggestion {
       sellPrice,
       multiplier,
       multiplierFromBuy,
+      premium,
+      levelAdjustment,
+      expectedMultiplier,
       clipped,
     },
-    projectedSellPrice: item.price * multiplierFromBuy,
+    projectedSellPrice: item.price * expectedMultiplier,
     confidence,
     breakdown,
-    score: (multiplierFromBuy - 1) * (confidence / 100),
+    score: (expectedMultiplier - 1) * (confidence / 100),
   };
 }
 
