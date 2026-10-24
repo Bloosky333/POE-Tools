@@ -54,6 +54,8 @@ export function createStore(root: string, game = 'poe2') {
   }
 
   return {
+    /** Root directory of the store (also holds `icons/`). */
+    root,
     async readMeta(leagueId: string): Promise<LeagueMeta> {
       const text = await readText(join(leagueDir(leagueId), 'meta.json'));
       return text ? metaSchema.parse(JSON.parse(text)) : structuredClone(EMPTY_META);

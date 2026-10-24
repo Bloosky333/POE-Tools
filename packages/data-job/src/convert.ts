@@ -1,5 +1,4 @@
 import type { CurrentItem, ExchangeType } from '@poe-tools/shared';
-import { NINJA_BASE_URL } from './poe-ninja/client.ts';
 import type { ExchangeDetails, ExchangeOverview } from './poe-ninja/schemas.ts';
 
 /** One price observation of an item on a UTC calendar date, in divine. */
@@ -35,7 +34,8 @@ export function overviewToItems(overview: ExchangeOverview, type: ExchangeType):
         id: line.id,
         detailsId: item.detailsId,
         name: item.name,
-        icon: item.image ? new URL(item.image, NINJA_BASE_URL).toString() : '',
+        // GGG image path (`/gen/image/...`); replaced by the self-hosted file in syncIcons.
+        icon: item.image ?? '',
         type,
         price: round(line.primaryValue),
         volume: round(line.volumePrimaryValue ?? 0),

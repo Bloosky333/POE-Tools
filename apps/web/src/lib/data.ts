@@ -47,8 +47,17 @@ export async function fetchLeagueHistory(game: string, leagueId: string): Promis
   return Object.assign({}, ...files.map((file) => file?.items ?? {}));
 }
 
-export function fetchCurrent(game: string, leagueId: string): Promise<CurrentFile> {
-  return fetchData(dataPaths.current(game, leagueId), currentFileSchema);
+export async function fetchCurrent(game: string, leagueId: string): Promise<CurrentFile> {
+  const file = await fetchData(dataPaths.current(game, leagueId), currentFileSchema);
+  return { ...file, items: file.items.map((item) => ({ ...item, icon: iconUrl(item.icon) })) };
+}
+
+/**
+ * Self-hosted icon path (`icons/<file>`) → URL on this site. Anything else (e.g. a
+ * remote URL from older data) is dropped: browsers must not call poe.ninja.
+ */
+export function iconUrl(icon: string): string {
+  return icon.startsWith('icons/') ? `${import.meta.env.BASE_URL}data/${icon}` : '';
 }
 
 export type AsyncState<T> =

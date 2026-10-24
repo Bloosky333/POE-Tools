@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { cp, mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import {
   dataPaths,
@@ -10,6 +10,7 @@ import {
   type LeaguesFile,
 } from '@poe-tools/shared';
 import type { DailyPoint, FxPoint } from './convert.ts';
+import { ICONS_DIR } from './icons.ts';
 import type { LeagueHistory } from './store.ts';
 
 /** Writes the JSON files the web app reads (`apps/web/public/data` in CI). */
@@ -21,6 +22,15 @@ export function createSiteWriter(outDir: string, game = 'poe2') {
   }
 
   return {
+    /** Publishes the stored icons under `<out>/icons/`. */
+    async copyIcons(storeDir: string) {
+      await cp(join(storeDir, ICONS_DIR), join(outDir, ICONS_DIR), {
+        recursive: true,
+        force: true,
+      }).catch((error: NodeJS.ErrnoException) => {
+        if (error.code !== 'ENOENT') throw error;
+      });
+    },
     writeLeagues(leagues: readonly League[], now: Date) {
       const file: LeaguesFile = {
         version: 1,
