@@ -10,6 +10,7 @@
     "probe": "tsx src/probe.ts",
     "probe:exchange": "tsx src/probe-exchange.ts",
     "probe:base-items": "tsx src/probe-base-items.ts",
+    "probe:poe1": "tsx src/probe-poe1.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

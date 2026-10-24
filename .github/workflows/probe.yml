@@ -9,7 +9,7 @@ on:
       source:
         description: What to probe
         type: choice
-        options: [exchange, ninja, base-items]
+        options: [exchange, ninja, base-items, poe1]
         default: exchange
 
 concurrency:
@@ -35,12 +35,14 @@ jobs:
         run: pnpm probe:exchange
       - if: inputs.source == 'base-items'
         run: pnpm probe:base-items
+      - if: inputs.source == 'poe1'
+        run: pnpm probe:poe1
       - name: Commit fixtures
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mkdir -p fixtures/poe-ninja/probe fixtures/ggg-exchange/probe packages/data-job/data
-          git add fixtures/poe-ninja/probe fixtures/ggg-exchange/probe packages/data-job/data
+          mkdir -p fixtures/poe-ninja/probe fixtures/ggg-exchange/probe fixtures/poe1 packages/data-job/data
+          git add fixtures/poe-ninja/probe fixtures/ggg-exchange/probe fixtures/poe1 packages/data-job/data
           if git diff --cached --quiet; then
             echo "No changes"
             exit 0
