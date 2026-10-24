@@ -1,11 +1,16 @@
 /**
  * GGG's public currency-exchange feed: one digest per complete UTC hour, every market of
- * every league (see `docs/specs/05-ggg-exchange-api.md`).
+ * every league of a game (see `docs/specs/05-ggg-exchange-api.md`).
  */
+import type { Game } from '@poe-tools/shared';
 import { z } from 'zod';
 import type { NinjaClient } from '../poe-ninja/client.ts';
 
-export const EXCHANGE_FEED_URL = 'https://web.poecdn.com/api/currency-exchange/poe2';
+/** Feed of each game (PoE 1 has no realm segment; verified by the probe, 2026-10-24). */
+export const EXCHANGE_FEED_URLS: Record<Game, string> = {
+  poe2: 'https://web.poecdn.com/api/currency-exchange/poe2',
+  poe1: 'https://web.poecdn.com/api/currency-exchange',
+};
 
 export const HOUR_S = 3600;
 
@@ -37,8 +42,9 @@ export function newestCompleteHour(now: Date): number {
 export async function fetchDigest(
   client: NinjaClient,
   epoch: number,
+  game: Game = 'poe2',
 ): Promise<ExchangeDigest | null> {
-  const res = await client.get(`${EXCHANGE_FEED_URL}/${epoch}`);
+  const res = await client.get(`${EXCHANGE_FEED_URLS[game]}/${epoch}`);
   if (res.status === 404) return null;
   if (res.status !== 200) throw new Error(`HTTP ${res.status} (${res.url})`);
   const digest = exchangeDigestSchema.parse(JSON.parse(res.body));

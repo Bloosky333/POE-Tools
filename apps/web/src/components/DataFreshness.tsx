@@ -1,4 +1,4 @@
-import { getLeague } from '@poe-tools/shared';
+import { getLeague, hasStarted } from '@poe-tools/shared';
 import { fetchCurrent, useAsync } from '../lib/data.ts';
 import { formatAge } from '../lib/format.ts';
 import { useNow } from '../lib/useNow.ts';
@@ -9,10 +9,10 @@ export function DataFreshness() {
   const { settings } = useSettings();
   const league = getLeague(settings.leagueId);
   const now = useNow();
-  const state = useAsync(`current:${settings.leagueId}`, () =>
+  const state = useAsync(`current:${settings.game}:${settings.leagueId}`, () =>
     fetchCurrent(settings.game, settings.leagueId),
   );
-  if (!league || state.status === 'loading') return null;
+  if (!league || !hasStarted(league, new Date(now)) || state.status === 'loading') return null;
   if (state.status === 'error') {
     return <Status tone="bad" label="No price data" />;
   }

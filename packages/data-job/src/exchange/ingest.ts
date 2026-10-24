@@ -1,4 +1,5 @@
 import {
+  HUBS,
   marketSides,
   type CurrentItem,
   type ExchangeHour,
@@ -7,12 +8,21 @@ import {
 } from '@poe-tools/shared';
 import type { ExchangeDigest } from './feed.ts';
 
-/** Base item ids of the hub currencies in the feed (verified by the probe, 2026-10-24). */
+/**
+ * Base item ids of the core currencies in the feed, the same in both games (verified by the
+ * probes, 2026-10-24). Only the game's hubs are treated as hubs.
+ */
 export const HUB_BASE_IDS: Record<string, Hub> = {
   'Metadata/Items/Currency/CurrencyModValues': 'divine',
   'Metadata/Items/Currency/CurrencyAddModToRare': 'exalted',
   'Metadata/Items/Currency/CurrencyRerollRare': 'chaos',
 };
+
+/** The hub of a base id among `hubs`, if it is one. */
+function hubOf(baseId: string, hubs: readonly Hub[]): Hub | undefined {
+  const hub = HUB_BASE_IDS[baseId];
+  return hub && hubs.includes(hub) ? hub : undefined;
+}
 
 export interface ItemMap {
   /** Feed base item id → poe.ninja item id. */
@@ -31,6 +41,7 @@ export function buildItemMap(
   names: Readonly<Record<string, string>>,
   items: readonly CurrentItem[],
   aliases: Readonly<Record<string, string>> = {},
+  hubs: readonly Hub[] = HUBS,
 ): ItemMap {
   const byName = new Map<string, string[]>();
   for (const item of items) {
@@ -41,7 +52,7 @@ export function buildItemMap(
   const ids = new Map<string, string>();
   const unmatched: string[] = [];
   for (const [baseId, name] of Object.entries(names)) {
-    const hub = HUB_BASE_IDS[baseId];
+    const hub = hubOf(baseId, hubs);
     const alias = aliases[baseId];
     const matches = byName.get(normalize(name)) ?? [];
     if (hub) ids.set(baseId, hub);
@@ -61,14 +72,15 @@ export function digestToHour(
   epoch: number,
   league: string,
   map: ItemMap,
+  hubs: readonly Hub[] = HUBS,
 ): { hour: ExchangeHour; unknown: Set<string> } {
   const markets: MarketHour[] = [];
   const unknown = new Set<string>();
   for (const m of digest.markets) {
     if (m.league !== league) continue;
     const [a, b] = m.market_pair;
-    const hubA = HUB_BASE_IDS[a];
-    const hubB = HUB_BASE_IDS[b];
+    const hubA = hubOf(a, hubs);
+    const hubB = hubOf(b, hubs);
     let itemBase: string;
     let hubBase: string;
     if (hubA && hubB) {
@@ -80,7 +92,7 @@ export function digestToHour(
       continue;
     }
     const item = map.ids.get(itemBase);
-    const hub = HUB_BASE_IDS[hubBase];
+    const hub = hubOf(hubBase, hubs);
     if (!item || !hub) {
       unknown.add(itemBase);
       continue;

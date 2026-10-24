@@ -1,6 +1,6 @@
 import type { HistoryPoint } from '@poe-tools/shared';
 import { useId, useState, type PointerEvent } from 'react';
-import { formatDiv } from '../lib/format.ts';
+import { formatAmount, formatDiv } from '../lib/format.ts';
 
 interface Props {
   reference: readonly HistoryPoint[];
@@ -13,6 +13,8 @@ interface Props {
   windowTo?: number | undefined;
   /** Draws the reference scaled to the current market level (market factor). */
   referenceScale?: number | null | undefined;
+  /** Price unit: currency id and short label (default divine). */
+  unit?: { id: string; short: string } | undefined;
 }
 
 const W = 640;
@@ -20,12 +22,14 @@ const H = 260;
 const M = { top: 12, right: 16, bottom: 28, left: 52 };
 
 /**
- * Prices of both leagues (divine) by days since league start, with today's marker and
+ * Prices of both leagues (in the game's unit) by days since league start, with today's marker and
  * a shaded day window, and optionally the reference scaled to this league's
  * market level. Hover shows the values for a day.
  */
 export function PriceChart(props: Props) {
   const { reference, current, today } = props;
+  const unit = props.unit ?? { id: 'divine', short: 'div' };
+  const fmt = (value: number) => formatAmount(value, unit.id);
   const clipId = useId();
   const [hoverDay, setHoverDay] = useState<number | null>(null);
 
@@ -73,7 +77,7 @@ export function PriceChart(props: Props) {
           viewBox={`0 0 ${W} ${H}`}
           className="w-full touch-none select-none"
           role="img"
-          aria-label={`Price in divine by league day: ${props.referenceLabel} and ${props.currentLabel}`}
+          aria-label={`Price in ${unit.id} by league day: ${props.referenceLabel} and ${props.currentLabel}`}
           onPointerMove={onMove}
           onPointerLeave={() => setHoverDay(null)}
         >
@@ -112,7 +116,7 @@ export function PriceChart(props: Props) {
                 textAnchor="end"
                 className="fill-subtle text-[11px]"
               >
-                {formatDiv(tick)}
+                {fmt(tick)}
               </text>
             </g>
           ))}
@@ -170,17 +174,17 @@ export function PriceChart(props: Props) {
             <div className="font-medium">Day {hoverDay}</div>
             {hoverRef && (
               <div>
-                {props.referenceLabel}: {formatDiv(hoverRef[1])} div
+                {props.referenceLabel}: {fmt(hoverRef[1])} {unit.short}
               </div>
             )}
             {hoverRef && scale && (
               <div className="text-muted">
-                at market level: {formatDiv(hoverRef[1] * scale)} div
+                at market level: {fmt(hoverRef[1] * scale)} {unit.short}
               </div>
             )}
             {hoverCur && (
               <div>
-                {props.currentLabel}: {formatDiv(hoverCur[1])} div
+                {props.currentLabel}: {fmt(hoverCur[1])} {unit.short}
               </div>
             )}
           </div>

@@ -1,6 +1,7 @@
 import { EXCHANGE_TYPE_LABELS, type HistoryPoint, type SellSignal } from '@poe-tools/shared';
 import { formatPercent } from '../../lib/format.ts';
-import { DataTable, Div, ItemCell, ScoreMeter, Sparkline, type Column } from '../../ui/index.ts';
+import { DataTable, Amount, ItemCell, ScoreMeter, Sparkline, type Column } from '../../ui/index.ts';
+import type { UnitInfo } from '../../lib/unit.ts';
 import type { SortKey, ViewParams } from './params.ts';
 import { VerdictBadge } from './VerdictBadge.tsx';
 
@@ -9,7 +10,7 @@ interface Props {
   params: ViewParams;
   currentHistory: Record<string, HistoryPoint[]>;
   today: number;
-  divineIcon: string | undefined;
+  unit: UnitInfo;
   onSort: (key: SortKey) => void;
   onSelect: (itemId: string) => void;
 }
@@ -24,15 +25,7 @@ function Change({ value }: { value: number | null }) {
   );
 }
 
-export function SellTable({
-  rows,
-  params,
-  currentHistory,
-  today,
-  divineIcon,
-  onSort,
-  onSelect,
-}: Props) {
+export function SellTable({ rows, params, currentHistory, today, unit, onSort, onSelect }: Props) {
   const columns: Column<SellSignal, SortKey>[] = [
     {
       id: 'item',
@@ -60,7 +53,7 @@ export function SellTable({
       align: 'right',
       title: 'Current price',
       className: 'font-medium',
-      render: (s) => <Div value={s.item.price} icon={divineIcon} />,
+      render: (s) => <Amount value={s.item.price} unit={unit} />,
     },
     {
       id: 'trend',
@@ -149,7 +142,7 @@ export function SellTable({
       align: 'right',
       title: 'Traded per day',
       className: 'text-muted',
-      render: (s) => <Div value={s.item.volume} icon={divineIcon} />,
+      render: (s) => <Amount value={s.item.volume} unit={unit} />,
     },
   ];
 

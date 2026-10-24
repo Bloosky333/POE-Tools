@@ -7,7 +7,7 @@ export const ninjaLeaguesSchema = z.array(z.object({ id: z.string(), name: z.str
 const coreSchema = z.object({
   primary: z.string(),
   secondary: z.string(),
-  /** Units of each currency per 1 primary (divine). */
+  /** Units of each currency per 1 primary (PoE 2: divine, PoE 1: chaos). */
   rates: z.record(z.string(), z.number()),
 });
 
@@ -48,7 +48,7 @@ export const exchangeDetailsSchema = z.object({
           timestamp: z.string(),
           /** Units of the pair currency per 1 item (missing on some days). */
           rate: z.number().nullish(),
-          /** Volume in primary currency (divine). */
+          /** Volume in the primary currency. */
           volumePrimaryValue: z.number().nullish(),
         }),
       ),

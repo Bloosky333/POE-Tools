@@ -3,18 +3,24 @@
  * past day, and compares BUY NOW calls with what actually happened `--horizon` days later.
  * Used to tune engine settings (e.g. `premiumDamping`) per league. No network.
  *   pnpm --filter @poe-tools/data-job backtest --data-dir <data branch checkout> [--horizon 14]
+ *     [--game poe1] [--league <id>]
  */
 import { parseArgs } from 'node:util';
 import {
-  DEFAULT_ENGINE_SETTINGS,
-  POE2_EXCHANGE_TYPES,
+  engineSettingsFor,
+  ECONOMY,
+  EXCHANGE_TYPES,
+  GAMES,
   Series,
   getDefaultLeague,
+  getLeague,
+  hasStarted,
   getReferenceLeague,
   marketFactor,
   suggest,
   type CurrentItem,
   type HistoryFile,
+  type Game,
   type League,
 } from '@poe-tools/shared';
 import { toSeries } from './site.ts';
@@ -23,28 +29,39 @@ import { createStore } from './store.ts';
 const { values } = parseArgs({
   options: {
     'data-dir': { type: 'string' },
+    game: { type: 'string', default: 'poe2' },
+    league: { type: 'string' },
     horizon: { type: 'string', default: '14' },
     'from-day': { type: 'string', default: '7' },
   },
 });
 const dataDir = values['data-dir'];
 if (!dataDir) {
-  console.error('Usage: backtest --data-dir <dir> [--horizon 14] [--from-day 7]');
+  console.error(
+    'Usage: backtest --data-dir <dir> [--horizon 14] [--from-day 7] [--game poe2|poe1] [--league <id>]',
+  );
   process.exit(2);
 }
 const horizon = Number(values.horizon);
 const fromDay = Number(values['from-day']);
 
-const league = getDefaultLeague('poe2');
+const game: Game = GAMES.find((g) => g === values.game) ?? 'poe2';
+const economy = ECONOMY[game];
+// Default: the game's current league, or its reference while it has not started.
+const selected = values.league ? getLeague(values.league) : getDefaultLeague(game);
+const league =
+  selected && !values.league && !hasStarted(selected, new Date())
+    ? getReferenceLeague(selected)
+    : selected;
 const reference = league && getReferenceLeague(league);
 if (!league || !reference) throw new Error('No current/reference league configured');
 
-const store = createStore(dataDir);
+const store = createStore(dataDir, game);
 async function load(l: League) {
   const items: HistoryFile['items'] = {};
   const types = new Map<string, CurrentItem['type']>();
   const history = await store.readHistory(l.id);
-  for (const type of POE2_EXCHANGE_TYPES) {
+  for (const type of EXCHANGE_TYPES[game]) {
     for (const [id, points] of Object.entries(toSeries(l, history.get(type) ?? []))) {
       items[id] = points;
       types.set(id, type);
@@ -75,9 +92,9 @@ for (let d = fromDay; d + horizon <= lastDay; d++) {
       change7d: null,
     });
   }
-  const factor = marketFactor(items, referenceHistory, d);
+  const factor = marketFactor(items, referenceHistory, d, engineSettingsFor(game));
   for (const item of items) {
-    if (item.price < 0.05) continue;
+    if (item.id === economy.unit || item.price < economy.minPrice) continue;
     const later = new Series(current.items[item.id] ?? []).priceAt(d + horizon);
     if (!later) continue;
     for (const premiumDamping of betas) {
@@ -88,7 +105,7 @@ for (let d = fromDay; d + horizon <= lastDay; d++) {
         today: d,
         mode: { kind: 'horizon', days: horizon },
         marketFactor: factor,
-        settings: { ...DEFAULT_ENGINE_SETTINGS, premiumDamping },
+        settings: { ...engineSettingsFor(game), premiumDamping },
       });
       if (s.action === 'buy') results.get(premiumDamping)?.push(later / item.price);
     }

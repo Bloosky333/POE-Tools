@@ -1,11 +1,18 @@
-import { recurrence, type CurrentItem, type ExchangeType, type Flip } from '@poe-tools/shared';
+import {
+  ECONOMY,
+  recurrence,
+  type CurrentItem,
+  type ExchangeType,
+  type Flip,
+  type Game,
+} from '@poe-tools/shared';
 
 /** Filters and view state, kept in the URL so views can be bookmarked. */
 export interface ViewParams {
   kind: 'all' | Flip['kind'];
   /** Min units of the item traded over the window, on every leg. */
   minUnits: number;
-  /** Min divine value traded over the window, on every leg. */
+  /** Min value (game unit) traded over the window, on every leg. */
   minValue: number;
   /** In %, e.g. 3 = 3 %. Also the threshold of the recurrence count. */
   minMargin: number;
@@ -20,10 +27,11 @@ export interface ViewParams {
 
 export type SortKey = 'margin' | 'name' | 'recurrence' | 'units' | 'value';
 
-export const DEFAULTS: ViewParams = {
+/** Defaults of a game: the value filter carries the game's unit. */
+export const defaultsFor = (game: Game): ViewParams => ({
   kind: 'all',
   minUnits: 50,
-  minValue: 120,
+  minValue: ECONOMY[game].flipDefaultValue,
   minMargin: 3,
   minRecurrence: 25,
   type: 'all',
@@ -31,7 +39,9 @@ export const DEFAULTS: ViewParams = {
   sort: 'margin',
   desc: true,
   flip: null,
-};
+});
+
+export const DEFAULTS: ViewParams = defaultsFor('poe2');
 
 export interface FlipRow {
   flip: Flip;

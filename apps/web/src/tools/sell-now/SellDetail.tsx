@@ -1,6 +1,15 @@
 import { EXCHANGE_TYPE_LABELS, type HistoryPoint, type SellSignal } from '@poe-tools/shared';
 import { formatPercent } from '../../lib/format.ts';
-import { Div, ItemCell, PriceChart, RatioBar, Sheet, StatCard, type Tone } from '../../ui/index.ts';
+import {
+  Amount,
+  ItemCell,
+  PriceChart,
+  RatioBar,
+  Sheet,
+  StatCard,
+  type Tone,
+} from '../../ui/index.ts';
+import type { UnitInfo } from '../../lib/unit.ts';
 import { VerdictBadge } from './VerdictBadge.tsx';
 
 interface Props {
@@ -10,14 +19,14 @@ interface Props {
   referenceName: string;
   currentName: string;
   today: number;
-  divineIcon: string | undefined;
+  unit: UnitInfo;
   onClose: () => void;
 }
 
 const pct = (ratio: number | null) => formatPercent(ratio === null ? null : ratio * 100);
 
 export function SellDetail(props: Props) {
-  const { signal: s, divineIcon } = props;
+  const { signal: s, unit } = props;
   const ref = s.reference;
 
   return (
@@ -29,8 +38,8 @@ export function SellDetail(props: Props) {
           <ItemCell icon={s.item.icon} name={s.item.name} size="lg" />
           <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted">
             {EXCHANGE_TYPE_LABELS[s.item.type]} ·
-            <Div value={s.item.price} icon={divineIcon} className="text-fg" /> now ·
-            <Div value={s.item.volume} icon={divineIcon} /> traded per day
+            <Amount value={s.item.price} unit={unit} className="text-fg" /> now ·
+            <Amount value={s.item.volume} unit={unit} /> traded per day
           </p>
         </>
       }
@@ -50,6 +59,7 @@ export function SellDetail(props: Props) {
         referenceLabel={props.referenceName}
         currentLabel={props.currentName}
         today={props.today}
+        unit={props.unit}
         windowFrom={ref && s.signals.includes('peak') ? ref.peakDay : undefined}
         windowTo={ref && s.signals.includes('peak') ? ref.horizonDay : undefined}
       />
@@ -73,10 +83,10 @@ export function SellDetail(props: Props) {
         {ref && (
           <>
             <StatCard label={`${props.referenceName} today`}>
-              <Div value={ref.priceToday} icon={divineIcon} />
+              <Amount value={ref.priceToday} unit={unit} />
             </StatCard>
             <StatCard label={`Last league peak · day ${ref.peakDay}`}>
-              <Div value={ref.peakPrice} icon={divineIcon} />
+              <Amount value={ref.peakPrice} unit={unit} />
             </StatCard>
             <StatCard label={`Last league · day ${ref.horizonDay}`} tone={tone(ref.change - 1)}>
               {pct(ref.change - 1)}

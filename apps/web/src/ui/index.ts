@@ -6,7 +6,7 @@ export * from './Badge.tsx';
 export * from './Card.tsx';
 export * from './Chips.tsx';
 export * from './DataTable.tsx';
-export * from './Div.tsx';
+export * from './Amount.tsx';
 export * from './form.tsx';
 export * from './ItemCell.tsx';
 export * from './Meter.tsx';

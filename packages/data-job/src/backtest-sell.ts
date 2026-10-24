@@ -3,18 +3,24 @@
  * past day, and checks whether SELL NOW calls were cheaper 3 / 7 / 14 days later (lower
  * than holding). Used to tune the Sell Now thresholds per league. No network.
  *   pnpm --filter @poe-tools/data-job backtest-sell --data-dir <data branch checkout>
+ *     [--game poe1] [--league <id>]
  */
 import { parseArgs } from 'node:util';
 import {
-  DEFAULT_SELL_SETTINGS,
-  POE2_EXCHANGE_TYPES,
+  sellSettingsFor,
+  ECONOMY,
+  EXCHANGE_TYPES,
+  GAMES,
   Series,
   getDefaultLeague,
+  getLeague,
+  hasStarted,
   getReferenceLeague,
   marketChanges,
   sellSignal,
   type CurrentItem,
   type HistoryFile,
+  type Game,
   type League,
   type SellSettings,
   type SellSignal,
@@ -25,29 +31,40 @@ import { createStore } from './store.ts';
 const { values } = parseArgs({
   options: {
     'data-dir': { type: 'string' },
+    game: { type: 'string', default: 'poe2' },
+    league: { type: 'string' },
     'from-day': { type: 'string', default: '7' },
-    'min-volume': { type: 'string', default: '5' },
+    'min-volume': { type: 'string' },
   },
 });
 const dataDir = values['data-dir'];
 if (!dataDir) {
-  console.error('Usage: backtest-sell --data-dir <dir> [--from-day 7] [--min-volume 5]');
+  console.error(
+    'Usage: backtest-sell --data-dir <dir> [--from-day 7] [--min-volume <unit/day>] [--game poe2|poe1] [--league <id>]',
+  );
   process.exit(2);
 }
 const fromDay = Number(values['from-day']);
-const minVolume = Number(values['min-volume']);
 const LATER = [3, 7, 14] as const;
 
-const league = getDefaultLeague('poe2');
+const game: Game = GAMES.find((g) => g === values.game) ?? 'poe2';
+const economy = ECONOMY[game];
+// Default: the game's current league, or its reference while it has not started.
+const selected = values.league ? getLeague(values.league) : getDefaultLeague(game);
+const league =
+  selected && !values.league && !hasStarted(selected, new Date())
+    ? getReferenceLeague(selected)
+    : selected;
 const reference = league && getReferenceLeague(league);
 if (!league || !reference) throw new Error('No current/reference league configured');
 
-const store = createStore(dataDir);
+const minVolume = Number(values['min-volume'] ?? economy.minVolume);
+const store = createStore(dataDir, game);
 async function load(l: League) {
   const items: HistoryFile['items'] = {};
   const types = new Map<string, CurrentItem['type']>();
   const history = await store.readHistory(l.id);
-  for (const type of POE2_EXCHANGE_TYPES) {
+  for (const type of EXCHANGE_TYPES[game]) {
     for (const [id, points] of Object.entries(toSeries(l, history.get(type) ?? []))) {
       items[id] = points;
       types.set(id, type);
@@ -60,15 +77,16 @@ const referenceHistory = (await load(reference)).items;
 const lastDay = Math.max(...Object.values(current.items).flatMap((p) => p.map((x) => x[0])));
 
 /** Settings variants compared; the first is the default. */
+const BASE = sellSettingsFor(game);
 const VARIANTS: [string, SellSettings][] = [
-  ['default', DEFAULT_SELL_SETTINGS],
-  ['falling vs market', { ...DEFAULT_SELL_SETTINGS, marketAdjustFalling: true }],
-  ['fall drop 10%', { ...DEFAULT_SELL_SETTINGS, fallDrop: 0.1 }],
-  ['fall drop 25%', { ...DEFAULT_SELL_SETTINGS, fallDrop: 0.25 }],
-  ['peak drop 10%', { ...DEFAULT_SELL_SETTINGS, peakDrop: 0.1 }],
-  ['peak drop 25%', { ...DEFAULT_SELL_SETTINGS, peakDrop: 0.25 }],
-  ['horizon 7 days', { ...DEFAULT_SELL_SETTINGS, horizon: 7 }],
-  ['soon window 3 days', { ...DEFAULT_SELL_SETTINGS, soonWindow: 3 }],
+  ['default', BASE],
+  ['falling vs market', { ...BASE, marketAdjustFalling: true }],
+  ['fall drop 10%', { ...BASE, fallDrop: 0.1 }],
+  ['fall drop 25%', { ...BASE, fallDrop: 0.25 }],
+  ['peak drop 10%', { ...BASE, peakDrop: 0.1 }],
+  ['peak drop 25%', { ...BASE, peakDrop: 0.25 }],
+  ['horizon 7 days', { ...BASE, horizon: 7 }],
+  ['soon window 3 days', { ...BASE, soonWindow: 3 }],
 ];
 
 interface Outcome {
@@ -103,8 +121,10 @@ for (let d = fromDay; d < lastDay; d++) {
   const past = Object.fromEntries(
     Object.entries(current.items).map(([id, p]) => [id, p.filter((x) => x[0] <= d)]),
   );
-  const market = marketChanges(items, past, d);
-  const liquid = items.filter((i) => i.id !== 'divine' && i.price >= 0.05 && i.volume >= minVolume);
+  const market = marketChanges(items, past, d, { ...economy, minVolume });
+  const liquid = items.filter(
+    (i) => i.id !== economy.unit && i.price >= economy.minPrice && i.volume >= minVolume,
+  );
   const marketLater = Object.fromEntries(
     LATER.map((k) => {
       const ratios = liquid
@@ -117,7 +137,8 @@ for (let d = fromDay; d < lastDay; d++) {
     }),
   ) as Outcome['later'];
   for (const item of items) {
-    if (item.id === 'divine' || item.price < 0.05 || item.volume < minVolume) continue;
+    if (item.id === economy.unit || item.price < economy.minPrice || item.volume < minVolume)
+      continue;
     const series = new Series(current.items[item.id] ?? []);
     const later = Object.fromEntries(
       LATER.map((k) => {

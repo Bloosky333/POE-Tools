@@ -18,13 +18,14 @@ is built once and reused. All code is written and maintained by Claude.
 Next tools are listed in [`02-backlog.md`](./02-backlog.md) and influence the shared
 services designed now.
 
-Out of scope for M1: user accounts, server-side alerts (Discord, e-mail), PoE 1.
+Out of scope for M1: user accounts, server-side alerts (Discord, e-mail), PoE 1. PoE 1 came
+later: [`07-poe1.md`](./07-poe1.md) (every economy tool, from the 3.30 launch).
 
 ## 3. App shell
 
 ### 3.1 Layout
 
-- **Top bar**: app name, game switch (PoE 2 active; PoE 1 shown as "coming soon"),
+- **Top bar**: app name, game switch (PoE 2 and PoE 1),
   league selector (default: newest trade league — currently **Forbidden Rites**),
   data freshness ("prices updated 23 min ago"), theme toggle.
 - **Side navigation** (collapsible; drawer on mobile): tools grouped by category

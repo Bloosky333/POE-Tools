@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { formatAge, formatDiv, formatMultiplier, formatPercent } from './format.ts';
+import {
+  formatAge,
+  formatAmount,
+  formatChaos,
+  formatDiv,
+  formatMultiplier,
+  formatPercent,
+} from './format.ts';
 
 describe('format', () => {
   it('formats divine amounts by magnitude', () => {
@@ -8,6 +15,15 @@ describe('format', () => {
     expect(formatDiv(1.234)).toBe('1.23');
     expect(formatDiv(0.004664)).toBe('0.0047');
     expect(formatDiv(null)).toBe('–');
+  });
+
+  it('formats chaos amounts as whole chaos from 10 c', () => {
+    expect(formatChaos(376923)).toBe('376,923');
+    expect(formatChaos(287.5)).toBe('288');
+    expect(formatChaos(4.02)).toBe('4.0');
+    expect(formatChaos(0.123)).toBe('0.12');
+    expect(formatAmount(287.5, 'chaos')).toBe('288');
+    expect(formatAmount(0.8723, 'divine')).toBe('0.87');
   });
 
   it('formats multipliers, percents and ages', () => {

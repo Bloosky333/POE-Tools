@@ -1,11 +1,14 @@
-import { POE2_EXCHANGE_TYPES, type ExchangeType } from '@poe-tools/shared';
+import { isExchangeType } from '@poe-tools/shared';
 import { useSearchParams } from 'react-router';
-import { DEFAULTS, type SortKey, type ViewParams } from './logic.ts';
+import { useSettings } from '../../lib/useSettings.ts';
+import { defaultsFor, type SortKey, type ViewParams } from './logic.ts';
 
 const SORT_KEYS: readonly SortKey[] = ['margin', 'name', 'recurrence', 'units', 'value'];
 
 export function useViewParams(): [ViewParams, (patch: Partial<ViewParams>) => void] {
   const [search, setSearch] = useSearchParams();
+  const { game } = useSettings().settings;
+  const DEFAULTS = defaultsFor(game);
   const num = (key: string, fallback: number) => {
     const value = Number(search.get(key));
     return search.has(key) && Number.isFinite(value) ? value : fallback;
@@ -19,7 +22,7 @@ export function useViewParams(): [ViewParams, (patch: Partial<ViewParams>) => vo
     minValue: num('minValue', DEFAULTS.minValue),
     minMargin: num('minMargin', DEFAULTS.minMargin),
     minRecurrence: num('minRecurrence', DEFAULTS.minRecurrence),
-    type: POE2_EXCHANGE_TYPES.includes(type as ExchangeType) ? (type as ExchangeType) : 'all',
+    type: type && isExchangeType(game, type) ? type : 'all',
     q: search.get('q') ?? '',
     sort: SORT_KEYS.includes(sort as SortKey) ? (sort as SortKey) : DEFAULTS.sort,
     desc: search.get('dir') !== 'asc',

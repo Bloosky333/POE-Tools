@@ -1,7 +1,7 @@
 import {
   EXCHANGE_TYPE_LABELS,
   HUBS,
-  POE2_EXCHANGE_TYPES,
+  ALL_EXCHANGE_TYPES,
   getLeague,
   type CurrentItem,
   type Hub,
@@ -10,6 +10,7 @@ import { useMemo } from 'react';
 import { fetchCurrent, fetchFlips, useAsync } from '../../lib/data.ts';
 import { formatAge } from '../../lib/format.ts';
 import { useNow } from '../../lib/useNow.ts';
+import { unitInfo } from '../../lib/unit.ts';
 import { useSettings } from '../../lib/useSettings.ts';
 import {
   Card,
@@ -45,7 +46,7 @@ export default function CurrencyFlippingPage() {
   const league = getLeague(settings.leagueId);
   const now = useNow();
 
-  const data = useAsync(`flipping:${settings.leagueId}`, async () => {
+  const data = useAsync(`flipping:${settings.game}:${settings.leagueId}`, async () => {
     if (!league) throw new Error('No league selected');
     const [current, flips] = await Promise.all([
       fetchCurrent(settings.game, league.id),
@@ -68,6 +69,7 @@ export default function CurrencyFlippingPage() {
       >,
     [items],
   );
+  const unit = unitInfo(settings.game, data.status === 'ready' ? data.data.current : null);
   const allRows = useMemo(
     () => (data.status === 'ready' ? toRows(data.data.flips.flips, items, params.minMargin) : []),
     [data, items, params.minMargin],
@@ -124,13 +126,14 @@ export default function CurrencyFlippingPage() {
               value={params.type}
               onChange={(type) => update({ type })}
             />
-            <Filters params={params} update={update} />
+            <Filters params={params} update={update} unit={unit.short} />
           </Card>
 
           <FlipsTable
             rows={rows}
             params={params}
             hubIcons={hubIcons}
+            unit={unit}
             onSort={(sort) =>
               update(
                 params.sort === sort ? { desc: !params.desc } : { sort, desc: sort !== 'name' },
@@ -148,6 +151,7 @@ export default function CurrencyFlippingPage() {
               hours={data.data.flips.hours}
               minMargin={params.minMargin}
               hubIcons={hubIcons}
+              unit={unit}
               onClose={() => update({ flip: null })}
             />
           )}
@@ -225,7 +229,7 @@ function CategoryChips({
       onChange={onChange}
       options={[
         { value: 'all', label: 'All', count: rows.length },
-        ...POE2_EXCHANGE_TYPES.filter((t) => counts.get(t)).map((t) => ({
+        ...ALL_EXCHANGE_TYPES.filter((t) => counts.get(t)).map((t) => ({
           value: t,
           label: EXCHANGE_TYPE_LABELS[t],
           count: counts.get(t) ?? 0,
@@ -265,7 +269,9 @@ function NumberField({
 function Filters({
   params,
   update,
+  unit,
 }: {
+  unit: string;
   params: ViewParams;
   update: (p: Partial<ViewParams>) => void;
 }) {
@@ -281,7 +287,7 @@ function Filters({
       />
       <NumberField
         label="Min value"
-        unit="div/24 h"
+        unit={`${unit}/24 h`}
         step={10}
         value={params.minValue}
         onChange={(minValue) => update({ minValue })}

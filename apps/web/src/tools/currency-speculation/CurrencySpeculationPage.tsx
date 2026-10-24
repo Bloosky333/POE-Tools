@@ -1,7 +1,9 @@
 import {
   EXCHANGE_TYPE_LABELS,
-  POE2_EXCHANGE_TYPES,
+  ALL_EXCHANGE_TYPES,
+  ECONOMY,
   marketChanges,
+  sellSettingsFor,
   sellSignal,
   type Suggestion,
 } from '@poe-tools/shared';
@@ -10,7 +12,7 @@ import { formatMultiplier } from '../../lib/format.ts';
 import {
   Card,
   Chips,
-  Div,
+  Amount,
   FilterBar,
   InlineField,
   Input,
@@ -22,6 +24,7 @@ import {
   Skeleton,
   StatTile,
 } from '../../ui/index.ts';
+import type { UnitInfo } from '../../lib/unit.ts';
 import { ACTION_LABELS } from './ActionBadge.tsx';
 import { ItemDetail } from './ItemDetail.tsx';
 import { MODES, useViewParams, type SortKey, type ViewParams } from './params.ts';
@@ -31,7 +34,7 @@ import { useSuggestions } from './useSuggestions.ts';
 export default function CurrencySpeculationPage() {
   const [params, update] = useViewParams();
   const mode = MODES.find((m) => m.value === params.mode)?.mode ?? { kind: 'horizon', days: 14 };
-  const { league, reference, today, data, suggestions, divineIcon, marketFactor } = useSuggestions(
+  const { game, league, reference, today, data, suggestions, unit, marketFactor } = useSuggestions(
     mode,
     params.minVolume,
   );
@@ -50,9 +53,10 @@ export default function CurrencySpeculationPage() {
       reference: referenceHistory[selected.item.id],
       current: currentHistory[selected.item.id],
       today,
-      market: marketChanges(current.items, currentHistory, today),
+      market: marketChanges(current.items, currentHistory, today, ECONOMY[game]),
+      settings: sellSettingsFor(game),
     });
-  }, [selected, data, today]);
+  }, [selected, data, today, game]);
 
   if (!league || !reference) return <p>No league selected.</p>;
 
@@ -88,12 +92,7 @@ export default function CurrencySpeculationPage() {
       )}
       {data.status === 'ready' && (
         <>
-          <StatTiles
-            suggestions={eligible}
-            today={today}
-            leagueName={league.name}
-            divineIcon={divineIcon}
-          />
+          <StatTiles suggestions={eligible} today={today} leagueName={league.name} unit={unit} />
 
           <Card className="space-y-3">
             <CategoryChips
@@ -101,7 +100,7 @@ export default function CurrencySpeculationPage() {
               value={params.type}
               onChange={(type) => update({ type })}
             />
-            <Filters params={params} update={update} />
+            <Filters params={params} update={update} unit={unit.short} />
           </Card>
 
           <SuggestionsTable
@@ -109,7 +108,7 @@ export default function CurrencySpeculationPage() {
             params={params}
             currentHistory={data.data.currentHistory}
             today={today}
-            divineIcon={divineIcon}
+            unit={unit}
             onSort={(key: SortKey) =>
               update(
                 params.sort === key ? { desc: !params.desc } : { sort: key, desc: key !== 'name' },
@@ -119,7 +118,7 @@ export default function CurrencySpeculationPage() {
           />
           <p className="text-xs text-subtle">
             {rows.length} of {suggestions.length} items · history prices are daily averages paid
-            across divine, exalted and chaos pairs.
+            across the currencies it trades against.
           </p>
           {selected && (
             <ItemDetail
@@ -131,7 +130,7 @@ export default function CurrencySpeculationPage() {
               today={today}
               marketFactor={marketFactor}
               sell={sell}
-              divineIcon={divineIcon}
+              unit={unit}
               onClose={() => update({ item: null })}
             />
           )}
@@ -145,12 +144,12 @@ function StatTiles({
   suggestions,
   today,
   leagueName,
-  divineIcon,
+  unit,
 }: {
   suggestions: readonly Suggestion[];
   today: number;
   leagueName: string;
-  divineIcon: string | undefined;
+  unit: UnitInfo;
 }) {
   const count = (action: Suggestion['action']) =>
     suggestions.filter((s) => s.action === action).length;
@@ -172,7 +171,7 @@ function StatTiles({
             <span className="flex min-w-0 items-center gap-1">
               <span className="truncate">{best.item.name}</span>
               <span aria-hidden>·</span>
-              <Div value={best.item.price} icon={divineIcon} className="shrink-0" />
+              <Amount value={best.item.price} unit={unit} className="shrink-0" />
             </span>
           ) : undefined
         }
@@ -198,7 +197,7 @@ function CategoryChips({
       onChange={onChange}
       options={[
         { value: 'all', label: 'All', count: suggestions.length },
-        ...POE2_EXCHANGE_TYPES.filter((t) => counts.get(t)).map((t) => ({
+        ...ALL_EXCHANGE_TYPES.filter((t) => counts.get(t)).map((t) => ({
           value: t,
           label: EXCHANGE_TYPE_LABELS[t],
           count: counts.get(t) ?? 0,
@@ -211,7 +210,9 @@ function CategoryChips({
 function Filters({
   params,
   update,
+  unit,
 }: {
+  unit: string;
   params: ViewParams;
   update: (p: Partial<ViewParams>) => void;
 }) {
@@ -231,7 +232,7 @@ function Filters({
           ))}
         </Select>
       </InlineField>
-      <InlineField label="Min volume" unit="div/day">
+      <InlineField label="Min volume" unit={`${unit}/day`}>
         <Input
           type="number"
           min={0}
@@ -241,7 +242,7 @@ function Filters({
           onChange={(e) => update({ minVolume: Number(e.target.value) || 0 })}
         />
       </InlineField>
-      <InlineField label="Min price" unit="div">
+      <InlineField label="Min price" unit={unit}>
         <Input
           type="number"
           min={0}

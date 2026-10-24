@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router';
+import { Outlet, useLocation } from 'react-router';
 import { Sidebar } from './Sidebar.tsx';
 import { TopBar } from './TopBar.tsx';
+import { UpcomingLeague, useLeagueStarted } from './UpcomingLeague.tsx';
 
 export function Layout() {
   const [navOpen, setNavOpen] = useState(false);
+  const started = useLeagueStarted();
+  const onTool = useLocation().pathname.startsWith('/tools/');
 
   return (
     <div className="flex min-h-screen flex-col bg-bg text-fg">
@@ -12,8 +15,9 @@ export function Layout() {
       <div className="flex flex-1">
         <Sidebar open={navOpen} onNavigate={() => setNavOpen(false)} />
         <main className="min-w-0 flex-1 px-4 py-6 md:px-8">
-          <div className="mx-auto max-w-[96rem]">
-            <Outlet />
+          <div className="mx-auto max-w-[96rem] space-y-5">
+            <UpcomingLeague />
+            {(started || !onTool) && <Outlet />}
           </div>
         </main>
       </div>

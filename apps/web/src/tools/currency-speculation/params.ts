@@ -1,5 +1,12 @@
-import { POE2_EXCHANGE_TYPES, type ExchangeType, type SellMode } from '@poe-tools/shared';
+import {
+  ECONOMY,
+  isExchangeType,
+  type ExchangeType,
+  type Game,
+  type SellMode,
+} from '@poe-tools/shared';
 import { useSearchParams } from 'react-router';
+import { useSettings } from '../../lib/useSettings.ts';
 
 /** Filters and view state, kept in the URL so views can be bookmarked. */
 export interface ViewParams {
@@ -25,20 +32,23 @@ export const MODES: { value: string; label: string; short: string; mode: SellMod
   { value: 'end', short: 'League end', label: 'Hold to league end', mode: { kind: 'end' } },
 ];
 
-const DEFAULTS: ViewParams = {
+/** Defaults of a game: liquidity filters carry the game's unit. */
+export const defaultsFor = (game: Game): ViewParams => ({
   mode: 'h14',
-  minVolume: 5,
-  minPrice: 0.05,
+  minVolume: ECONOMY[game].minVolume,
+  minPrice: ECONOMY[game].minPrice,
   type: 'all',
   action: 'all',
   q: '',
   sort: 'score',
   desc: true,
   item: null,
-};
+});
 
 export function useViewParams(): [ViewParams, (patch: Partial<ViewParams>) => void] {
   const [search, setSearch] = useSearchParams();
+  const { game } = useSettings().settings;
+  const DEFAULTS = defaultsFor(game);
   const num = (key: string, fallback: number) => {
     const value = Number(search.get(key));
     return search.has(key) && Number.isFinite(value) ? value : fallback;
@@ -51,7 +61,7 @@ export function useViewParams(): [ViewParams, (patch: Partial<ViewParams>) => vo
       : DEFAULTS.mode,
     minVolume: num('minVolume', DEFAULTS.minVolume),
     minPrice: num('minPrice', DEFAULTS.minPrice),
-    type: POE2_EXCHANGE_TYPES.includes(type as ExchangeType) ? (type as ExchangeType) : 'all',
+    type: type && isExchangeType(game, type) ? type : 'all',
     action: ['buy', 'wait', 'avoid', 'neutral'].includes(action ?? '')
       ? (action as ViewParams['action'])
       : 'all',

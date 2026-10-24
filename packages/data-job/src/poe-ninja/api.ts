@@ -1,4 +1,4 @@
-import type { ExchangeType } from '@poe-tools/shared';
+import type { ExchangeType, Game } from '@poe-tools/shared';
 import type { z } from 'zod';
 import type { NinjaClient } from './client.ts';
 import {
@@ -49,26 +49,28 @@ async function getJsonOrNull<T>(
   return parsed.data;
 }
 
-export async function fetchLeagues(client: NinjaClient) {
-  return getJson(client, '/poe2/api/economy/leagues', ninjaLeaguesSchema);
+export async function fetchLeagues(client: NinjaClient, game: Game) {
+  return getJson(client, `/${game}/api/economy/leagues`, ninjaLeaguesSchema);
 }
 
 export async function fetchOverview(
   client: NinjaClient,
+  game: Game,
   league: string,
   type: ExchangeType,
 ): Promise<ExchangeOverview> {
-  const path = `/poe2/api/economy/exchange/current/overview?league=${q(league)}&type=${type}`;
+  const path = `/${game}/api/economy/exchange/current/overview?league=${q(league)}&type=${type}`;
   return getJson(client, path, exchangeOverviewSchema);
 }
 
 /** Full daily history of one item. Undocumented route: use sparingly. */
 export async function fetchDetails(
   client: NinjaClient,
+  game: Game,
   league: string,
   type: ExchangeType,
   detailsId: string,
 ): Promise<ExchangeDetails | null> {
-  const path = `/poe2/api/economy/exchange/current/details?league=${q(league)}&type=${type}&id=${q(detailsId)}`;
+  const path = `/${game}/api/economy/exchange/current/details?league=${q(league)}&type=${type}&id=${q(detailsId)}`;
   return getJsonOrNull(client, path, exchangeDetailsSchema);
 }

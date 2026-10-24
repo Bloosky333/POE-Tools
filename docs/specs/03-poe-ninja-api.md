@@ -90,6 +90,13 @@ Notes:
   same pair's details rate (Sione's Temper/exalted: 205 vs 97 ex per item).
 - `id` uses `detailsId` (e.g. `chaos-orb`); `id=divine` → 404.
 
+## PoE 1 (probe of 2026-10-24, `fixtures/poe1/`)
+
+Same routes under `/poe1/`, same response shapes; `core.primary = "chaos"`,
+`core.rates = { divine: 0.003046 }`, details pairs `chaos` and `divine`. League ids
+`Allflame`, `Hardcore Allflame`, `Standard`, `Hardcore`; the ended league `Mirage` still
+answers overview and details. Details see [`07-poe1.md`](./07-poe1.md) §4.
+
 ## Consequences for the design
 
 - **Reference-league backfill solved**: one throttled pass over the details endpoint per

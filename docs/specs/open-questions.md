@@ -96,10 +96,29 @@
 | Alerts      | None in v1.                                                                                                                                              |
 | Tuning      | Defaults validated by `backtest-sell` (spec 06 §5); re-run per league.                                                                                   |
 
+## PoE 1 (`07-poe1.md`)
+
+| #   | Topic      | Decision                                                                                                 |
+| --- | ---------- | -------------------------------------------------------------------------------------------------------- |
+| P1  | Unit       | PoE 1 prices in **chaos**, divine value shown alongside; "divine only" (Q10) stays for PoE 2.            |
+| P2  | Item scope | PoE 1 **exchange items only** (poe.ninja PoE 1 exchange categories); stash items (uniques, gems…) later. |
+| P3  | Timing     | **Ready for the 3.30 launch** (2026-11-13), 3.29 Curse of the Allflame as reference, backfilled first.   |
+| P4  | Tools      | Speculation, Flipping, Cheapest Currency and Sell Now; Crafting Recipes follows its PoE 2 spec.          |
+| P5  | Reference  | Same rule as Q11: only the previous league (3.30 → 3.29); 3.28 Mirage only for backtests.                |
+| P6  | Feed       | Public PoE 1 feed exists (`web.poecdn.com/api/currency-exchange/{hour}`): flipping without OAuth.        |
+| P7  | Hubs       | PoE 1 hubs = chaos + divine (exalted in 7 markets of ~2,200 over 3 h); also the cheapest-currency pairs. |
+| P8  | 3.30 name  | Unknown until ExileCon: entry `poe1-3-30` resolves poe.ninja's new challenge league at launch.           |
+| P9  | Cheapest   | Cheapest Currency page built with the PoE 1 port, for both games (status beta).                          |
+| P10 | Backtest   | Allflame vs Mirage (2026-10-24, `--game poe1`): Speculation BUY NOW, 14-day hold, β = 1: 2,142 calls,    |
+|     |            | median ×1.16, 66 % rose (β = 0: ×1.10, 60 %; market ×1.07) → shared settings kept. Sell Now: SELL NOW    |
+|     |            | peak calls ×0.96 vs the market at 14 d (54 % cheaper later; PoE 2: ×0.88, 65 %), falling ×1.00; no       |
+|     |            | variant clearly better → defaults kept, weak signal noted on the page; re-run on 3.30 data.              |
+
 ## Still open
 
 - Currency flipping: recurrence thresholds (calibrate on data), gold (deferred), base item id mapping, Gemcutter's Prism in-game check — see
   `04-currency-flipping.md` §9.
+- PoE 1: chaos thresholds (starting values), 3.30 name after ExileCon — see `07-poe1.md` §9.
 - **Stash import for Sell Now**: reading the player's stash needs GGG OAuth (account
   scopes), which a static site without a backend cannot hold safely. Options: manual entry,
   pasted stash export, or a backend later.

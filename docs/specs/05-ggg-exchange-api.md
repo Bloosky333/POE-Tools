@@ -63,3 +63,9 @@ the last complete hour was available ~1 h 10 min after its start.
   Greater Transmutation Orbs, 7× their value) — a min divine value per leg is needed.
 - Units traded can be large while value is tiny (1,645 Greater Transmutation Orbs ≈ 0.5 div),
   so a units-only volume filter lets these through.
+
+## PoE 1 (probe of 2026-10-24)
+
+`GET https://web.poecdn.com/api/currency-exchange/{hourEpoch}` (no realm segment) serves
+PoE 1 with the same digest. Hubs are chaos and divine only; see
+[`07-poe1.md`](./07-poe1.md) §4.2.

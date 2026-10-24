@@ -1,5 +1,6 @@
 import { EXCHANGE_TYPE_LABELS, type HistoryPoint, type Hub } from '@poe-tools/shared';
-import { DataTable, Div, ItemCell, ScoreMeter, Sparkline, type Column } from '../../ui/index.ts';
+import { DataTable, Amount, ItemCell, ScoreMeter, Sparkline, type Column } from '../../ui/index.ts';
+import type { UnitInfo } from '../../lib/unit.ts';
 import type { FlipRow, SortKey, ViewParams } from './logic.ts';
 import { KindBadge, OrderRatio, formatMargin, quotePrices } from './parts.tsx';
 
@@ -7,11 +8,12 @@ interface Props {
   rows: readonly FlipRow[];
   params: ViewParams;
   hubIcons: Partial<Record<Hub, string>>;
+  unit: UnitInfo;
   onSort: (key: SortKey) => void;
   onSelect: (flipId: string) => void;
 }
 
-export function FlipsTable({ rows, params, hubIcons, onSort, onSelect }: Props) {
+export function FlipsTable({ rows, params, hubIcons, unit, onSort, onSelect }: Props) {
   const columns: Column<FlipRow, SortKey>[] = [
     {
       id: 'item',
@@ -100,9 +102,9 @@ export function FlipsTable({ rows, params, hubIcons, onSort, onSelect }: Props) 
       label: 'Value',
       sortKey: 'value',
       align: 'right',
-      title: 'Divine traded over 24 h on the thinnest leg',
+      title: `Value traded over 24 h on the thinnest leg, in ${unit.id}`,
       className: 'text-muted',
-      render: ({ flip }) => <Div value={flip.value24h} icon={hubIcons.divine} />,
+      render: ({ flip }) => <Amount value={flip.value24h} unit={unit} />,
     },
   ];
 

@@ -12,14 +12,15 @@ decisions in `docs/specs/open-questions.md`.
   schemas, later the suggestion engine). Consumed as TypeScript source, no build step.
 - `packages/data-job` — scheduled job talking to poe.ninja and GGG's exchange feed (only place
   allowed to).
-- `fixtures/poe-ninja/`, `fixtures/ggg-exchange/` — real responses captured by the probe workflow.
+- `fixtures/poe-ninja/`, `fixtures/ggg-exchange/`, `fixtures/poe1/` — real responses captured by
+  the probe workflow.
 
 ## Commands
 
 - `pnpm check` — format check, lint, typecheck, tests (run before every push).
 - `pnpm build`, `pnpm dev`.
-- `pnpm probe` / `pnpm probe:exchange` / `pnpm probe:base-items` — need network access; run via the
-  "poe.ninja probe" workflow (input `source`).
+- `pnpm probe` / `pnpm probe:exchange` / `pnpm probe:base-items` / `pnpm probe:poe1` — need network
+  access; run via the "poe.ninja probe" workflow (inputs `source`, `game`).
 - `pnpm job --data-dir <abs> --out <abs> [--exchange-dir <abs>]` — data job (run hourly by the "Data" workflow;
   store on the orphan `data` branch, site data in `apps/web/public/data`, both gitignored).
 - `pnpm --filter @poe-tools/data-job dev-data --data-dir <data branch checkout> --out
@@ -37,5 +38,5 @@ decisions in `docs/specs/open-questions.md`.
   throttled, with the `USER_AGENT` from `packages/data-job/src/poe-ninja/client.ts`. Never
   from the browser — item icons are self-hosted (`packages/data-job/src/icons.ts`), never
   hotlinked.
-- Prices are expressed in divine.
+- Prices are expressed in divine for PoE 2, in chaos (divine alongside) for PoE 1 (`docs/specs/07-poe1.md`).
 - Pin exact dependency versions.

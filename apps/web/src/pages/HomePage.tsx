@@ -1,10 +1,12 @@
+import { ECONOMY } from '@poe-tools/shared';
 import { Link } from 'react-router';
 import { formatMultiplier } from '../lib/format.ts';
 import { ActionBadge } from '../tools/currency-speculation/ActionBadge.tsx';
 import { useSuggestions } from '../tools/currency-speculation/useSuggestions.ts';
 import { TOOLS } from '../tools/registry.ts';
+import { useSettings } from '../lib/useSettings.ts';
 import type { ToolStatus } from '../tools/types.ts';
-import { Div, ItemCell, PageHeader, Panel, Pill } from '../ui/index.ts';
+import { Amount, ItemCell, PageHeader, Panel, Pill } from '../ui/index.ts';
 
 const STATUS_LABELS: Record<ToolStatus, string> = {
   stable: 'Stable',
@@ -61,10 +63,12 @@ export function HomePage() {
 }
 
 function TopOpportunities() {
-  const { data, suggestions, divineIcon, reference } = useSuggestions(MODE, 5);
+  const { settings } = useSettings();
+  const economy = ECONOMY[settings.game];
+  const { data, suggestions, unit, reference } = useSuggestions(MODE, economy.minVolume);
   if (data.status !== 'ready') return null;
   const top = suggestions
-    .filter((s) => (s.action === 'buy' || s.action === 'wait') && s.item.price >= 0.05)
+    .filter((s) => (s.action === 'buy' || s.action === 'wait') && s.item.price >= economy.minPrice)
     .sort((a, b) => b.score - a.score)
     .slice(0, 6);
   if (!top.length) return null;
@@ -95,7 +99,7 @@ function TopOpportunities() {
                   s.action === 'wait' && s.reference ? `day ${s.reference.buyDay}` : undefined
                 }
               />
-              <Div value={s.item.price} icon={divineIcon} className="w-20 text-sm" />
+              <Amount value={s.item.price} unit={unit} className="w-20 text-sm" />
               <span className="w-14 text-right font-semibold text-gain">
                 {formatMultiplier(s.reference?.expectedMultiplier)}
               </span>

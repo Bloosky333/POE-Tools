@@ -1,6 +1,7 @@
 # Tool #2 — Cheapest Currency (v1.0 — agreed)
 
-Game: **PoE 2**. Tool id: `cheapest-currency` (already registered as _coming soon_).
+Games: **PoE 2** and **PoE 1** (pay currencies = the game's hubs, `07-poe1.md` §5.3). Tool id:
+`cheapest-currency`, status beta.
 Category: economy. Decisions are logged in [`open-questions.md`](./open-questions.md) (Q25–Q35).
 
 ## 1. Goal
@@ -15,7 +16,7 @@ divine at the core cross rates, differ by several times). The tool compares the 
 
 Out of scope (v1): conversion paths (convert first, then pay), multi-hop or
 non-core intermediate currencies, wallet/affordability, order-book depth/slippage,
-market-wide spread table, price charts, home-page widget, alerts, PoE 1.
+market-wide spread table, price charts, home-page widget, alerts.
 
 ## 2. Data
 

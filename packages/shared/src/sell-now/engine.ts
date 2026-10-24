@@ -1,3 +1,4 @@
+import { ECONOMY, type CoreCurrency, type Game } from '../games.ts';
 import type { CurrentItem, HistoryPoint } from '../site-data.ts';
 import {
   argBest,
@@ -37,17 +38,32 @@ export interface SellSettings {
   marketAdjustFalling: boolean;
   /** Days of history compared to judge trajectory similarity. */
   similarityWindow: number;
+  /** Daily volume (game unit) at which the liquidity part of confidence saturates. */
+  liquiditySaturation: number;
 }
 
-export const DEFAULT_SELL_SETTINGS: SellSettings = {
-  horizon: 14,
-  peakDrop: 0.15,
-  soonWindow: 7,
-  peakMargin: 0.03,
-  fallDrop: 0.15,
-  marketAdjustFalling: false,
-  similarityWindow: 14,
-};
+/** Default settings of a game: thresholds are shared, liquidity from its economy. */
+export function sellSettingsFor(game: Game): SellSettings {
+  return {
+    horizon: 14,
+    peakDrop: 0.15,
+    soonWindow: 7,
+    peakMargin: 0.03,
+    fallDrop: 0.15,
+    marketAdjustFalling: false,
+    similarityWindow: 14,
+    liquiditySaturation: ECONOMY[game].liquiditySaturation,
+  };
+}
+
+export const DEFAULT_SELL_SETTINGS: SellSettings = sellSettingsFor('poe2');
+
+/** Which items make up "the market" (market move): liquid items other than the unit. */
+export interface MarketScope {
+  unit: CoreCurrency;
+  minPrice: number;
+  minVolume: number;
+}
 
 /** Price change windows (days) reported and checked for the falling signal. */
 export const SELL_WINDOWS = [1, 3, 7] as const;
@@ -103,9 +119,6 @@ export interface SellInput {
   settings?: SellSettings;
 }
 
-/** Minimum price (div) and volume of an item counted in the market move. */
-const MARKET_MIN_PRICE = 0.05;
-const MARKET_MIN_VOLUME = 5;
 const MARKET_MIN_ITEMS = 10;
 
 /** Price changes of an item over each window, from its current price and history. */
@@ -118,19 +131,20 @@ export function windowChanges(price: number, history: Series, d: number): Window
 }
 
 /**
- * Market move over each window: median change of liquid items. A move of divine itself
- * shifts every item priced in divine, so items are judged against this. Null per window
+ * Market move over each window: median change of liquid items. A move of the unit itself
+ * shifts every item priced in it, so items are judged against this. Null per window
  * when too few items can be compared.
  */
 export function marketChanges(
   items: readonly CurrentItem[],
   currentHistory: Readonly<Record<string, readonly HistoryPoint[]>>,
   today: number,
+  scope: MarketScope = ECONOMY.poe2,
 ): WindowChanges {
   const d = Math.floor(today);
   const changes: Record<SellWindow, number[]> = { 1: [], 3: [], 7: [] };
   for (const item of items) {
-    if (item.id === 'divine' || item.price < MARKET_MIN_PRICE || item.volume < MARKET_MIN_VOLUME)
+    if (item.id === scope.unit || item.price < scope.minPrice || item.volume < scope.minVolume)
       continue;
     const history = currentHistory[item.id];
     if (!history) continue;
@@ -257,7 +271,11 @@ export function sellSignal(input: SellInput): SellSignal {
   const hasRef = reference !== null;
   const breakdown: ConfidenceBreakdown = {
     similarity: hasRef ? similarity(ref, cur, d, settings.similarityWindow) : 0.5,
-    liquidity: liquidityScore(item.volume, hasRef ? ref.volumeAt(d) : null),
+    liquidity: liquidityScore(
+      item.volume,
+      hasRef ? ref.volumeAt(d) : null,
+      settings.liquiditySaturation,
+    ),
     completeness: hasRef
       ? completeness(ref, d, reference?.horizonDay ?? d)
       : completeness(cur, d - 7, d - 1),
