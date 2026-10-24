@@ -82,7 +82,21 @@
 | F15 | Spread      | Kept in v1 as a heuristic ranked on recurrence (the feed has no volume per ratio).                                                                       |
 | F16 | Value       | Min divine value traded per leg (24 h), default 120 div, tunable.                                                                                        |
 
-## PoE 1 port (draft — `06-poe1.md`)
+## Sell Now (spec `06-sell-now.md`)
+
+| Topic       | Decision                                                                                                                                                 |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scope       | Whole market in v1; the player's own stash later.                                                                                                        |
+| Trigger     | Flag when either signal fires (Peak or Falling), with the reason shown.                                                                                  |
+| Peak        | Last league peaks around today (or within 7 days → SELL SOON) and then falls ≥ 15 % over 14 days.                                                        |
+| Falling     | First agreed as 1 / 3 / 7-day drops; backtest showed short drops rebound → **7-day drop ≥ 15 % confirmed by a non-rising reference** (decided after it). |
+| Rise guard  | First agreed ("still rising ≥ 10 % in 3 days → SELL SOON"); backtest showed no gain → **dropped**, trend shown in the row instead.                       |
+| Ranking     | Expected loss × confidence.                                                                                                                              |
+| Integration | Separate tool, engine next to speculation in `packages/shared`, reusing its helpers.                                                                     |
+| Alerts      | None in v1.                                                                                                                                              |
+| Tuning      | Defaults validated by `backtest-sell` (spec 06 §5); re-run per league.                                                                                   |
+
+## PoE 1 port (draft — `07-poe1.md`)
 
 | #   | Topic      | Decision                                                                                                 |
 | --- | ---------- | -------------------------------------------------------------------------------------------------------- |
@@ -97,4 +111,7 @@
 - Currency flipping: recurrence thresholds (calibrate on data), gold (deferred), base item id mapping, Gemcutter's Prism in-game check — see
   `04-currency-flipping.md` §9.
 - PoE 1 port: public PoE 1 exchange feed, PoE 1 details route, chaos thresholds, 3.30 name, exalted as a
-  hub — see `06-poe1.md` §9.
+  hub — see `07-poe1.md` §9.
+- **Stash import for Sell Now**: reading the player's stash needs GGG OAuth (account
+  scopes), which a static site without a backend cannot hold safely. Options: manual entry,
+  pasted stash export, or a backend later.

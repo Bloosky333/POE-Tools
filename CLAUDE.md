@@ -26,7 +26,8 @@ decisions in `docs/specs/open-questions.md`.
 <abs>/apps/web/public/data` — local site data without network (history from the `data`
   branch, current prices from the probe fixtures).
 - `pnpm --filter @poe-tools/data-job backtest --data-dir <data branch checkout>` — replays the
-  speculation engine over stored history to tune its settings (e.g. `premiumDamping`).
+  speculation engine over stored history to tune its settings (e.g. `premiumDamping`);
+  `backtest-sell` does the same for the Sell Now thresholds.
 
 ## Rules
 
@@ -36,5 +37,5 @@ decisions in `docs/specs/open-questions.md`.
   throttled, with the `USER_AGENT` from `packages/data-job/src/poe-ninja/client.ts`. Never
   from the browser — item icons are self-hosted (`packages/data-job/src/icons.ts`), never
   hotlinked.
-- Prices are expressed in divine for PoE 2, in chaos (divine alongside) for PoE 1 (`docs/specs/06-poe1.md`).
+- Prices are expressed in divine for PoE 2, in chaos (divine alongside) for PoE 1 (`docs/specs/07-poe1.md`).
 - Pin exact dependency versions.

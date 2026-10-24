@@ -19,7 +19,7 @@ Next tools are listed in [`02-backlog.md`](./02-backlog.md) and influence the sh
 services designed now.
 
 Out of scope for M1: user accounts, server-side alerts (Discord, e-mail), PoE 1. The PoE 1
-port is specified in [`06-poe1.md`](./06-poe1.md) (target: 3.30 launch).
+port is specified in [`07-poe1.md`](./07-poe1.md) (target: 3.30 launch).
 
 ## 3. App shell
 

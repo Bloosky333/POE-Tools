@@ -1,4 +1,10 @@
-import { EXCHANGE_TYPE_LABELS, POE2_EXCHANGE_TYPES, type Suggestion } from '@poe-tools/shared';
+import {
+  EXCHANGE_TYPE_LABELS,
+  POE2_EXCHANGE_TYPES,
+  marketChanges,
+  sellSignal,
+  type Suggestion,
+} from '@poe-tools/shared';
 import { useMemo } from 'react';
 import { formatMultiplier } from '../../lib/format.ts';
 import {
@@ -36,6 +42,17 @@ export default function CurrencySpeculationPage() {
   );
   const rows = useMemo(() => filterAndSort(suggestions, params), [suggestions, params]);
   const selected = params.item ? suggestions.find((s) => s.item.id === params.item) : undefined;
+  const sell = useMemo(() => {
+    if (!selected || data.status !== 'ready') return undefined;
+    const { current, currentHistory, referenceHistory } = data.data;
+    return sellSignal({
+      item: selected.item,
+      reference: referenceHistory[selected.item.id],
+      current: currentHistory[selected.item.id],
+      today,
+      market: marketChanges(current.items, currentHistory, today),
+    });
+  }, [selected, data, today]);
 
   if (!league || !reference) return <p>No league selected.</p>;
 
@@ -113,6 +130,7 @@ export default function CurrencySpeculationPage() {
               currentName={league.name}
               today={today}
               marketFactor={marketFactor}
+              sell={sell}
               divineIcon={divineIcon}
               onClose={() => update({ item: null })}
             />
