@@ -1,4 +1,4 @@
-# Tool #2 — Currency Flipping (v0.1 — draft, under review)
+# Tool #2 — Currency Flipping (v0.2 — draft, under review)
 
 Game: **PoE 2**. Status: draft — decisions so far are logged in
 [`open-questions.md`](./open-questions.md) (F-series); open points are listed in §9.
@@ -23,7 +23,7 @@ Out of scope for v1: budget allocation, flip log / tracking, item-to-item cycles
 - The global "divine only" rule (Q10) is **lifted for this tool**: orders are shown as the
   in-game ratios in their own currencies (e.g. "pay 3 ex : get 1 X", "sell 1 X : get 25 c").
 - **Profit is a percentage** of the capital put in (it does not depend on quantity).
-- Divine is used only to make gold costs and volumes comparable (§5).
+- Divine is used only to make volumes (and later gold costs) comparable (§5).
 
 ## 3. Data source — GGG currency exchange feed
 
@@ -46,7 +46,7 @@ they are to be confirmed by the probe (§8, step 1).
 Called **only from the data job**, with the project `USER_AGENT`, one request per run
 (plus a throttled one-time backfill of up to 24 hours when the rolling window is missing).
 
-poe.ninja stays the source for divine prices (gold-per-div and volume in divine).
+poe.ninja stays the source for divine prices (volume in divine, later gold per div).
 
 ### 3.1 Item identity
 
@@ -67,7 +67,7 @@ PoE 2 `base_items` export, refreshed per league). Unmapped ids are logged and sk
 ## 5. Engine (`packages/shared`, unit-tested)
 
 Notation: for a market hub `H` ↔ item `X`, a ratio is converted to `p` = units of `H` per
-1 `X`. Each hour gives `p_low`, `p_high` (from the ratio range) and `p_mid = √(p_low·p_high)`.
+1 `X`. Each hour gives `p_low`, `p_high` (from the ratio range).
 Hub conversion rates come from the hub ↔ hub markets of the same hour (same source, same
 hour → no cross-source drift).
 
@@ -78,15 +78,19 @@ hour → no cross-source drift).
 
 ### 5.2 Cross-pair flip (hub A → X → hub B → A)
 
-`margin = p_B(X) · rate(B→A) / p_A(X) − 1`, using `p_mid` on each leg (the spread is not
-counted twice), and `p_mid` of the B ↔ A market for the conversion. All 6 ordered hub pairs
+`margin = p_B(X) · rate(B→A) / p_A(X) − 1`, **optimistic** on every leg (decided): buy X at
+`p_low` in the A market, sell X at `p_high` in the B market, convert B → A at the most
+favourable end of the B ↔ A range. It is an upper bound, which the recurrence filter
+(§5.3) and the per-leg ranges in the detail sheet put into context. All 6 ordered hub pairs
 are evaluated per item; the best direction is kept.
 
 ### 5.3 Recurrence (confidence)
 
 `recurrence = share of the last 24 hours where the flip had margin ≥ minMargin`
-(default 3 %) **and** all legs traded. Only flips with recurrence ≥ 25 % (default) are
-ranked; the latest hour alone is never enough. Shown as a 0–100 `ScoreMeter`.
+(starting value 3 %) **and** all legs traded. Only flips with recurrence ≥ 25 % (starting
+value) are ranked; the latest hour alone is never enough. Both thresholds are **not decided**:
+they are tunable in the UI and will be calibrated on real feed data (probe fixtures, then the
+first days of the rolling window). Shown as a 0–100 `ScoreMeter`.
 
 ### 5.4 Volume / capacity
 
@@ -96,7 +100,10 @@ ranked; the latest hour alone is never enough. Shown as a 0–100 `ScoreMeter`.
 - The min-volume selector filters on units; the divine value of that volume is shown as
   context.
 
-### 5.5 Gold cost
+### 5.5 Gold cost — deferred (not in v1)
+
+Parked until the fee can be checked in-game; v1 ships without the gold column. Notes kept
+for later:
 
 The exchange charges gold when an order is placed. No official formula is published; the
 PoE 2 wiki lists a fixed gold cost per item (e.g. exalted 120, divine 800, mirror 25,000).
@@ -113,8 +120,9 @@ v1 model (to be confirmed, §9):
 
 ### 5.6 Ranking
 
-Default sort: **margin %** among flips passing the filters (min volume, min recurrence).
-Other sortable columns: volume, recurrence, gold per div.
+Margin and volume are **separate columns** (no combined score). Default sort: **margin %**
+among flips passing the filters (min volume, min recurrence); volume and recurrence are
+sortable too.
 
 ## 6. UI
 
@@ -125,7 +133,7 @@ margin, category (`Chips`), search. All in the URL.
 
 Table:
 
-| Item | Type | Buy (pay → get) | Sell (pay → get) | Convert | Margin % | Recurrence | Volume 24 h | Gold / div |
+| Item | Type | Buy (pay → get) | Sell (pay → get) | Convert | Margin % | Volume 24 h | Recurrence |
 
 - Ratios shown in in-game form, with currency icons.
 - Row click → `Sheet`: per-hour margin over the last 24 h (`Sparkline`), the ratio range
@@ -146,12 +154,13 @@ Stale data (> 3 h) → `Notice` warning, same as other tools.
 1. **M2a — probe**: add the GGG feed to the `poe.ninja probe` workflow (renamed "data
    probe"); capture fixtures; confirm field meanings (ratio orientation, range semantics,
    base ids), and write them up in `05-ggg-exchange-api.md`.
-2. **M2b — data job**: fetch + rolling window + `flips.json`; item mapping; gold table.
+2. **M2b — data job**: fetch + rolling window + `flips.json`; item mapping.
 3. **M2c — UI**: flips table + detail sheet; registry status `beta`.
 
 ## 9. Open points
 
-- **Gold fee model**: per unit of the item received? of the item paid? per order? To be
+- **Recurrence thresholds** (min margin, min share of hours): calibrate on real data.
+- **Gold (deferred)** — fee model: per unit of the item received? of the item paid? per order? To be
   checked in-game (place two orders of different quantities, note the fees) or found in
   game data.
 - **Gold cost table source** (wiki table, game data export).
