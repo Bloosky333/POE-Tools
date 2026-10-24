@@ -65,6 +65,43 @@ describe('details conversion', () => {
     expect(last?.volume).toBeGreaterThan(0);
   });
 
+  it('averages pairs by traded items, staying within the pair prices', () => {
+    // Forbidden Rites 2026-10-22 rates (fx.csv of the data branch), applied to every day.
+    const rates = { exalted: 696.6, chaos: 9.77 };
+    for (const fixture of ['uncut-skill-gem-level-19', 'siones-temper', 'artificers-orb']) {
+      const details = exchangeDetailsSchema.parse(
+        probeJson(`exchange-details-${fixture}-forbidden-rites.json`),
+      );
+      const dates = details.pairs.flatMap((p) => p.history.map((h) => h.timestamp.slice(0, 10)));
+      const fxMap = new Map(dates.map((date) => [date, { date, ...rates }]));
+      const point = detailsToDailyPoints(details, fixture, fxMap, TODAY).find(
+        (p) => p.date === '2026-10-22',
+      );
+      const pairPrices = details.pairs.flatMap((pair) => {
+        const h = pair.history.find((x) => x.timestamp.startsWith('2026-10-22'));
+        const per = pair.id === 'divine' ? 1 : 1 / rates[pair.id as 'exalted' | 'chaos'];
+        return h?.rate ? [h.rate * per] : [];
+      });
+      expect(point?.price).toBeGreaterThanOrEqual(Math.min(...pairPrices) * 0.999);
+      expect(point?.price).toBeLessThanOrEqual(Math.max(...pairPrices) * 1.001);
+      const totalVolume = details.pairs.reduce(
+        (sum, pair) =>
+          sum +
+          (pair.history.find((x) => x.timestamp.startsWith('2026-10-22'))?.volumePrimaryValue ?? 0),
+        0,
+      );
+      expect(point?.volume).toBeCloseTo(totalVolume, 2);
+    }
+  });
+
+  it('skips points without a rate', () => {
+    const details = exchangeDetailsSchema.parse(
+      probeJson('exchange-details-adept-rune-forbidden-rites.json'),
+    );
+    const points = detailsToDailyPoints(details, 'adept-rune', fxByDate, TODAY);
+    expect(points.every((p) => Number.isFinite(p.price) && p.price > 0)).toBe(true);
+  });
+
   it('ignores pairs it cannot convert', () => {
     const points = detailsToDailyPoints(chaos, 'chaos', new Map(), TODAY);
     // Without fx only the divine pair is usable, which still gives a price per day.

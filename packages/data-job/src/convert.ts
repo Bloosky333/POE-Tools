@@ -61,7 +61,7 @@ export function fxFromDivineDetails(details: ExchangeDetails, beforeDate: string
     if (pair.id !== 'exalted' && pair.id !== 'chaos') continue;
     for (const point of pair.history) {
       const date = point.timestamp.slice(0, 10);
-      if (date >= beforeDate) continue;
+      if (date >= beforeDate || !point.rate) continue;
       const fx = byDate.get(date) ?? { date, exalted: null, chaos: null };
       fx[pair.id] = point.rate;
       byDate.set(date, fx);
@@ -71,9 +71,15 @@ export function fxFromDivineDetails(details: ExchangeDetails, beforeDate: string
 }
 
 /**
- * Converts an item's per-pair history into one daily price in divine: a volume-weighted
- * mean of every pair converted with that day's rates. Only completed days
- * (`date < beforeDate`) are kept, since the latest point is the running day.
+ * Converts an item's per-pair history into one daily price in divine: the
+ * volume-weighted average price actually paid over all pairs that day
+ * (Σ divine traded / Σ items traded).
+ *
+ * Pairs can disagree a lot on cheap items (a 0.03 div item bought with divines trades in
+ * lots at a worse rate; thin pairs drift), and picking one pair per day — as the overview
+ * does — makes the series jump between pairs, which would show fake price moves. The
+ * average is stable. Only completed days (`date < beforeDate`) are kept, since the
+ * latest point is the running day.
  */
 export function detailsToDailyPoints(
   details: ExchangeDetails,
@@ -81,32 +87,36 @@ export function detailsToDailyPoints(
   fx: ReadonlyMap<string, FxPoint>,
   beforeDate: string,
 ): DailyPoint[] {
-  const acc = new Map<string, { weighted: number; volume: number; sum: number; n: number }>();
+  const days = new Map<string, { volume: number; units: number; prices: number[] }>();
   for (const pair of details.pairs) {
     for (const point of pair.history) {
       const date = point.timestamp.slice(0, 10);
-      if (date >= beforeDate) continue;
       const divPerUnit = divinePerUnit(pair.id, fx.get(date));
-      if (divPerUnit === null) continue;
+      if (date >= beforeDate || !point.rate || divPerUnit === null) continue;
       const price = point.rate * divPerUnit;
       const volume = point.volumePrimaryValue ?? 0;
-      const day = acc.get(date) ?? { weighted: 0, volume: 0, sum: 0, n: 0 };
-      day.weighted += price * volume;
+      const day = days.get(date) ?? { volume: 0, units: 0, prices: [] };
       day.volume += volume;
-      day.sum += price;
-      day.n += 1;
-      acc.set(date, day);
+      day.units += volume / price;
+      day.prices.push(price);
+      days.set(date, day);
     }
   }
-  return [...acc.entries()]
+  return [...days.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, day]) => ({
       date,
       item: itemId,
-      price: round(day.volume > 0 ? day.weighted / day.volume : day.sum / day.n),
+      price: round(day.units > 0 ? day.volume / day.units : median(day.prices)),
       volume: round(day.volume),
       source: 'details' as const,
     }));
+}
+
+function median(values: readonly number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? (sorted[mid] ?? 0) : ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
 }
 
 function divinePerUnit(currency: string, fx: FxPoint | undefined): number | null {

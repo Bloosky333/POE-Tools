@@ -95,11 +95,13 @@ GitHub Actions (cron)                           Static hosting
 
 - **Hourly** (`.github/workflows/data.yml`, cron `:17`): current overviews of the
   selectable league (14 requests) → `current.json`, deployed with the site, not committed.
-- **Once per UTC day** (first run after midnight): yesterday is closed with a snapshot
-  of every item and committed to the orphan **`data` branch** (~1 small commit/day;
-  `main` stays clean).
 - **Once per league**: full history backfill through the exchange details route
-  (items with ≥ 2 div daily volume); later, ≤ 30 newly liquid items per day.
+  (items with ≥ 2 div daily volume).
+- **Once per UTC day** (first run after midnight), current league only: the details
+  history of every liquid item is re-fetched (~270 throttled requests, ≈ 7 min) so each
+  item's series has a single, consistent source; items without details get yesterday's
+  overview snapshot. Committed to the orphan **`data` branch** (1 commit/day; `main`
+  stays clean).
 - Store (`data` branch), append-friendly CSV sorted by date:
   - `poe2/<league>/history/<ExchangeType>.csv` — `date,item,price_div,volume_div,source`
   - `poe2/<league>/fx.csv` — `date,exalted_per_div,chaos_per_div`

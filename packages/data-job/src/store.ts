@@ -12,9 +12,14 @@ import { formatFxCsv, formatHistoryCsv, parseFxCsv, parseHistoryCsv } from './cs
  *   <game>/<leagueId>/history/<ExchangeType>.csv
  */
 
+/** Bump to re-run the history backfill of every league (e.g. after a conversion fix). */
+export const BACKFILL_VERSION = 2;
+
 export const metaSchema = z.object({
   /** When the one-time history backfill completed. */
   backfilledAt: z.string().nullable(),
+  /** `BACKFILL_VERSION` the backfill was made with. */
+  backfillVersion: z.number().default(1),
   /** Latest completed UTC date present in history. */
   lastClosedDate: z.string().nullable(),
   /** Items whose details history was already fetched (or attempted). */
@@ -22,7 +27,12 @@ export const metaSchema = z.object({
 });
 export type LeagueMeta = z.infer<typeof metaSchema>;
 
-const EMPTY_META: LeagueMeta = { backfilledAt: null, lastClosedDate: null, detailsFetched: [] };
+const EMPTY_META: LeagueMeta = {
+  backfilledAt: null,
+  backfillVersion: BACKFILL_VERSION,
+  lastClosedDate: null,
+  detailsFetched: [],
+};
 
 export type LeagueHistory = Map<ExchangeType, DailyPoint[]>;
 

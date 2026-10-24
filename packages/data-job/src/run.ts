@@ -20,7 +20,7 @@ import { fetchDetails, fetchLeagues, fetchOverview } from './poe-ninja/api.ts';
 import type { NinjaClient } from './poe-ninja/client.ts';
 import type { ExchangeOverview } from './poe-ninja/schemas.ts';
 import type { createSiteWriter } from './site.ts';
-import type { LeagueHistory, Store } from './store.ts';
+import { BACKFILL_VERSION, type LeagueHistory, type Store } from './store.ts';
 
 export interface Logger {
   info(message: string): void;
@@ -33,10 +33,10 @@ export interface JobOptions {
   site: ReturnType<typeof createSiteWriter>;
   now: Date;
   log: Logger;
-  /** Minimum daily volume (div) for an item to get its full history fetched. */
-  backfillMinVolume?: number;
-  /** Max new items whose history is fetched in one daily run (after the backfill). */
-  newItemsPerRun?: number;
+  /** Minimum daily volume (div) for an item to get its details history. */
+  historyMinVolume?: number;
+  /** Max items whose details history is refreshed per league per day. */
+  maxHistoryItems?: number;
 }
 
 interface LeagueSnapshot {
@@ -47,12 +47,17 @@ interface LeagueSnapshot {
 /**
  * One run of the data job (scheduled hourly):
  * - current prices of selectable leagues → site `current.json`;
- * - one-time history backfill of each tracked league (poe.ninja details route);
- * - once per UTC day, closes yesterday: snapshot of every item appended to history;
+ * - once per league (or per `BACKFILL_VERSION`): full history of every liquid item from
+ *   poe.ninja's details route;
+ * - once per UTC day, for selectable leagues: refresh of those histories (details are
+ *   the single source of an item's history, so its series stays consistent); items
+ *   without details history get yesterday's overview snapshot instead;
  * - site history / fx files rebuilt from the store.
  */
 export async function runJob(options: JobOptions): Promise<void> {
   const { client, store, site, now, log } = options;
+  const minVolume = options.historyMinVolume ?? 2;
+  const maxItems = options.maxHistoryItems ?? 400;
   const today = utcDate(now);
   const yesterday = utcDate(now.getTime() - DAY_MS);
 
@@ -63,9 +68,9 @@ export async function runJob(options: JobOptions): Promise<void> {
   for (const league of tracked) {
     if (!ninjaLeagues.has(league.ninjaName)) continue;
     const meta = await store.readMeta(league.id);
-    const needsBackfill = meta.backfilledAt === null;
+    const needsBackfill = meta.backfilledAt === null || meta.backfillVersion !== BACKFILL_VERSION;
     const needsDaily = meta.lastClosedDate === null || meta.lastClosedDate < yesterday;
-    if (!league.selectable && !needsBackfill && !needsDaily) continue;
+    if (!league.selectable && !needsBackfill) continue;
 
     const snapshot = await fetchSnapshot(client, league);
     log.info(`${league.name}: ${snapshot.items.length} items`);
@@ -82,40 +87,45 @@ export async function runJob(options: JobOptions): Promise<void> {
         items: snapshot.items,
       });
     }
-    if (!needsBackfill && !needsDaily) continue;
+    if (!needsBackfill && !(league.selectable && needsDaily)) continue;
 
     let history = await store.readHistory(league.id);
     let fx = await store.readFx(league.id);
-
-    const fetched = new Set(meta.detailsFetched);
-    const candidates = snapshot.items.filter(
-      (item) =>
-        item.id !== DIVINE_ID &&
-        item.volume >= (options.backfillMinVolume ?? 2) &&
-        !fetched.has(item.id),
-    );
-    const toFetch = needsBackfill ? candidates : candidates.slice(0, options.newItemsPerRun ?? 30);
-    const result = toFetch.length
-      ? await fetchHistories(client, league, toFetch, today, log)
-      : { points: [], fx: [] };
-    if (result) {
-      fx = mergeFx(fx, result.fx);
-      history = addPoints(history, result.points, toFetch);
-      meta.detailsFetched.push(...toFetch.map((item) => item.id));
-      if (toFetch.length) log.info(`${league.name}: history fetched for ${toFetch.length} items`);
-      if (needsBackfill) meta.backfilledAt = now.toISOString();
+    if (needsBackfill && meta.backfilledAt !== null) {
+      log.info(`${league.name}: re-running backfill v${BACKFILL_VERSION}`);
+      history = new Map(
+        [...history].map(([type, points]) => [type, points.filter((p) => p.source === 'snapshot')]),
+      );
+      meta.detailsFetched = [];
     }
 
-    // Close yesterday with the current snapshot, unless the details already cover it.
-    if (firstOverview) {
-      const covered = new Set(
-        [...history.values()]
-          .flat()
-          .filter((p) => p.date === yesterday)
-          .map((p) => p.item),
-      );
+    // Items with details history: previously fetched ones plus newly liquid ones.
+    const fetched = new Set(meta.detailsFetched);
+    const toFetch = snapshot.items
+      .filter((item) => item.id !== DIVINE_ID && (fetched.has(item.id) || item.volume >= minVolume))
+      .sort((a, b) => b.volume - a.volume)
+      .slice(0, maxItems);
+    const result = toFetch.length
+      ? await fetchHistories(client, league, toFetch, today, log)
+      : { points: [], fx: [], fetched: [] };
+    if (!result) {
+      log.warn(`${league.name}: history refresh postponed`);
+    } else {
+      fx = mergeFx(fx, result.fx);
+      history = replaceItemHistories(history, result.points, toFetch);
+      meta.detailsFetched = [...new Set([...meta.detailsFetched, ...result.fetched])];
+      log.info(`${league.name}: history refreshed for ${result.fetched.length} items`);
+      if (needsBackfill) {
+        meta.backfilledAt = now.toISOString();
+        meta.backfillVersion = BACKFILL_VERSION;
+      }
+    }
+
+    // Close yesterday: overview snapshot for items without details history.
+    if (firstOverview && league.selectable) {
+      const withDetails = new Set(meta.detailsFetched);
       const points: DailyPoint[] = snapshot.items
-        .filter((item) => item.id !== DIVINE_ID && item.price > 0 && !covered.has(item.id))
+        .filter((item) => item.id !== DIVINE_ID && item.price > 0 && !withDetails.has(item.id))
         .map((item) => ({
           date: yesterday,
           item: item.id,
@@ -123,12 +133,12 @@ export async function runJob(options: JobOptions): Promise<void> {
           volume: item.volume,
           source: 'snapshot',
         }));
-      history = addPoints(history, points, snapshot.items);
+      history = addSnapshotPoints(history, points, snapshot.items);
       if (!fx.some((p) => p.date === yesterday)) {
         fx = mergeFx(fx, [fxFromOverview(firstOverview, yesterday)]);
       }
     }
-    meta.lastClosedDate = yesterday;
+    if (result) meta.lastClosedDate = yesterday;
 
     await store.writeHistory(league.id, history);
     await store.writeFx(league.id, fx);
@@ -175,17 +185,17 @@ async function fetchHistories(
   items: readonly CurrentItem[],
   today: string,
   log: Logger,
-): Promise<{ points: DailyPoint[]; fx: FxPoint[] } | null> {
+): Promise<{ points: DailyPoint[]; fx: FxPoint[]; fetched: string[] } | null> {
   const divine = await fetchDetails(client, league.ninjaName, 'Currency', 'divine-orb');
   if (!divine) {
-    log.warn(`${league.name}: Divine Orb details not found, history fetch postponed`);
+    log.warn(`${league.name}: Divine Orb details not found`);
     return null;
   }
   const fx = fxFromDivineDetails(divine, today);
   const fxByDate = new Map(fx.map((point) => [point.date, point]));
 
   const points: DailyPoint[] = [];
-  let deviations = 0;
+  const fetched: string[] = [];
   for (const item of items) {
     let details;
     try {
@@ -198,30 +208,37 @@ async function fetchHistories(
       log.warn(`${league.name}: no details for ${item.type}/${item.detailsId}`);
       continue;
     }
-    const itemPoints = detailsToDailyPoints(details, item.id, fxByDate, today);
-    // Sanity check of the pair-rate conversion against the overview price.
-    const last = itemPoints.at(-1);
-    if (last && Math.abs(last.price / item.price - 1) > 0.5) deviations++;
-    points.push(...itemPoints);
+    points.push(...detailsToDailyPoints(details, item.id, fxByDate, today));
+    fetched.push(item.id);
   }
-  if (deviations > items.length * 0.2) {
-    log.warn(
-      `${league.name}: ${deviations}/${items.length} items deviate >50% from the overview price`,
-    );
-  }
-  return { points, fx };
+  return { points, fx, fetched };
 }
 
-/** Adds points to the history of each item's exchange type. */
-function addPoints(
+/** Replaces the whole history of every item in `items` that has new points. */
+function replaceItemHistories(
   history: LeagueHistory,
   points: readonly DailyPoint[],
-  items?: readonly CurrentItem[],
+  items: readonly CurrentItem[],
 ): LeagueHistory {
-  const typeOf = new Map<string, CurrentItem['type']>();
-  for (const [type, existing] of history) for (const p of existing) typeOf.set(p.item, type);
-  for (const item of items ?? []) if (!typeOf.has(item.id)) typeOf.set(item.id, item.type);
+  const replaced = new Set(points.map((p) => p.item));
+  const typeOf = new Map(items.map((item) => [item.id, item.type]));
+  const next: LeagueHistory = new Map(
+    [...history].map(([type, list]) => [type, list.filter((p) => !replaced.has(p.item))]),
+  );
+  for (const point of points) {
+    const type = typeOf.get(point.item);
+    if (type) next.set(type, [...(next.get(type) ?? []), point]);
+  }
+  return next;
+}
 
+/** Adds snapshot points to the history of each item's exchange type. */
+function addSnapshotPoints(
+  history: LeagueHistory,
+  points: readonly DailyPoint[],
+  items: readonly CurrentItem[],
+): LeagueHistory {
+  const typeOf = new Map(items.map((item) => [item.id, item.type]));
   const byType = new Map<CurrentItem['type'], DailyPoint[]>();
   for (const point of points) {
     const type = typeOf.get(point.item);

@@ -86,9 +86,9 @@ Open points for the data job:
   liquid item (~200 requests at ≥ 1.5 s ≈ 5 min), run once per league and stored in the
   `data` branch. Undocumented but part of the economy API; used sparingly and never in the
   hourly loop.
-- **Current league history** is available the same way — no need to wait for our own
-  snapshots; the daily job can refresh it incrementally (only items whose overview changed,
-  or a rolling subset) to keep volume low.
+- **Current league history** is available the same way and is re-fetched daily for
+  liquid items (~270 requests/day, ≈ 11/hour on average), so every item's series has a
+  single source.
 - **Day alignment**: history points are at 00:00 UTC while leagues start at ~20:00 UTC.
   League day = UTC calendar day of the point − UTC calendar day of the league start
   (start day = day 0, partial).

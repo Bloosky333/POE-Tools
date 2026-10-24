@@ -42,8 +42,8 @@ export const exchangeDetailsSchema = z.object({
       history: z.array(
         z.object({
           timestamp: z.string(),
-          /** Units of the pair currency per 1 item. */
-          rate: z.number(),
+          /** Units of the pair currency per 1 item (missing on some days). */
+          rate: z.number().nullish(),
           /** Volume in primary currency (divine). */
           volumePrimaryValue: z.number().nullish(),
         }),
