@@ -12,7 +12,7 @@ import { createNinjaClient } from './poe-ninja/client.ts';
 
 const REPOE_URL = 'https://repoe-fork.github.io/poe2/base_items.json';
 const OUT_FILE = join(import.meta.dirname, '../data/exchange-base-items.json');
-const HOURS = 6;
+const HOURS = 24;
 const HOUR = 3600;
 
 const baseItemsSchema = z.record(z.string(), z.object({ name: z.string().optional() }).loose());
