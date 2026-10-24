@@ -1,91 +1,98 @@
-import {
-  DEFAULT_ENGINE_SETTINGS,
-  EXCHANGE_TYPE_LABELS,
-  POE2_EXCHANGE_TYPES,
-  getLeague,
-  getReferenceLeague,
-  leagueDay,
-  suggest,
-  type Suggestion,
-} from '@poe-tools/shared';
+import { EXCHANGE_TYPE_LABELS, POE2_EXCHANGE_TYPES, type Suggestion } from '@poe-tools/shared';
 import { useMemo } from 'react';
-import { fetchCurrent, fetchLeagueHistory, useAsync } from '../../lib/data.ts';
-import { useNow } from '../../lib/useNow.ts';
-import { useSettings } from '../../lib/useSettings.ts';
+import { formatMultiplier } from '../../lib/format.ts';
+import {
+  Card,
+  Chips,
+  Div,
+  FilterBar,
+  InlineField,
+  Input,
+  Notice,
+  PageHeader,
+  SearchInput,
+  Segmented,
+  Select,
+  Skeleton,
+  StatTile,
+} from '../../ui/index.ts';
 import { ACTION_LABELS } from './ActionBadge.tsx';
 import { ItemDetail } from './ItemDetail.tsx';
 import { MODES, useViewParams, type SortKey, type ViewParams } from './params.ts';
 import { SuggestionsTable } from './SuggestionsTable.tsx';
+import { useSuggestions } from './useSuggestions.ts';
 
 export default function CurrencySpeculationPage() {
-  const { settings } = useSettings();
-  const league = getLeague(settings.leagueId);
-  const reference = league && getReferenceLeague(league);
   const [params, update] = useViewParams();
+  const mode = MODES.find((m) => m.value === params.mode)?.mode ?? { kind: 'horizon', days: 14 };
+  const { league, reference, today, data, suggestions, divineIcon } = useSuggestions(
+    mode,
+    params.minVolume,
+  );
 
-  const data = useAsync(`speculation:${settings.leagueId}`, async () => {
-    if (!league || !reference) throw new Error('No reference league configured');
-    const [current, currentHistory, referenceHistory] = await Promise.all([
-      fetchCurrent(settings.game, league.id),
-      fetchLeagueHistory(settings.game, league.id),
-      fetchLeagueHistory(settings.game, reference.id),
-    ]);
-    return { current, currentHistory, referenceHistory };
-  });
-
-  const now = useNow();
-  const today = league ? leagueDay(league.startsAt, new Date(now)) : 0;
-
-  const suggestions = useMemo(() => {
-    if (data.status !== 'ready') return [];
-    const { current, currentHistory, referenceHistory } = data.data;
-    const mode = MODES.find((m) => m.value === params.mode)?.mode ?? {
-      kind: 'horizon',
-      days: 14,
-    };
-    return current.items
-      .filter((item) => item.id !== 'divine')
-      .map((item) =>
-        suggest({
-          item,
-          reference: referenceHistory[item.id],
-          current: currentHistory[item.id],
-          today,
-          mode,
-          settings: { ...DEFAULT_ENGINE_SETTINGS, minVolume: params.minVolume },
-        }),
-      );
-  }, [data, today, params.mode, params.minVolume]);
-
+  const eligible = useMemo(
+    () => filterAndSort(suggestions, { ...params, type: 'all', action: 'all', q: '' }),
+    [suggestions, params],
+  );
   const rows = useMemo(() => filterAndSort(suggestions, params), [suggestions, params]);
   const selected = params.item ? suggestions.find((s) => s.item.id === params.item) : undefined;
 
   if (!league || !reference) return <p>No league selected.</p>;
 
   return (
-    <section className="space-y-4">
-      <header>
-        <h1 className="text-xl font-semibold">Currency Speculation</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {league.name}: day {today} · compared with {reference.name} at the same day · prices in
-          divine
-        </p>
-      </header>
+    <section className="space-y-5">
+      <PageHeader
+        title="Currency Speculation"
+        description={
+          <>
+            What to buy now and sell later, from how prices moved in{' '}
+            <span className="text-fg">{reference.name}</span> at the same point of the league.
+          </>
+        }
+        actions={
+          <>
+            <span className="shrink-0 text-xs text-muted">Sell after</span>
+            <Segmented
+              label="Sell strategy"
+              options={MODES.map((m) => ({ value: m.value, label: m.short }))}
+              value={params.mode}
+              onChange={(mode) => update({ mode })}
+            />
+          </>
+        }
+      />
 
-      <Controls params={params} update={update} />
-
-      {data.status === 'loading' && <p className="text-sm text-gray-500">Loading price data…</p>}
+      {data.status === 'loading' && <Skeleton label="Loading price data" />}
       {data.status === 'error' && (
-        <p className="rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-          ⚠ Price data couldn't be loaded ({data.error.message}). The data job may not have run yet.
-        </p>
+        <Notice>
+          Price data couldn&apos;t be loaded ({data.error.message}). The data job may not have run
+          yet.
+        </Notice>
       )}
       {data.status === 'ready' && (
         <>
-          <Summary suggestions={rows} />
+          <StatTiles
+            suggestions={eligible}
+            today={today}
+            leagueName={league.name}
+            divineIcon={divineIcon}
+          />
+
+          <Card className="space-y-3">
+            <CategoryChips
+              suggestions={eligible}
+              value={params.type}
+              onChange={(type) => update({ type })}
+            />
+            <Filters params={params} update={update} />
+          </Card>
+
           <SuggestionsTable
             rows={rows}
             params={params}
+            currentHistory={data.data.currentHistory}
+            today={today}
+            divineIcon={divineIcon}
             onSort={(key: SortKey) =>
               update(
                 params.sort === key ? { desc: !params.desc } : { sort: key, desc: key !== 'name' },
@@ -93,6 +100,10 @@ export default function CurrencySpeculationPage() {
             }
             onSelect={(item) => update({ item })}
           />
+          <p className="text-xs text-subtle">
+            {rows.length} of {suggestions.length} items · history prices are daily averages paid
+            across divine, exalted and chaos pairs.
+          </p>
           {selected && (
             <ItemDetail
               suggestion={selected}
@@ -101,6 +112,7 @@ export default function CurrencySpeculationPage() {
               referenceName={reference.name}
               currentName={league.name}
               today={today}
+              divineIcon={divineIcon}
               onClose={() => update({ item: null })}
             />
           )}
@@ -110,21 +122,74 @@ export default function CurrencySpeculationPage() {
   );
 }
 
-function Summary({ suggestions }: { suggestions: readonly Suggestion[] }) {
+function StatTiles({
+  suggestions,
+  today,
+  leagueName,
+  divineIcon,
+}: {
+  suggestions: readonly Suggestion[];
+  today: number;
+  leagueName: string;
+  divineIcon: string | undefined;
+}) {
   const count = (action: Suggestion['action']) =>
     suggestions.filter((s) => s.action === action).length;
+  const best = [...suggestions]
+    .filter((s) => s.action === 'buy' || s.action === 'wait')
+    .sort((a, b) => b.score - a.score)[0];
   return (
-    <p className="text-sm text-gray-600 dark:text-gray-300">
-      {suggestions.length} items · {count('buy')} buy now · {count('wait')} wait · {count('avoid')}{' '}
-      avoid
-    </p>
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <StatTile label={leagueName} value={`Day ${today}`} />
+      <StatTile label="Buy now" value={count('buy')} tone="gain" />
+      <StatTile label="Wait for a dip" value={count('wait')} tone="warn" />
+      <StatTile label="Avoid" value={count('avoid')} tone="loss" />
+      <StatTile
+        label="Top opportunity"
+        value={best ? formatMultiplier(best.reference?.multiplierFromBuy) : '–'}
+        tone="accent"
+        detail={
+          best ? (
+            <span className="flex min-w-0 items-center gap-1">
+              <span className="truncate">{best.item.name}</span>
+              <span aria-hidden>·</span>
+              <Div value={best.item.price} icon={divineIcon} className="shrink-0" />
+            </span>
+          ) : undefined
+        }
+      />
+    </div>
   );
 }
 
-const inputClass =
-  'rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-900';
+function CategoryChips({
+  suggestions,
+  value,
+  onChange,
+}: {
+  suggestions: readonly Suggestion[];
+  value: ViewParams['type'];
+  onChange: (value: ViewParams['type']) => void;
+}) {
+  const counts = new Map<string, number>();
+  for (const s of suggestions) counts.set(s.item.type, (counts.get(s.item.type) ?? 0) + 1);
+  return (
+    <Chips<ViewParams['type']>
+      value={value}
+      onChange={onChange}
+      options={[
+        { value: 'all', label: 'All', count: suggestions.length },
+        ...POE2_EXCHANGE_TYPES.filter((t) => counts.get(t)).map((t) => ({
+          value: t,
+          label: EXCHANGE_TYPE_LABELS[t],
+          count: counts.get(t) ?? 0,
+        })),
+      ]}
+    />
+  );
+}
 
-function Controls({
+function Filters({
   params,
   update,
 }: {
@@ -132,23 +197,10 @@ function Controls({
   update: (p: Partial<ViewParams>) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-end gap-3 text-sm">
-      <Field label="Sell">
-        <select
-          className={inputClass}
-          value={params.mode}
-          onChange={(e) => update({ mode: e.target.value })}
-        >
-          {MODES.map((m) => (
-            <option key={m.value} value={m.value}>
-              {m.label}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Action">
-        <select
-          className={inputClass}
+    <FilterBar>
+      <SearchInput placeholder="Search items" value={params.q} onChange={(q) => update({ q })} />
+      <InlineField label="Suggestion">
+        <Select
           value={params.action}
           onChange={(e) => update({ action: e.target.value as ViewParams['action'] })}
         >
@@ -158,61 +210,29 @@ function Controls({
               {ACTION_LABELS[a]}
             </option>
           ))}
-        </select>
-      </Field>
-      <Field label="Category">
-        <select
-          className={inputClass}
-          value={params.type}
-          onChange={(e) => update({ type: e.target.value as ViewParams['type'] })}
-        >
-          <option value="all">All</option>
-          {POE2_EXCHANGE_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {EXCHANGE_TYPE_LABELS[t]}
-            </option>
-          ))}
-        </select>
-      </Field>
-      <Field label="Min volume (div/day)">
-        <input
+        </Select>
+      </InlineField>
+      <InlineField label="Min volume" unit="div/day">
+        <Input
           type="number"
           min={0}
           step={1}
-          className={`${inputClass} w-24`}
+          className="w-20"
           value={params.minVolume}
           onChange={(e) => update({ minVolume: Number(e.target.value) || 0 })}
         />
-      </Field>
-      <Field label="Min price (div)">
-        <input
+      </InlineField>
+      <InlineField label="Min price" unit="div">
+        <Input
           type="number"
           min={0}
           step={0.01}
-          className={`${inputClass} w-24`}
+          className="w-20"
           value={params.minPrice}
           onChange={(e) => update({ minPrice: Number(e.target.value) || 0 })}
         />
-      </Field>
-      <Field label="Search">
-        <input
-          type="search"
-          placeholder="Item name"
-          className={`${inputClass} w-44`}
-          value={params.q}
-          onChange={(e) => update({ q: e.target.value })}
-        />
-      </Field>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="flex flex-col gap-1">
-      <span className="text-xs text-gray-500">{label}</span>
-      {children}
-    </label>
+      </InlineField>
+    </FilterBar>
   );
 }
 

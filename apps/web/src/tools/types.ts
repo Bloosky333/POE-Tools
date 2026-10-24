@@ -1,5 +1,5 @@
 import type { Game } from '@poe-tools/shared';
-import type { ComponentType, LazyExoticComponent } from 'react';
+import type { ComponentType, LazyExoticComponent, SVGProps } from 'react';
 
 export type ToolCategory = 'economy' | 'crafting' | 'misc';
 export type ToolStatus = 'stable' | 'beta' | 'coming-soon';
@@ -11,6 +11,7 @@ export interface ToolDefinition {
   category: ToolCategory;
   games: readonly Game[];
   status: ToolStatus;
+  icon: ComponentType<SVGProps<SVGSVGElement>>;
   /** Route path relative to the app root, e.g. "tools/currency-speculation". */
   path: string;
   /** Lazy-loaded page; absent for tools that are not implemented yet. */

@@ -14,15 +14,27 @@ export function DataFreshness() {
   );
   if (!league || state.status === 'loading') return null;
   if (state.status === 'error') {
-    return <span className="text-xs text-amber-700 dark:text-amber-400">⚠ No price data</span>;
+    return <Status tone="bad" label="No price data" />;
   }
   const stale = now - Date.parse(state.data.fetchedAt) > 3 * 60 * 60 * 1000;
   return (
-    <span
-      className={`text-xs ${stale ? 'text-amber-700 dark:text-amber-400' : 'text-gray-500'}`}
+    <Status
+      tone={stale ? 'bad' : 'good'}
+      label={`Prices ${formatAge(state.data.fetchedAt, now)}`}
       title={`Prices fetched ${new Date(state.data.fetchedAt).toLocaleString()}`}
-    >
-      {stale && '⚠ '}Prices {formatAge(state.data.fetchedAt, now)}
+    />
+  );
+}
+
+function Status({ tone, label, title }: { tone: 'good' | 'bad'; label: string; title?: string }) {
+  return (
+    <span className="hidden items-center gap-1.5 text-xs text-muted md:flex" title={title}>
+      <span
+        className={`h-1.5 w-1.5 rounded-full ${tone === 'good' ? 'bg-gain' : 'bg-warn'}`}
+        aria-hidden
+      />
+      {tone === 'bad' && <span className="sr-only">Warning:</span>}
+      {label}
     </span>
   );
 }

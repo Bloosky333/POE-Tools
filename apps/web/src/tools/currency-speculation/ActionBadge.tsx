@@ -1,26 +1,11 @@
 import type { Action } from '@poe-tools/shared';
+import { Badge, type BadgeTone } from '../../ui/index.ts';
 
-const STYLES: Record<Action, { label: string; icon: string; className: string }> = {
-  buy: {
-    label: 'Buy now',
-    icon: '▲',
-    className: 'bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-300',
-  },
-  wait: {
-    label: 'Wait',
-    icon: '◷',
-    className: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-  },
-  avoid: {
-    label: 'Avoid',
-    icon: '▼',
-    className: 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-300',
-  },
-  neutral: {
-    label: 'Neutral',
-    icon: '–',
-    className: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  },
+const STYLES: Record<Action, { label: string; icon: string; tone: BadgeTone }> = {
+  buy: { label: 'Buy now', icon: '▲', tone: 'gain' },
+  wait: { label: 'Wait', icon: '◷', tone: 'warn' },
+  avoid: { label: 'Avoid', icon: '▼', tone: 'loss' },
+  neutral: { label: 'Neutral', icon: '–', tone: 'neutral' },
 };
 
 export const ACTION_LABELS: Record<Action, string> = {
@@ -30,14 +15,11 @@ export const ACTION_LABELS: Record<Action, string> = {
   neutral: STYLES.neutral.label,
 };
 
-export function ActionBadge({ action }: { action: Action }) {
+export function ActionBadge({ action, detail }: { action: Action; detail?: string | undefined }) {
   const style = STYLES[action];
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap ${style.className}`}
-    >
-      <span aria-hidden>{style.icon}</span>
+    <Badge tone={style.tone} icon={style.icon} detail={detail}>
       {style.label}
-    </span>
+    </Badge>
   );
 }

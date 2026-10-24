@@ -18,7 +18,7 @@ export const routes: RouteObject[] = [
               {
                 path,
                 element: (
-                  <Suspense fallback={<p className="text-sm text-gray-500">Loading…</p>}>
+                  <Suspense fallback={<p className="text-sm text-muted">Loading…</p>}>
                     <Tool />
                   </Suspense>
                 ),

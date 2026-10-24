@@ -9,6 +9,7 @@ on:
   push:
     branches-ignore: [data]
     paths:
+      - apps/web/**
       - packages/data-job/src/**
       - packages/shared/src/**
       - .github/workflows/data.yml

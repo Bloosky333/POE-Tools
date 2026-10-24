@@ -17,12 +17,12 @@ export interface ViewParams {
 export type SortKey =
   'score' | 'name' | 'price' | 'multiplier' | 'confidence' | 'volume' | 'change7d' | 'sellDay';
 
-export const MODES: { value: string; label: string; mode: SellMode }[] = [
-  { value: 'h7', label: 'Hold 7 days', mode: { kind: 'horizon', days: 7 } },
-  { value: 'h14', label: 'Hold 14 days', mode: { kind: 'horizon', days: 14 } },
-  { value: 'h30', label: 'Hold 30 days', mode: { kind: 'horizon', days: 30 } },
-  { value: 'peak', label: 'Sell at peak', mode: { kind: 'peak' } },
-  { value: 'end', label: 'Hold to league end', mode: { kind: 'end' } },
+export const MODES: { value: string; label: string; short: string; mode: SellMode }[] = [
+  { value: 'h7', short: '7 days', label: 'Hold 7 days', mode: { kind: 'horizon', days: 7 } },
+  { value: 'h14', short: '14 days', label: 'Hold 14 days', mode: { kind: 'horizon', days: 14 } },
+  { value: 'h30', short: '30 days', label: 'Hold 30 days', mode: { kind: 'horizon', days: 30 } },
+  { value: 'peak', short: 'Peak', label: 'Sell at peak', mode: { kind: 'peak' } },
+  { value: 'end', short: 'League end', label: 'Hold to league end', mode: { kind: 'end' } },
 ];
 
 const DEFAULTS: ViewParams = {

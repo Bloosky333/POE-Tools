@@ -26,7 +26,7 @@ describe('App shell', () => {
   it('opens the currency speculation tool', async () => {
     renderAt('/tools/currency-speculation');
     expect(await screen.findByRole('heading', { name: 'Currency Speculation' })).toBeDefined();
-    expect(screen.getByText(/compared with Runes of Aldur/)).toBeDefined();
+    expect(screen.getByText('Runes of Aldur')).toBeDefined();
   });
 
   it('shows a not-found page for unknown routes', () => {

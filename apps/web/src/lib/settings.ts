@@ -12,7 +12,7 @@ const STORAGE_KEY = 'poe-tools:settings';
 
 export function defaultSettings(): Settings {
   const game = ENABLED_GAMES[0] ?? 'poe2';
-  return { game, leagueId: getDefaultLeague(game)?.id ?? '', theme: 'system' };
+  return { game, leagueId: getDefaultLeague(game)?.id ?? '', theme: 'dark' };
 }
 
 export function loadSettings(): Settings {
