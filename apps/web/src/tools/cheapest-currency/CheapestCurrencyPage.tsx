@@ -277,7 +277,12 @@ function Result(props: {
       align: 'right',
       title: 'Whole units of the currency to pay',
       render: (o) => (
-        <Amount value={o.pay} unit={currencyView(o.currency, props.current)} secondary={false} />
+        <Amount
+          value={o.pay}
+          unit={currencyView(o.currency, props.current)}
+          secondary={false}
+          whole
+        />
       ),
     },
     {

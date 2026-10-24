@@ -9,19 +9,24 @@ export function Amount({
   value,
   unit,
   secondary = true,
+  whole = false,
   className = '',
 }: {
   value: number | null | undefined;
   unit: UnitInfo | CurrencyView;
   /** Show the secondary currency when the unit has one. */
   secondary?: boolean;
+  /** A count of whole units (e.g. currency to hand over): no decimals. */
+  whole?: boolean;
   className?: string;
 }) {
   const second = secondary && 'secondary' in unit ? unit.secondary : null;
   const converted = second && value !== null && value !== undefined ? value * second.perUnit : null;
   return (
     <span className={`inline-flex items-center justify-end gap-1 ${className}`}>
-      {formatAmount(value, unit.id)}
+      {whole && value !== null && value !== undefined
+        ? value.toLocaleString('en-US')
+        : formatAmount(value, unit.id)}
       <CurrencyMark currency={unit} />
       {converted !== null && converted >= 0.01 && second && (
         <span className="ml-1 text-xs text-subtle" title={`${second.short} at today's rate`}>
