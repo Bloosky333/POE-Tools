@@ -1,5 +1,12 @@
 import { lazy } from 'react';
-import { CoinsIcon, HammerIcon, SwapIcon, TrendDownIcon, TrendIcon } from '../components/icons.tsx';
+import {
+  CoinsIcon,
+  HammerIcon,
+  PickaxeIcon,
+  SwapIcon,
+  TrendDownIcon,
+  TrendIcon,
+} from '../components/icons.tsx';
 import type { ToolDefinition } from './types.ts';
 
 /** Every tool of the app. Adding a tool = a folder under `tools/` + one entry here. */
@@ -48,6 +55,17 @@ export const TOOLS: readonly ToolDefinition[] = [
     status: 'beta',
     path: 'tools/cheapest-currency',
     component: lazy(() => import('./cheapest-currency/CheapestCurrencyPage.tsx')),
+  },
+  {
+    id: 'what-to-farm',
+    icon: PickaxeIcon,
+    name: 'What to Farm',
+    description: 'Which league mechanics drop the most valuable, easiest-to-sell loot right now.',
+    category: 'economy',
+    games: ['poe2', 'poe1'],
+    status: 'beta',
+    path: 'tools/what-to-farm',
+    component: lazy(() => import('./what-to-farm/WhatToFarmPage.tsx')),
   },
   {
     id: 'crafting-recipes',

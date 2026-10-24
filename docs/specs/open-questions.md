@@ -135,6 +135,23 @@
 | C15 | Mod data     | RePoE mods / bases trimmed into `packages/shared/data/`, bundled as hashed assets (implementation).               |
 | C16 | PoE 1        | Same tool for PoE 1: chaos unit, RePoE PoE 1 mods / bases, one recipe list per game; fossils link resonators.     |
 
+## What to Farm (`09-what-to-farm.md`)
+
+| #   | Topic      | Decision                                                                                                                                                                                                   |
+| --- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W1  | Yield      | **No drop rates / div per hour** (no source): rank loot quality only. Run log or yield table later.                                                                                                        |
+| W2  | Row        | One row per **mechanic**: category default + item-name overrides, hand-kept per game.                                                                                                                      |
+| W3  | Signal     | Current value + 7-day trend + last league's 14-day outlook → farm & sell / farm & hold / avoid.                                                                                                            |
+| W4  | Scope      | **Both games**, loot side only (no input costs).                                                                                                                                                           |
+| W5  | Non-mech   | General drops = greyed "Any content" baseline row; map inputs (Scarab, Astrolabe) excluded.                                                                                                                |
+| W6  | Index      | Volume-weighted (item weight capped at 40 %).                                                                                                                                                              |
+| W7  | Verdicts   | Outlook thresholds vs market (±15 %), Sell Now's Falling for AVOID; tuned by `backtest-farm`.                                                                                                              |
+| W8  | Mapping    | Idols ignored (not targetable); Verisium, Tattoo → Expedition; EnshroudingCrystal → Legion; Fate fragments → Ultimatum; Ducat = 3.29 league row; boss keys / fragments = Bosses.                           |
+| W9  | Thresholds | ±15 %, 40 % cap, 50 div/day accepted until `backtest-farm` says otherwise.                                                                                                                                 |
+| W10 | Start      | "Waiting for data" until day 7 of a league; PoE 1 3.30 waits too.                                                                                                                                          |
+| W11 | Placement  | Tool page only, no home-page widget.                                                                                                                                                                       |
+| W12 | Backtest   | 2026-10-24: weak signal (PoE 1 hold ×1.04 / avoid ×0.94 vs market at 14 d; PoE 2 inconclusive) → defaults kept, "falling" AVOID rule dropped (rebounds), weak signal noted on the page; re-run per league. |
+
 ## Still open
 
 - Currency flipping: recurrence thresholds (calibrate on data), gold (deferred), base item id mapping, Gemcutter's Prism in-game check — see

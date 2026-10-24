@@ -15,6 +15,8 @@ Order is indicative. Each will get its own spec file before implementation.
    or when falling with no recovery ahead).
 5. **PoE 1** — done: every economy tool for PoE 1, ready for the 3.30 launch
    ([`07-poe1.md`](./07-poe1.md)). Cheapest currency path (2) built along with it.
+6. **What to Farm** — agreed: [`09-what-to-farm.md`](./09-what-to-farm.md) (rank league
+   mechanics by the value, liquidity and outlook of their loot).
 
 Shared needs anticipated in M1 design: exchange-rate service (1, 2, 3), price service
 (all), history service (1).
