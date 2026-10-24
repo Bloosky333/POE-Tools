@@ -3,9 +3,11 @@ import {
   currentFileSchema,
   dataPaths,
   flipsFileSchema,
+  pairsFileSchema,
   historyFileSchema,
   type CurrentFile,
   type FlipsFile,
+  type PairsFile,
   type Game,
   type HistoryPoint,
 } from '@poe-tools/shared';
@@ -61,6 +63,10 @@ export async function fetchCurrent(game: string, leagueId: string): Promise<Curr
  */
 export function iconUrl(icon: string): string {
   return icon.startsWith('icons/') ? `${import.meta.env.BASE_URL}data/${icon}` : '';
+}
+
+export function fetchPairs(game: Game, leagueId: string): Promise<PairsFile> {
+  return fetchData(dataPaths.pairs(game, leagueId), pairsFileSchema);
 }
 
 export function fetchFlips(game: string, leagueId: string): Promise<FlipsFile> {

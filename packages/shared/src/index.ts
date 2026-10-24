@@ -5,3 +5,4 @@ export * from './time.ts';
 export * from './speculation/index.ts';
 export * from './sell-now/index.ts';
 export * from './flipping/index.ts';
+export * from './cheapest/index.ts';
