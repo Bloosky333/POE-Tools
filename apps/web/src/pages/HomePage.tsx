@@ -97,7 +97,7 @@ function TopOpportunities() {
               />
               <Div value={s.item.price} icon={divineIcon} className="w-20 text-sm" />
               <span className="w-14 text-right font-semibold text-gain">
-                {formatMultiplier(s.reference?.multiplierFromBuy)}
+                {formatMultiplier(s.reference?.expectedMultiplier)}
               </span>
             </Link>
           </li>

@@ -23,6 +23,8 @@ decisions in `docs/specs/open-questions.md`.
 - `pnpm --filter @poe-tools/data-job dev-data --data-dir <data branch checkout> --out
 <abs>/apps/web/public/data` — local site data without network (history from the `data`
   branch, current prices from the probe fixtures).
+- `pnpm --filter @poe-tools/data-job backtest --data-dir <data branch checkout>` — replays the
+  speculation engine over stored history to tune its settings (e.g. `premiumDamping`).
 
 ## Rules
 

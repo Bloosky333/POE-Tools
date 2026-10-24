@@ -25,7 +25,7 @@ import { useSuggestions } from './useSuggestions.ts';
 export default function CurrencySpeculationPage() {
   const [params, update] = useViewParams();
   const mode = MODES.find((m) => m.value === params.mode)?.mode ?? { kind: 'horizon', days: 14 };
-  const { league, reference, today, data, suggestions, divineIcon } = useSuggestions(
+  const { league, reference, today, data, suggestions, divineIcon, marketFactor } = useSuggestions(
     mode,
     params.minVolume,
   );
@@ -112,6 +112,7 @@ export default function CurrencySpeculationPage() {
               referenceName={reference.name}
               currentName={league.name}
               today={today}
+              marketFactor={marketFactor}
               divineIcon={divineIcon}
               onClose={() => update({ item: null })}
             />
@@ -146,7 +147,7 @@ function StatTiles({
       <StatTile label="Avoid" value={count('avoid')} tone="loss" />
       <StatTile
         label="Top opportunity"
-        value={best ? formatMultiplier(best.reference?.multiplierFromBuy) : '–'}
+        value={best ? formatMultiplier(best.reference?.expectedMultiplier) : '–'}
         tone="accent"
         detail={
           best ? (
@@ -256,7 +257,7 @@ export function filterAndSort(
       case 'price':
         return s.item.price;
       case 'multiplier':
-        return s.reference?.multiplierFromBuy ?? -Infinity;
+        return s.reference?.expectedMultiplier ?? -Infinity;
       case 'confidence':
         return s.confidence;
       case 'volume':

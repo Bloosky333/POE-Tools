@@ -10,6 +10,8 @@ interface Props {
   today: number;
   buyDay?: number | undefined;
   sellDay?: number | undefined;
+  /** Draws the reference scaled to the current market level (market factor). */
+  referenceScale?: number | null | undefined;
 }
 
 const W = 640;
@@ -18,14 +20,17 @@ const M = { top: 12, right: 16, bottom: 28, left: 52 };
 
 /**
  * Prices of both leagues (divine) by days since league start, with today's marker and
- * the suggested buy → sell window. Hover shows both values for a day.
+ * the suggested buy → sell window, and optionally the reference scaled to this league's
+ * market level. Hover shows the values for a day.
  */
 export function PriceChart(props: Props) {
   const { reference, current, today } = props;
   const clipId = useId();
   const [hoverDay, setHoverDay] = useState<number | null>(null);
 
-  const all = [...reference, ...current];
+  const scale = props.referenceScale ?? null;
+  const scaled: HistoryPoint[] = scale ? reference.map(([d, p, v]) => [d, p * scale, v]) : [];
+  const all = [...reference, ...current, ...scaled];
   if (!all.length) return <p className="text-sm text-muted">No price history.</p>;
   const maxDay = Math.max(...all.map((p) => p[0]), today);
   const maxPrice = Math.max(...all.map((p) => p[1])) * 1.08;
@@ -54,6 +59,13 @@ export function PriceChart(props: Props) {
       <div className="mb-2 flex flex-wrap gap-4 text-xs text-muted">
         <Legend color="var(--series-1)" label={props.referenceLabel} />
         <Legend color="var(--series-2)" label={props.currentLabel} />
+        {scale && (
+          <Legend
+            color="var(--series-1)"
+            dashed
+            label={`${props.referenceLabel} × ${formatDiv(scale)} (market level)`}
+          />
+        )}
       </div>
       <div className="relative">
         <svg
@@ -116,6 +128,9 @@ export function PriceChart(props: Props) {
           ))}
           <g clipPath={`url(#${clipId})`} fill="none" strokeWidth={2} strokeLinejoin="round">
             <path d={path(reference)} stroke="var(--series-1)" />
+            {scale && (
+              <path d={path(scaled)} stroke="var(--series-1)" strokeDasharray="5 4" opacity={0.7} />
+            )}
             <path d={path(current)} stroke="var(--series-2)" />
           </g>
           <line
@@ -157,6 +172,11 @@ export function PriceChart(props: Props) {
                 {props.referenceLabel}: {formatDiv(hoverRef[1])} div
               </div>
             )}
+            {hoverRef && scale && (
+              <div className="text-muted">
+                at market level: {formatDiv(hoverRef[1] * scale)} div
+              </div>
+            )}
             {hoverCur && (
               <div>
                 {props.currentLabel}: {formatDiv(hoverCur[1])} div
@@ -169,10 +189,19 @@ export function PriceChart(props: Props) {
   );
 }
 
-function Legend({ color, label }: { color: string; label: string }) {
+function Legend({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className="inline-block h-0.5 w-4 rounded" style={{ background: color }} />
+      <span
+        className="inline-block h-0.5 w-4 rounded"
+        style={
+          dashed
+            ? {
+                background: `repeating-linear-gradient(90deg, ${color} 0 5px, transparent 5px 8px)`,
+              }
+            : { background: color }
+        }
+      />
       {label}
     </span>
   );
