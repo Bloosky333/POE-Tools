@@ -25,7 +25,7 @@ date,item,price_div,volume_div,source
 2026-06-11,jiquanis-thesis,46.91,418.5,details
 2026-06-11,raven-touched-shard,78.49,5003,details
 2026-06-12,jiquanis-thesis,48.96,572.8,details
-2026-06-12,raven-touched-shard,76.4496,6860.33,details
+2026-06-12,raven-touched-shard,76.3117,6860.33,details
 2026-06-13,jiquanis-thesis,62.16,828.9,details
 2026-06-13,raven-touched-shard,71.77,7794,details
 2026-06-14,jiquanis-thesis,84.6,1434,details
@@ -67,9 +67,9 @@ date,item,price_div,volume_div,source
 2026-07-02,jiquanis-thesis,428.2,7673,details
 2026-07-02,raven-touched-shard,91.31,23434,details
 2026-07-03,jiquanis-thesis,411.1,7373,details
-2026-07-03,raven-touched-shard,90.3971,26128.4,details
+2026-07-03,raven-touched-shard,90.3969,26128.4,details
 2026-07-04,jiquanis-thesis,437.1,9395,details
-2026-07-04,raven-touched-shard,95.5938,28780,details
+2026-07-04,raven-touched-shard,95.5927,28780,details
 2026-07-05,jiquanis-thesis,446.3,8361,details
 2026-07-05,raven-touched-shard,102.3,26654,details
 2026-07-06,jiquanis-thesis,468.4,8971,details
@@ -192,7 +192,7 @@ date,item,price_div,volume_div,source
 2026-09-02,raven-touched-shard,74.7,1804,details
 2026-09-03,jiquanis-thesis,492.4,1034,details
 2026-09-03,raven-touched-shard,72.26,1504,details
-2026-09-04,atziris-soul-core-of-devotion,5.83102,0,details
+2026-09-04,atziris-soul-core-of-devotion,1.49105,0,details
 2026-09-04,jiquanis-thesis,535.1,504.6,details
 2026-09-04,raven-touched-shard,74.74,1006,details
 2026-09-05,atziris-soul-core-of-devotion,50.88,21.08,details
@@ -222,7 +222,7 @@ date,item,price_div,volume_div,source
 2026-09-13,atziris-soul-core-of-devotion,10.01,8.45,details
 2026-09-13,jiquanis-thesis,408.1,0,details
 2026-09-13,raven-touched-shard,95.49,580.4,details
-2026-09-14,atziris-soul-core-of-devotion,4.78734,0,details
+2026-09-14,atziris-soul-core-of-devotion,0.41021,0,details
 2026-09-14,jiquanis-thesis,292.8,0,details
 2026-09-14,raven-touched-shard,93.59,391,details
 2026-09-15,atziris-soul-core-of-devotion,5.7801,0,details
@@ -252,16 +252,16 @@ date,item,price_div,volume_div,source
 2026-09-23,atziris-soul-core-of-devotion,2.67764,0,details
 2026-09-23,jiquanis-thesis,331,0,details
 2026-09-23,raven-touched-shard,92.89,265.2,details
-2026-09-24,atziris-soul-core-of-devotion,1.69146,0,details
+2026-09-24,atziris-soul-core-of-devotion,0.799574,0,details
 2026-09-24,jiquanis-thesis,293.2,0,details
 2026-09-24,raven-touched-shard,91.04,176.2,details
-2026-09-25,atziris-soul-core-of-devotion,2.3268,0,details
+2026-09-25,atziris-soul-core-of-devotion,0.628272,0,details
 2026-09-25,jiquanis-thesis,299.8,0,details
 2026-09-25,raven-touched-shard,88.89,265.6,details
-2026-09-26,atziris-soul-core-of-devotion,2.94366,0,details
+2026-09-26,atziris-soul-core-of-devotion,0.386392,0,details
 2026-09-26,jiquanis-thesis,391.7,0,details
 2026-09-26,raven-touched-shard,83.64,172.7,details
-2026-09-27,atziris-soul-core-of-devotion,2.81364,0,details
+2026-09-27,atziris-soul-core-of-devotion,0.134868,0,details
 2026-09-27,jiquanis-thesis,360.3,0,details
 2026-09-27,raven-touched-shard,83.2,258.9,details
 2026-09-28,atziris-soul-core-of-devotion,4.06503,0,details
@@ -270,7 +270,7 @@ date,item,price_div,volume_div,source
 2026-09-29,atziris-soul-core-of-devotion,4.70855,0,details
 2026-09-29,jiquanis-thesis,233.7,0,details
 2026-09-29,raven-touched-shard,83.32,165,details
-2026-09-30,atziris-soul-core-of-devotion,8.86504,10.9423,details
+2026-09-30,atziris-soul-core-of-devotion,5.11078,10.9423,details
 2026-09-30,jiquanis-thesis,220,0,details
 2026-09-30,raven-touched-shard,80.8,162,details
 2026-10-01,atziris-soul-core-of-devotion,7.94,8.2,details
@@ -282,7 +282,7 @@ date,item,price_div,volume_div,source
 2026-10-03,atziris-soul-core-of-devotion,10.66,12.12,details
 2026-10-03,jiquanis-thesis,374.7,0,details
 2026-10-03,raven-touched-shard,87.53,270.4,details
-2026-10-04,atziris-soul-core-of-devotion,3.07086,0,details
+2026-10-04,atziris-soul-core-of-devotion,1.61677,0,details
 2026-10-04,jiquanis-thesis,380.3,0,details
 2026-10-04,raven-touched-shard,94.87,184.7,details
 2026-10-05,atziris-soul-core-of-devotion,8.32501,0,details
@@ -294,10 +294,10 @@ date,item,price_div,volume_div,source
 2026-10-07,atziris-soul-core-of-devotion,3.43267,0,details
 2026-10-07,jiquanis-thesis,304.2,0,details
 2026-10-07,raven-touched-shard,105.7,211.4,details
-2026-10-08,atziris-soul-core-of-devotion,1.29785,0,details
+2026-10-08,atziris-soul-core-of-devotion,0.596498,0,details
 2026-10-08,jiquanis-thesis,342.3,0,details
 2026-10-08,raven-touched-shard,84.87,158.5,details
-2026-10-09,atziris-soul-core-of-devotion,3.18752,0,details
+2026-10-09,atziris-soul-core-of-devotion,0.565986,0,details
 2026-10-09,jiquanis-thesis,402,0,details
 2026-10-09,raven-touched-shard,82.89,163.9,details
 2026-10-10,atziris-soul-core-of-devotion,8.29,0,details
@@ -324,7 +324,7 @@ date,item,price_div,volume_div,source
 2026-10-17,atziris-soul-core-of-devotion,9.61,0,details
 2026-10-17,jiquanis-thesis,257.5,0,details
 2026-10-17,raven-touched-shard,91.13,176.9,details
-2026-10-18,atziris-soul-core-of-devotion,3.80984,0,details
+2026-10-18,atziris-soul-core-of-devotion,1.50812,0,details
 2026-10-18,jiquanis-thesis,333.8,0,details
 2026-10-18,raven-touched-shard,91.59,92.57,details
 2026-10-19,atziris-soul-core-of-devotion,3.64174,0,details
@@ -367,3 +367,6 @@ date,item,price_div,volume_div,source
 2026-10-22,tacatis-soul-core-of-affliction,0.1099,0.01831,snapshot
 2026-10-22,tzamotos-soul-core-of-ferocity,0.25,0.1667,snapshot
 2026-10-22,xopecs-soul-core-of-power,5,0.8333,snapshot
+2026-10-23,atziris-soul-core-of-devotion,21,42,details
+2026-10-23,jiquanis-thesis,299.5,0,details
+2026-10-23,raven-touched-shard,104.6,104.6,details

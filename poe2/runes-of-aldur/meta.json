@@ -1,6 +1,7 @@
 {
-  "backfilledAt": "2026-10-23T23:45:01.479Z",
-  "lastClosedDate": "2026-10-22",
+  "backfilledAt": "2026-10-24T00:02:43.007Z",
+  "backfillVersion": 2,
+  "lastClosedDate": "2026-10-23",
   "detailsFetched": [
     "aldurs-legacy",
     "aldurs-saga",
@@ -13,6 +14,7 @@
     "annul",
     "architects-orb",
     "astrids-creativity",
+    "ataluis-bloodletting",
     "atziris-communion",
     "atziris-soul-core-of-devotion",
     "azmeri-reliquary-key",
@@ -116,6 +118,7 @@
     "tecrods-gaze",
     "tuls-stillness",
     "uhtreds-augury",
+    "uhtreds-constellation",
     "uhtreds-exodus",
     "uhtreds-omen",
     "uncut-skill-gem-1",

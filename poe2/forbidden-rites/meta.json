@@ -1,6 +1,7 @@
 {
-  "backfilledAt": "2026-10-23T23:45:01.479Z",
-  "lastClosedDate": "2026-10-22",
+  "backfilledAt": "2026-10-24T00:02:43.007Z",
+  "backfillVersion": 2,
+  "lastClosedDate": "2026-10-23",
   "detailsFetched": [
     "adaptive-catalyst",
     "ailiths-chimes",
