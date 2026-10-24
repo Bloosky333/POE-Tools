@@ -114,17 +114,21 @@
 |     |            | peak calls ×0.96 vs the market at 14 d (54 % cheaper later; PoE 2: ×0.88, 65 %), falling ×1.00; no       |
 |     |            | variant clearly better → defaults kept, weak signal noted on the page; re-run on 3.30 data.              |
 
-## What to Farm (draft — `08-what-to-farm.md`)
+## What to Farm (`08-what-to-farm.md`)
 
-| #   | Topic    | Decision                                                                                            |
-| --- | -------- | --------------------------------------------------------------------------------------------------- |
-| W1  | Yield    | **No drop rates / div per hour** (no source): rank loot quality only. Run log or yield table later. |
-| W2  | Row      | One row per **mechanic**: category default + item-name overrides, hand-kept per game.               |
-| W3  | Signal   | Current value + 7-day trend + last league's 14-day outlook → farm & sell / farm & hold / avoid.     |
-| W4  | Scope    | **Both games**, loot side only (no input costs).                                                    |
-| W5  | Non-mech | General drops = greyed "Any content" baseline row; map inputs (Scarab, Astrolabe) excluded.         |
-| W6  | Index    | Volume-weighted (item weight capped at 40 %).                                                       |
-| W7  | Verdicts | Outlook thresholds vs market (±15 %), Sell Now's Falling for AVOID; tuned by `backtest-farm`.       |
+| #   | Topic      | Decision                                                                                                                                                                         |
+| --- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W1  | Yield      | **No drop rates / div per hour** (no source): rank loot quality only. Run log or yield table later.                                                                              |
+| W2  | Row        | One row per **mechanic**: category default + item-name overrides, hand-kept per game.                                                                                            |
+| W3  | Signal     | Current value + 7-day trend + last league's 14-day outlook → farm & sell / farm & hold / avoid.                                                                                  |
+| W4  | Scope      | **Both games**, loot side only (no input costs).                                                                                                                                 |
+| W5  | Non-mech   | General drops = greyed "Any content" baseline row; map inputs (Scarab, Astrolabe) excluded.                                                                                      |
+| W6  | Index      | Volume-weighted (item weight capped at 40 %).                                                                                                                                    |
+| W7  | Verdicts   | Outlook thresholds vs market (±15 %), Sell Now's Falling for AVOID; tuned by `backtest-farm`.                                                                                    |
+| W8  | Mapping    | Idols ignored (not targetable); Verisium, Tattoo → Expedition; EnshroudingCrystal → Legion; Fate fragments → Ultimatum; Ducat = 3.29 league row; boss keys / fragments = Bosses. |
+| W9  | Thresholds | ±15 %, 40 % cap, 50 div/day accepted until `backtest-farm` says otherwise.                                                                                                       |
+| W10 | Start      | "Waiting for data" until day 7 of a league; PoE 1 3.30 waits too.                                                                                                                |
+| W11 | Placement  | Tool page only, no home-page widget.                                                                                                                                             |
 
 ## Still open
 

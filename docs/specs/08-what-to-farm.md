@@ -1,4 +1,4 @@
-# What to Farm (draft v0.1 — 2026-10-24)
+# What to Farm (v1.0 — agreed 2026-10-24)
 
 Games: **PoE 2 and PoE 1**. Unit: divine (PoE 2), chaos with divine alongside (PoE 1, spec 07).
 Same leagues, categories and data as tools #1 and Sell Now: **no new poe.ninja calls**; computed
@@ -25,37 +25,40 @@ the category).
 | Mechanic    | Loot of one mechanic → one row.                                            |
 | Any content | General drops → one greyed **baseline** row, to compare mechanics against. |
 | Input       | Bought to run content, not farmed → excluded.                              |
+| Ignored     | Drops that cannot be targeted by a mechanic (e.g. Idols) → excluded.       |
 
-Draft PoE 2 mapping (verify item names against the overviews before shipping):
+PoE 2 mapping (item names checked against the Forbidden Rites overviews):
 
-| Category                                                  | Default     | Overrides                                                              |
-| --------------------------------------------------------- | ----------- | ---------------------------------------------------------------------- |
-| Breach                                                    | Breach      |                                                                        |
-| Delirium                                                  | Delirium    |                                                                        |
-| Ritual                                                    | Ritual      |                                                                        |
-| Expedition                                                | Expedition  |                                                                        |
-| Abyss                                                     | Abyss       |                                                                        |
-| Essences                                                  | Essences    |                                                                        |
-| Verisium                                                  | Verisium    |                                                                        |
-| Idols                                                     | Idols       |                                                                        |
-| Fragments                                                 | Bosses      | `Simulacrum*` → Delirium; `Breachlord Sac` → Breach; `* Fate` → Ritual |
-| Currency, UncutGems, LineageSupportGems, Runes, SoulCores | Any content |                                                                        |
+| Category                                                  | Default     | Overrides                                                                 |
+| --------------------------------------------------------- | ----------- | ------------------------------------------------------------------------- |
+| Breach                                                    | Breach      |                                                                           |
+| Delirium                                                  | Delirium    |                                                                           |
+| Ritual                                                    | Ritual      |                                                                           |
+| Expedition                                                | Expedition  |                                                                           |
+| Abyss                                                     | Abyss       |                                                                           |
+| Essences                                                  | Essences    |                                                                           |
+| Verisium                                                  | Expedition  |                                                                           |
+| Idols                                                     | Ignored     |                                                                           |
+| Fragments                                                 | Bosses      | `Simulacrum*` → Delirium; `Breachlord Sac` → Breach; `* Fate` → Ultimatum |
+| Currency, UncutGems, LineageSupportGems, Runes, SoulCores | Any content |                                                                           |
 
-Draft PoE 1 mapping (3.29 categories; league categories change each league):
+PoE 1 mapping (3.29 categories; redone for 3.30 at launch, categories change each league):
 
-| Category                                         | Default     | Overrides                                       |
-| ------------------------------------------------ | ----------- | ----------------------------------------------- |
-| Essence                                          | Essences    |                                                 |
-| DeliriumOrb                                      | Delirium    |                                                 |
-| Fossil, Resonator                                | Delve       |                                                 |
-| Oil                                              | Blight      |                                                 |
-| Artifact                                         | Expedition  |                                                 |
-| Omen                                             | Ritual      |                                                 |
-| Runegraft                                        | Kingsmarch  |                                                 |
-| Tattoo, AllflameEmber, Ducat, EnshroudingCrystal | own row     |                                                 |
-| Fragment                                         | Bosses      | `Simulacrum*` → Delirium; `Timeless *` → Legion |
-| Currency, DivinationCard                         | Any content |                                                 |
-| Scarab, Astrolabe                                | Input       |                                                 |
+| Category                 | Default                        | Overrides                                       |
+| ------------------------ | ------------------------------ | ----------------------------------------------- |
+| Essence                  | Essences                       |                                                 |
+| DeliriumOrb              | Delirium                       |                                                 |
+| Fossil, Resonator        | Delve                          |                                                 |
+| Oil                      | Blight                         |                                                 |
+| Artifact, Tattoo         | Expedition                     |                                                 |
+| Omen                     | Ritual                         |                                                 |
+| Runegraft                | Kingsmarch                     |                                                 |
+| EnshroudingCrystal       | Legion                         |                                                 |
+| Ducat                    | own row (3.29 league mechanic) |                                                 |
+| AllflameEmber            | own row                        |                                                 |
+| Fragment                 | Bosses                         | `Simulacrum*` → Delirium; `Timeless *` → Legion |
+| Currency, DivinationCard | Any content                    |                                                 |
+| Scarab, Astrolabe        | Input                          |                                                 |
 
 ## 3. Metrics (per mechanic)
 
@@ -102,8 +105,12 @@ replay the verdicts over the current league's stored history (days 7–N) and co
 mechanic index 14 days later vs the market, per verdict (as `backtest-sell`). Thresholds
 (±15 %, 40 % cap, 50 div/day) are kept or changed from it and logged in `open-questions.md`.
 
-## 7. Open
+## 7. League start
 
-- Full override list per game (fragments, keys, splinters) — reviewed against the overviews.
-- What Idols, Verisium (PoE 2) and Tattoo, Ducat, EnshroudingCrystal (PoE 1) belong to.
-- 3.30 categories: mapping updated at launch (2026-11-13).
+The page shows "waiting for data" until **day 7** of the current league (the 7-day trend needs
+it; confidence is low before anyway). For PoE 1 3.30 (2026-11-13) that means from ~2026-11-20;
+the mapping is updated for the 3.30 categories at launch.
+
+## 8. Placement
+
+Tool page only — no home-page widget (decided).
