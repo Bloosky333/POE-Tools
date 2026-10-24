@@ -1,4 +1,6 @@
+import type { PayCurrency } from '@poe-tools/shared';
 import type { DailyPoint, FxPoint } from './convert.ts';
+import type { PairPoint } from './pairs.ts';
 
 /*
  * History is stored as append-friendly CSV sorted by date, so the daily commit on the
@@ -7,6 +9,7 @@ import type { DailyPoint, FxPoint } from './convert.ts';
 
 const HISTORY_HEADER = 'date,item,price_div,volume_div,source';
 const FX_HEADER = 'date,exalted_per_div,chaos_per_div';
+const PAIRS_HEADER = 'date,item,pair,rate,volume_div';
 
 export function parseHistoryCsv(text: string): DailyPoint[] {
   return dataLines(text).map((line) => {
@@ -56,6 +59,25 @@ export function mergeFx(existing: readonly FxPoint[], incoming: readonly FxPoint
   const merged = new Map<string, FxPoint>();
   for (const point of [...existing, ...incoming]) merged.set(point.date, point);
   return [...merged.values()];
+}
+
+export function parsePairsCsv(text: string): PairPoint[] {
+  return dataLines(text).map((line) => {
+    const [date = '', item = '', pair = '', rate = '', volume = ''] = line.split(',');
+    return { date, item, pair: pair as PayCurrency, rate: Number(rate), volume: Number(volume) };
+  });
+}
+
+export function formatPairsCsv(points: readonly PairPoint[]): string {
+  const rows = [...points]
+    .sort(
+      (a, b) =>
+        a.date.localeCompare(b.date) ||
+        a.item.localeCompare(b.item) ||
+        a.pair.localeCompare(b.pair),
+    )
+    .map((p) => `${p.date},${p.item},${p.pair},${p.rate},${p.volume}`);
+  return [PAIRS_HEADER, ...rows].join('\n') + '\n';
 }
 
 function dataLines(text: string): string[] {

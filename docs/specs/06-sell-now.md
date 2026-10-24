@@ -1,4 +1,4 @@
-# Tool #2 — Sell Now (v1.0 — agreed 2026-10-24)
+# Sell Now (v1.0 — agreed 2026-10-24)
 
 Game: **PoE 2**. Unit: **divine**. Same leagues, categories and data as tool #1
 (`01-currency-speculation.md` §2–3): no new poe.ninja calls.

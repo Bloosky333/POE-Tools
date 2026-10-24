@@ -9,7 +9,7 @@ import {
 import { Series } from '../speculation/series.ts';
 
 /*
- * Sell Now engine (spec 04): flags items to sell because last league's curve peaks here
+ * Sell Now engine (spec 06): flags items to sell because last league's curve peaks here
  * and then declines, or because the price is falling fast right now.
  * R(t) = reference-league price on league day t, N(t) = current-league price, d = today.
  */

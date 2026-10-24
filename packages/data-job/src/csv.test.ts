@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import type { DailyPoint } from './convert.ts';
-import { formatFxCsv, formatHistoryCsv, mergeHistory, parseFxCsv, parseHistoryCsv } from './csv.ts';
+import {
+  formatFxCsv,
+  formatHistoryCsv,
+  formatPairsCsv,
+  mergeHistory,
+  parseFxCsv,
+  parseHistoryCsv,
+  parsePairsCsv,
+} from './csv.ts';
 
 const point = (date: string, item: string, price: number): DailyPoint => ({
   date,
@@ -31,5 +39,17 @@ describe('fx csv', () => {
   it('round-trips missing values', () => {
     const points = [{ date: '2026-09-05', exalted: 500, chaos: null }];
     expect(parseFxCsv(formatFxCsv(points))).toEqual(points);
+  });
+});
+
+describe('pairs csv', () => {
+  it('round-trips and sorts by date, item, pair', () => {
+    const points = [
+      { date: '2026-09-05', item: 'a', pair: 'exalted' as const, rate: 97.4, volume: 1.2 },
+      { date: '2026-09-05', item: 'a', pair: 'divine' as const, rate: 0.5, volume: 3 },
+    ];
+    const csv = formatPairsCsv(points);
+    expect(csv.split('\n')[0]).toBe('date,item,pair,rate,volume_div');
+    expect(parsePairsCsv(csv)).toEqual([points[1], points[0]]);
   });
 });

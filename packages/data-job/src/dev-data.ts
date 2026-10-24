@@ -1,19 +1,32 @@
 /**
  * Local development data, without network access: rebuilds site files from a checkout of
- * the `data` branch and makes `current.json` from the probe fixtures.
+ * the `data` branch and makes `current.json` and `flips.json` from the probe fixtures.
  *   pnpm --filter @poe-tools/data-job dev-data --data-dir <data branch checkout> --out <dir>
  */
-import { readFile, readdir } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { POE2_EXCHANGE_TYPES, getTrackedLeagues, type CurrentItem } from '@poe-tools/shared';
+import {
+  DAY_MS,
+  POE2_EXCHANGE_TYPES,
+  getTrackedLeagues,
+  type CurrentItem,
+} from '@poe-tools/shared';
 import { overviewToItems } from './convert.ts';
+import { HOUR_S } from './exchange/feed.ts';
+import { updateFlips } from './exchange/update.ts';
+import { createWindowStore } from './exchange/window.ts';
+import { createNinjaClient } from './poe-ninja/client.ts';
 import { ICONS_DIR, iconFileName } from './icons.ts';
-import { exchangeOverviewSchema } from './poe-ninja/schemas.ts';
+import { buildPairQuotes, busiestPairs } from './pairs.ts';
+import { exchangeOverviewSchema, type ExchangeOverview } from './poe-ninja/schemas.ts';
 import { createSiteWriter } from './site.ts';
 import { createStore } from './store.ts';
+import { exchangeFixture } from './test/fixtures.ts';
 
 const FIXTURES = join(import.meta.dirname, '../../../fixtures/poe-ninja/probe');
+const EXCHANGE_FIXTURES = join(import.meta.dirname, '../../../fixtures/ggg-exchange/probe');
 
 const { values } = parseArgs({
   options: { 'data-dir': { type: 'string' }, out: { type: 'string' } },
@@ -34,6 +47,7 @@ for (const league of leagues) {
   if (!league.selectable) continue;
 
   const items = new Map<string, CurrentItem>();
+  const overviews: ExchangeOverview[] = [];
   let rates = { exalted: 0, chaos: 0 };
   for (const type of POE2_EXCHANGE_TYPES) {
     const file = join(FIXTURES, `exchange-overview-${type.toLowerCase()}-${league.id}.json`);
@@ -44,6 +58,7 @@ for (const league of leagues) {
       continue;
     }
     const overview = exchangeOverviewSchema.parse(JSON.parse(text));
+    overviews.push(overview);
     rates = { exalted: overview.core.rates.exalted ?? 0, chaos: overview.core.rates.chaos ?? 0 };
     for (const item of overviewToItems(overview, type))
       if (!items.has(item.id)) items.set(item.id, item);
@@ -60,6 +75,40 @@ for (const league of leagues) {
       return { ...item, icon: file && icons.has(file) ? `${ICONS_DIR}/${file}` : '' };
     }),
   });
+  // Stored daily rates may be older than the 7-day limit: date them from the newest row.
+  const pairPoints = [...(await store.readPairs(league.id)).values()].flat();
+  const newest = pairPoints.reduce((max, p) => (p.date > max ? p.date : max), '');
+  const now = newest ? new Date(Date.parse(newest) + DAY_MS) : new Date();
+  await site.writePairs({
+    version: 1,
+    leagueId: league.id,
+    generatedAt: now.toISOString(),
+    items: buildPairQuotes(pairPoints, busiestPairs(overviews), now),
+  });
+
+  // Flips from the captured exchange hours, as if the job ran right after the newest one.
+  const epochs = (await readdir(EXCHANGE_FIXTURES))
+    .map((name) => /^exchange-(\d+)\.json$/.exec(name)?.[1])
+    .filter((epoch): epoch is string => epoch !== undefined)
+    .map(Number);
+  if (epochs.length) {
+    const newest = Math.max(...epochs);
+    await updateFlips({
+      client: createNinjaClient({
+        fetchImpl: async (url) => {
+          const body = exchangeFixture(Number(String(url).split('/').pop()));
+          return body === null ? new Response('', { status: 404 }) : new Response(body);
+        },
+        sleep: async () => {},
+      }),
+      windows: createWindowStore(await mkdtemp(join(tmpdir(), 'poe-tools-window-'))),
+      site,
+      league,
+      items: [...items.values()],
+      now: new Date((newest + 2 * HOUR_S + 20 * 60) * 1000),
+      log: { info: () => {}, warn: (message) => console.warn(message) },
+    });
+  }
 }
 await site.copyIcons(dataDir);
 await site.writeLeagues(leagues, new Date());

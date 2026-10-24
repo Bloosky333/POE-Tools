@@ -95,10 +95,37 @@ export const fxFileSchema = z.object({
 });
 export type FxFile = z.infer<typeof fxFileSchema>;
 
+/** Currencies an exchange item can be paid with (its pairs on the currency exchange). */
+export const PAY_CURRENCIES = ['divine', 'exalted', 'chaos'] as const;
+export type PayCurrency = (typeof PAY_CURRENCIES)[number];
+
+export const pairQuoteSchema = z.object({
+  /** Units of the pay currency per 1 item. */
+  rate: z.number(),
+  /** Volume traded on this pair over a day, in divine; null when unknown. */
+  volume: z.number().nullable(),
+  /** End of the traded day (`daily`) or fetch time of the overview (`hourly`). */
+  asOf: z.iso.datetime(),
+  /** `daily`: details pass; `hourly`: the item's busiest pair from the overview. */
+  source: z.enum(['daily', 'hourly']),
+});
+export type PairQuote = z.infer<typeof pairQuoteSchema>;
+
+/** Per-pair rates of every item (tool #2, spec 04 §2.3). */
+export const pairsFileSchema = z.object({
+  version: z.literal(1),
+  leagueId: z.string(),
+  generatedAt: z.iso.datetime(),
+  items: z.record(z.string(), z.partialRecord(z.enum(PAY_CURRENCIES), pairQuoteSchema)),
+});
+export type PairsFile = z.infer<typeof pairsFileSchema>;
+
 export const dataPaths = {
   leagues: (game: string) => `${game}/leagues.json`,
   current: (game: string, leagueId: string) => `${game}/${leagueId}/current.json`,
   history: (game: string, leagueId: string, type: ExchangeType) =>
     `${game}/${leagueId}/history/${type}.json`,
   fx: (game: string, leagueId: string) => `${game}/${leagueId}/fx.json`,
+  pairs: (game: string, leagueId: string) => `${game}/${leagueId}/pairs.json`,
+  flips: (game: string, leagueId: string) => `${game}/${leagueId}/flips.json`,
 };
