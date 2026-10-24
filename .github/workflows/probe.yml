@@ -1,0 +1,41 @@
+# M0: capture real poe.ninja responses (unreachable from the dev sandbox) and commit them
+# as fixtures to the branch that triggered the run. Small and on demand only.
+name: poe.ninja probe
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - packages/data-job/src/probe.ts
+      - .github/workflows/probe.yml
+
+concurrency:
+  group: probe-${{ github.ref }}
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm probe
+      - name: Commit fixtures
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add fixtures/poe-ninja/probe
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "Update poe.ninja probe fixtures"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

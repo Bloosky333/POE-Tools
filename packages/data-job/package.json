@@ -1,0 +1,17 @@
+{
+  "name": "@poe-tools/data-job",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "job": "tsx src/main.ts",
+    "probe": "tsx src/probe.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@poe-tools/shared": "workspace:*",
+    "zod": "4.3.3"
+  },
+  "devDependencies": {
+    "tsx": "4.23.15"
+  }
+}
