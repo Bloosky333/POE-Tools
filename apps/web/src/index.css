@@ -2,15 +2,74 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-@theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --color-accent: #d97706;
-  --color-gain: #16a34a;
-  --color-loss: #dc2626;
+/*
+ * Design tokens. Use the semantic utilities (bg-surface, text-muted, border-line…)
+ * rather than raw palette colors so both themes stay consistent.
+ */
+:root {
+  --c-bg: #f6f7f9;
+  --c-surface: #ffffff;
+  --c-surface-2: #f0f2f5;
+  --c-line: #e3e6eb;
+  --c-fg: #14171c;
+  --c-muted: #5f6774;
+  --c-subtle: #8c94a1;
+  --c-accent: #b7791f;
+  --c-accent-soft: #fbf1df;
+  --c-on-accent: #ffffff;
+  --c-gain: #13804b;
+  --c-gain-soft: #e3f5ea;
+  --c-loss: #c2362f;
+  --c-loss-soft: #fbe6e4;
+  --c-warn: #a15c07;
+  --c-warn-soft: #fdf0d8;
+}
+
+.dark {
+  --c-bg: #0d0f13;
+  --c-surface: #151820;
+  --c-surface-2: #1c2029;
+  --c-line: #262b36;
+  --c-fg: #e7e9ee;
+  --c-muted: #9aa2b1;
+  --c-subtle: #6b7383;
+  --c-accent: #e2a73f;
+  --c-accent-soft: #2e2516;
+  --c-on-accent: #14110a;
+  --c-gain: #4cc38a;
+  --c-gain-soft: #13261d;
+  --c-loss: #f0716a;
+  --c-loss-soft: #2c1617;
+  --c-warn: #f0b44f;
+  --c-warn-soft: #2d2313;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-line: var(--c-line);
+  --color-fg: var(--c-fg);
+  --color-muted: var(--c-muted);
+  --color-subtle: var(--c-subtle);
+  --color-accent: var(--c-accent);
+  --color-accent-soft: var(--c-accent-soft);
+  --color-on-accent: var(--c-on-accent);
+  --color-gain: var(--c-gain);
+  --color-gain-soft: var(--c-gain-soft);
+  --color-loss: var(--c-loss);
+  --color-loss-soft: var(--c-loss-soft);
+  --color-warn: var(--c-warn);
+  --color-warn-soft: var(--c-warn-soft);
 }
 
 body {
+  background: var(--c-bg);
+  color: var(--c-fg);
   font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
 }
 
 /* Chart series (validated reference palette, dataviz skill): slot 1 blue, slot 2 orange. */

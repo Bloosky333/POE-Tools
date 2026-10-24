@@ -1,76 +1,107 @@
-import { ENABLED_GAMES, GAMES, GAME_LABELS, LEAGUES, type Game } from '@poe-tools/shared';
+import { ENABLED_GAMES, GAMES, LEAGUES, getLeague, leagueDay, type Game } from '@poe-tools/shared';
 import { Link } from 'react-router';
 import type { Theme } from '../lib/settings.ts';
-import { DataFreshness } from './DataFreshness.tsx';
+import { useNow } from '../lib/useNow.ts';
 import { useSettings } from '../lib/useSettings.ts';
+import { DataFreshness } from './DataFreshness.tsx';
+import { LogoMark, MenuIcon } from './icons.tsx';
 
-const THEMES: Theme[] = ['system', 'light', 'dark'];
+const GAME_SHORT: Record<Game, string> = { poe2: 'PoE 2', poe1: 'PoE 1' };
+const THEMES: { value: Theme; label: string }[] = [
+  { value: 'dark', label: 'Dark' },
+  { value: 'light', label: 'Light' },
+  { value: 'system', label: 'System' },
+];
 
-const selectClass =
-  'rounded border border-gray-300 bg-white px-2 py-1 text-sm dark:border-gray-700 dark:bg-gray-900';
+export const selectClass =
+  'h-8 rounded-md border border-line bg-surface-2 px-2 text-sm text-fg outline-none hover:border-subtle focus-visible:border-accent';
 
 export function TopBar({ onToggleNav }: { onToggleNav: () => void }) {
   const { settings, update } = useSettings();
+  const now = useNow();
   const leagues = LEAGUES.filter((l) => l.game === settings.game && l.selectable);
+  const league = getLeague(settings.leagueId);
 
   return (
-    <header className="flex flex-wrap items-center gap-3 border-b border-gray-200 px-4 py-2 dark:border-gray-800">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-line bg-surface/95 px-4 backdrop-blur">
       <button
         type="button"
-        className="rounded px-2 py-1 text-lg md:hidden"
+        className="rounded-md p-1.5 text-muted hover:bg-surface-2 md:hidden"
         aria-label="Toggle navigation"
         onClick={onToggleNav}
       >
-        ☰
+        <MenuIcon />
       </button>
-      <Link to="/" className="font-semibold tracking-tight">
-        POE Tools
+      <Link to="/" className="flex items-center gap-2 font-semibold tracking-tight">
+        <LogoMark />
+        <span>
+          POE <span className="text-accent">Tools</span>
+        </span>
       </Link>
-      <div className="ml-auto flex flex-wrap items-center gap-2">
+
+      <div
+        role="radiogroup"
+        aria-label="Game"
+        className="ml-4 hidden rounded-md border border-line bg-surface-2 p-0.5 sm:flex"
+      >
+        {GAMES.map((game) => {
+          const enabled = ENABLED_GAMES.includes(game);
+          const active = settings.game === game;
+          return (
+            <button
+              key={game}
+              type="button"
+              role="radio"
+              aria-checked={active}
+              disabled={!enabled}
+              title={enabled ? undefined : 'Coming soon'}
+              onClick={() => update({ game })}
+              className={`rounded px-2.5 py-1 text-xs font-medium ${
+                active ? 'bg-surface text-fg shadow-sm' : 'text-subtle'
+              } ${enabled ? 'hover:text-fg' : 'cursor-not-allowed opacity-60'}`}
+            >
+              {GAME_SHORT[game]}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="ml-auto flex items-center gap-3">
         <DataFreshness />
-        <label className="sr-only" htmlFor="game">
-          Game
-        </label>
-        <select
-          id="game"
-          className={selectClass}
-          value={settings.game}
-          onChange={(e) => update({ game: e.target.value as Game })}
-        >
-          {GAMES.map((game) => (
-            <option key={game} value={game} disabled={!ENABLED_GAMES.includes(game)}>
-              {GAME_LABELS[game]}
-              {ENABLED_GAMES.includes(game) ? '' : ' (coming soon)'}
-            </option>
-          ))}
-        </select>
         <label className="sr-only" htmlFor="league">
           League
         </label>
-        <select
-          id="league"
-          className={selectClass}
-          value={settings.leagueId}
-          onChange={(e) => update({ leagueId: e.target.value })}
-        >
-          {leagues.map((league) => (
-            <option key={league.id} value={league.id}>
-              {league.name}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2">
+          <select
+            id="league"
+            className={selectClass}
+            value={settings.leagueId}
+            onChange={(e) => update({ leagueId: e.target.value })}
+          >
+            {leagues.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+          {league && (
+            <span className="hidden rounded-md bg-accent-soft px-2 py-1 text-xs font-medium text-accent lg:inline">
+              Day {leagueDay(league.startsAt, new Date(now))}
+            </span>
+          )}
+        </div>
         <label className="sr-only" htmlFor="theme">
           Theme
         </label>
         <select
           id="theme"
-          className={selectClass}
+          className={`${selectClass} hidden sm:block`}
           value={settings.theme}
           onChange={(e) => update({ theme: e.target.value as Theme })}
         >
-          {THEMES.map((theme) => (
-            <option key={theme} value={theme}>
-              {theme[0]?.toUpperCase() + theme.slice(1)} theme
+          {THEMES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
             </option>
           ))}
         </select>

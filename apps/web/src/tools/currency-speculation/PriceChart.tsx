@@ -26,7 +26,7 @@ export function PriceChart(props: Props) {
   const [hoverDay, setHoverDay] = useState<number | null>(null);
 
   const all = [...reference, ...current];
-  if (!all.length) return <p className="text-sm text-gray-500">No price history.</p>;
+  if (!all.length) return <p className="text-sm text-muted">No price history.</p>;
   const maxDay = Math.max(...all.map((p) => p[0]), today);
   const maxPrice = Math.max(...all.map((p) => p[1])) * 1.08;
 
@@ -51,7 +51,7 @@ export function PriceChart(props: Props) {
 
   return (
     <figure className="viz-root">
-      <div className="mb-2 flex flex-wrap gap-4 text-xs text-gray-600 dark:text-gray-300">
+      <div className="mb-2 flex flex-wrap gap-4 text-xs text-muted">
         <Legend color="var(--series-1)" label={props.referenceLabel} />
         <Legend color="var(--series-2)" label={props.currentLabel} />
       </div>
@@ -80,7 +80,7 @@ export function PriceChart(props: Props) {
               y={M.top}
               width={Math.max(0, x(props.sellDay) - x(props.buyDay))}
               height={H - M.top - M.bottom}
-              className="fill-gray-100 dark:fill-gray-800"
+              className="fill-accent-soft"
             />
           )}
           {yTicks.map((tick) => (
@@ -90,14 +90,14 @@ export function PriceChart(props: Props) {
                 x2={W - M.right}
                 y1={y(tick)}
                 y2={y(tick)}
-                className="stroke-gray-200 dark:stroke-gray-800"
+                className="stroke-line"
               />
               <text
                 x={M.left - 6}
                 y={y(tick)}
                 dy="0.32em"
                 textAnchor="end"
-                className="fill-gray-500 text-[11px]"
+                className="fill-subtle text-[11px]"
               >
                 {formatDiv(tick)}
               </text>
@@ -109,7 +109,7 @@ export function PriceChart(props: Props) {
               x={x(tick)}
               y={H - 8}
               textAnchor="middle"
-              className="fill-gray-500 text-[11px]"
+              className="fill-subtle text-[11px]"
             >
               {tick === 0 ? 'day 0' : tick}
             </text>
@@ -124,9 +124,9 @@ export function PriceChart(props: Props) {
             y1={M.top}
             y2={H - M.bottom}
             strokeDasharray="3 3"
-            className="stroke-gray-500"
+            className="stroke-subtle"
           />
-          <text x={x(today) + 4} y={M.top + 10} className="fill-gray-500 text-[11px]">
+          <text x={x(today) + 4} y={M.top + 10} className="fill-subtle text-[11px]">
             today
           </text>
           {hoverDay !== null && (
@@ -136,7 +136,7 @@ export function PriceChart(props: Props) {
                 x2={x(hoverDay)}
                 y1={M.top}
                 y2={H - M.bottom}
-                className="stroke-gray-400"
+                className="stroke-muted"
               />
               {hoverRef && <Dot cx={x(hoverDay)} cy={y(hoverRef[1])} color="var(--series-1)" />}
               {hoverCur && <Dot cx={x(hoverDay)} cy={y(hoverCur[1])} color="var(--series-2)" />}
@@ -145,7 +145,7 @@ export function PriceChart(props: Props) {
         </svg>
         {hoverDay !== null && (hoverRef || hoverCur) && (
           <div
-            className="pointer-events-none absolute top-2 rounded border border-gray-200 bg-white px-2 py-1 text-xs shadow-sm dark:border-gray-700 dark:bg-gray-900"
+            className="pointer-events-none absolute top-2 rounded-md border border-line bg-surface px-2.5 py-1.5 text-xs shadow-lg"
             style={{
               left: `${(x(hoverDay) / W) * 100}%`,
               transform: x(hoverDay) > W / 2 ? 'translateX(calc(-100% - 8px))' : 'translateX(8px)',
@@ -179,16 +179,7 @@ function Legend({ color, label }: { color: string; label: string }) {
 }
 
 function Dot({ cx, cy, color }: { cx: number; cy: number; color: string }) {
-  return (
-    <circle
-      cx={cx}
-      cy={cy}
-      r={4}
-      fill={color}
-      className="stroke-white dark:stroke-gray-950"
-      strokeWidth={2}
-    />
-  );
+  return <circle cx={cx} cy={cy} r={4} fill={color} className="stroke-surface" strokeWidth={2} />;
 }
 
 /** Round tick values from 0 to `max`. */

@@ -1,26 +1,10 @@
 import type { Action } from '@poe-tools/shared';
 
 const STYLES: Record<Action, { label: string; icon: string; className: string }> = {
-  buy: {
-    label: 'Buy now',
-    icon: '▲',
-    className: 'bg-green-50 text-green-800 dark:bg-green-950 dark:text-green-300',
-  },
-  wait: {
-    label: 'Wait',
-    icon: '◷',
-    className: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
-  },
-  avoid: {
-    label: 'Avoid',
-    icon: '▼',
-    className: 'bg-red-50 text-red-800 dark:bg-red-950 dark:text-red-300',
-  },
-  neutral: {
-    label: 'Neutral',
-    icon: '–',
-    className: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
-  },
+  buy: { label: 'Buy now', icon: '▲', className: 'bg-gain-soft text-gain' },
+  wait: { label: 'Wait', icon: '◷', className: 'bg-warn-soft text-warn' },
+  avoid: { label: 'Avoid', icon: '▼', className: 'bg-loss-soft text-loss' },
+  neutral: { label: 'Neutral', icon: '–', className: 'bg-surface-2 text-muted' },
 };
 
 export const ACTION_LABELS: Record<Action, string> = {
@@ -30,14 +14,17 @@ export const ACTION_LABELS: Record<Action, string> = {
   neutral: STYLES.neutral.label,
 };
 
-export function ActionBadge({ action }: { action: Action }) {
+export function ActionBadge({ action, detail }: { action: Action; detail?: string | undefined }) {
   const style = STYLES[action];
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium whitespace-nowrap ${style.className}`}
+      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${style.className}`}
     >
-      <span aria-hidden>{style.icon}</span>
+      <span aria-hidden className="text-[10px]">
+        {style.icon}
+      </span>
       {style.label}
+      {detail && <span className="font-normal opacity-80">{detail}</span>}
     </span>
   );
 }
