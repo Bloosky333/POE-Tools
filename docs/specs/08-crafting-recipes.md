@@ -1,4 +1,4 @@
-# Crafting Recipes (draft v0.2 — under discussion)
+# Crafting Recipes (v1.0 — agreed 2026-10-24)
 
 Backlog item 3 (`02-backlog.md`). Game: **PoE 2** only (C7). Unit: **divine**. Decisions are
 logged in `open-questions.md` § "Crafting recipes" (C-numbered).
@@ -29,63 +29,63 @@ A recipe is a small **flow of steps**. Four step kinds:
 An **action** is one or more items used together: `[Omen of Greater Exaltation, Exalted
 Orb]` counts as one use of each.
 
+Schema: `packages/shared/src/crafting/recipe.ts` (zod; validated on save and on import).
+
 ```ts
 interface Recipe {
   id: string; // uuid
   name: string;
   game: 'poe2';
   notes?: string;
-  bases: BaseOption[]; // one or several; the page shows one at a time (C13)
-  baseMods?: ModCondition; // what to look for on the base before step 1 (optional)
+  bases: {
+    baseId: string;
+    minItemLevel?: number;
+    rarity?: 'normal' | 'magic' | 'rare';
+    price: number;
+  }[];
+  baseMods?: ModCondition; // what to look for on the base before step 1
   target?: ModCondition; // finished item, informative
   steps: Step[];
-  priceOverrides?: Record<string, number>; // item id → divine (C12)
+  priceOverrides: Record<string, number>; // exchange item id → divine (C12)
   updatedAt: string; // ISO
 }
 
-interface BaseOption {
-  baseId: string; // RePoE base item id → name, item class
-  minItemLevel?: number;
-  rarity?: 'normal' | 'magic' | 'rare';
-  price: number; // divine, typed in (C5)
-}
-
-interface ItemUse {
-  itemId: string; // exchange item id (poe.ninja / GGG), see §4
-  count?: number; // default 1
-}
-type Action = ItemUse[]; // items used together
+type CraftAction = { itemId: string; count: number }[]; // exchange item ids used together
 
 type Step =
-  | { id: string; kind: 'apply'; label?: string; action: Action; times?: number }
+  | { id; label?; kind: 'apply'; action: CraftAction; times: number }
   | {
-      id: string;
+      id;
+      label?;
       kind: 'loop';
-      label?: string;
-      until: ModCondition;
-      uses: { action: Action; expectedUses: number }[]; // C4: e.g. Augment ×30, Annul ×25
+      until?: ModCondition;
+      uses: { action: CraftAction; expectedUses: number }[];
     }
   | {
-      id: string;
+      id;
+      label?;
       kind: 'gate';
-      label?: string;
-      action: Action;
-      success: ModCondition;
-      successChance: number; // 0–1, typed in (C2)
-      onFail: { recovery?: Action; goto: string }; // C8; goto = an earlier step id or 'base'
-    }
-  | { id: string; kind: 'best-effort'; label?: string; action: Action; expectedUses: number };
+      action: CraftAction;
+      success?: ModCondition;
+      successChance: number;
+      onFail: { recovery?: CraftAction; goto: string };
+    } // goto: this or an earlier step id, or 'base'
+  | { id; label?; kind: 'best-effort'; action: CraftAction; expectedUses: number };
 
 type ModCondition =
-  | { modId: string; minTier?: number } // mod picked from the mod list (C3)
-  | { anyOf: ModCondition[] } // "T1 life OR T1 armour"
+  | { family: string; tier?: number } // RePoE mod `type` at tier ≤ n (1 = best for the base)
+  | { anyOf: ModCondition[] }
   | { allOf: ModCondition[] }
   | { atLeast: number; of: ModCondition[] };
 ```
 
 Rules (validated by a zod schema on save and on import):
 
-- `goto` targets an **earlier** step, or `'base'` = restart with a new base (re-buys it).
+- `goto` targets the gate itself, an **earlier** step, or `'base'` = restart with a new base
+  (re-buys it).
+- Conditions name a **mod family** (RePoE `type`) and a tier: tiers are ranked per base
+  (spawnable tiers of the family on the recipe's bases, highest level = T1). A family id is
+  stable across tiers, so computed odds can use it later.
 - Loops have no `goto`: they end only when `until` holds.
 - Conditions are informative in v1 (odds are typed in); they become the input of computed
   odds later.
@@ -99,12 +99,13 @@ C12). Average only, no percentiles (C10).
 - `apply`: `times × c(A)`.
 - `loop`: `Σ expectedUses × c(action)`.
 - `best-effort`: `expectedUses × c(A)`.
-- `gate` with chance `p`, retrying from step `X` (or the base): let `S` = cost of the steps
-  from `X` up to and including the gate's action, `r = c(recovery)`. Attempts are
-  geometric (`1 / p` on average, `(1 − p) / p` failures), so the segment costs
-  `S / p + r × (1 − p) / p`. Steps before `X` are paid once.
-- **Nested gates**: process gates in order; a later gate whose `goto` lands before an
-  earlier gate includes that gate's expected cost (not its single-attempt cost) in `S`.
+- `gate` with chance `p`, retrying from step `X` (or the base): each attempt repeats the
+  passes from `X` up to the gate, so on average they run `1 / p` times as often and the
+  recovery runs `(1 − p) / p` times. Nested and overlapping gates compose: the engine
+  (`packages/shared/src/crafting/engine.ts`) computes the expected number of runs of every
+  pass (base, step, recovery) as a linear recursion, `E(after gate) = E(before X) +
+(E(before gate) − E(before X) + gate) / p + recovery × (1 − p) / p`, then prices them.
+  The same runs give the **shopping list** (expected uses per item).
 - Total = base price (× expected base purchases when a gate goes to `'base'`) + Σ steps.
 
 The page shows, per step: action icons, uses, unit prices, step cost, share of total;
@@ -115,22 +116,25 @@ incomplete.
 
 - **Prices**: existing `current.json` (PoE 2 exchange items, hourly). No new poe.ninja
   calls.
-- **Mod list** (new, C3): the RePoE PoE 2 export (`https://repoe-fork.github.io/poe2/`,
-  already used for base names) trimmed by the probe workflow to the fields the editor
-  needs — mod id, text, tier, prefix/suffix, generation type, item classes / tags, level —
-  and committed to `packages/data-job/data/` like `exchange-base-items.json`, then
-  shipped as a lazy-loaded `mods.json` (only fetched by this tool). Spawn weights are kept
-  in the file for the later computed odds.
-- **Bases**: RePoE `base_items.json` (equipment bases only) → `bases.json`, same pipeline.
+- **Mod list** (C3): RePoE PoE 2 `mods.json` (`https://repoe-fork.github.io/poe2/`), item
+  prefixes / suffixes only, trimmed to id, name, family, kind, level, text, spawn weights
+  (kept for the later computed odds) → `packages/shared/data/crafting-mods-poe2.json`.
+- **Bases**: RePoE `base_items.json`, released bases of the craftable item classes →
+  `packages/shared/data/crafting-bases-poe2.json`.
+- Both are regenerated by the probe workflow (`source: crafting`, `pnpm probe:crafting`)
+  after a patch, committed, and bundled by Vite as hashed assets fetched only by this tool.
 
 ## 5. Editor
 
-- **Item picker** (C9): category first (Currency, Omens, Essences, Catalysts, Abyss /
-  Desecration, Runes & Soul Cores, …, from the exchange categories), then the item.
-- **Linked items** (C9): picking a base currency offers its curated companions, like
-  Craft of Exile — e.g. Exalted Orb → Omen of Greater / Sinistral / Dextral Exaltation;
-  Chaos Orb → Omens of Whittling / Sinistral / Dextral Erasure; Regal → Omen of
-  Homogenising Coronation. Curated table in `packages/shared` (maintained per league).
+- **Item picker** (C9): category first (exchange categories used for crafting: Currency,
+  Omens, Essences, Abyssal Bones, Catalysts, Runes, Soul Cores, Idols, Liquid Emotions,
+  Expedition, Verisium), then the item; a search covers all of them.
+- **Linked items** (C9): an action offers the curated companions of its items, like
+  Craft of Exile — Exalted Orbs → Omens of Greater / Sinistral / Dextral / Catalysing
+  Exaltation; Chaos Orbs → Omens of Whittling / Sinistral / Dextral Erasure; Annulment →
+  Sinistral / Dextral Annulment, Light; Perfect Essences → Crystallisation omens; Abyssal
+  bones → Necromancy, Sovereign, Liege… Table in `packages/shared/src/crafting/linked.ts`
+  (maintained per league).
 - **Mod picker**: autocomplete over the mod list, filtered by the selected bases' item
   class; tier selector.
 - **Base picker**: autocomplete over bases, typed price in divine.
@@ -138,11 +142,15 @@ incomplete.
 
 ## 6. Pages
 
-- `/tools/crafting-recipes` — list of saved recipes (name, base, expected total, updated);
-  new / import / export all.
-- `/tools/crafting-recipes/:id` — recipe view (base selector, step table, total) with an
-  Edit toggle.
+- `/tools/crafting-recipes` — list of saved recipes (name, first base, steps, expected total
+  with the first base, updated); New / Import / Export all.
+- `?recipe=<id>[&base=<n>]` — recipe view: base selector, key figures (expected total, base,
+  currency, unpriced items), step table (one pass, expected passes, expected cost, share)
+  and shopping list. Edit / Duplicate / Export / Delete.
+- `?recipe=<id>&edit=1` (`recipe=new` for a new one) — editor; Save validates.
 
-## 7. Open questions
+## 7. Later
 
-See `open-questions.md` § "Crafting recipes" — still open: C14+.
+- Computed odds from spawn weights (C2), filling `expectedUses` / `successChance`.
+- Desecration ("reveal one of three") and other mechanics as needed; a give-up exit for
+  loops; recipes shared by link.

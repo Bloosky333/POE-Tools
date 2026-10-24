@@ -19,8 +19,8 @@ decisions in `docs/specs/open-questions.md`.
 
 - `pnpm check` — format check, lint, typecheck, tests (run before every push).
 - `pnpm build`, `pnpm dev`.
-- `pnpm probe` / `pnpm probe:exchange` / `pnpm probe:base-items` / `pnpm probe:poe1` — need network
-  access; run via the "poe.ninja probe" workflow (inputs `source`, `game`).
+- `pnpm probe` / `pnpm probe:exchange` / `pnpm probe:base-items` / `pnpm probe:poe1` /
+  `pnpm probe:crafting` (RePoE mods + bases → `packages/shared/data/`) — need network access; run via the "poe.ninja probe" workflow (inputs `source`, `game`).
 - `pnpm job --data-dir <abs> --out <abs> [--exchange-dir <abs>]` — data job (run hourly by the "Data" workflow;
   store on the orphan `data` branch, site data in `apps/web/public/data`, both gitignored).
 - `pnpm --filter @poe-tools/data-job dev-data --data-dir <data branch checkout> --out

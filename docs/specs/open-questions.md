@@ -114,7 +114,7 @@
 |     |            | peak calls ×0.96 vs the market at 14 d (54 % cheaper later; PoE 2: ×0.88, 65 %), falling ×1.00; no       |
 |     |            | variant clearly better → defaults kept, weak signal noted on the page; re-run on 3.30 data.              |
 
-## Crafting recipes (`08-crafting-recipes.md`, draft)
+## Crafting recipes (`08-crafting-recipes.md`)
 
 | #   | Topic        | Decision                                                                                                          |
 | --- | ------------ | ----------------------------------------------------------------------------------------------------------------- |
@@ -131,6 +131,8 @@
 | C11 | Sharing      | JSON export/import only.                                                                                          |
 | C12 | No price     | Manual price override per item in the recipe.                                                                     |
 | C13 | Bases        | One base selected at a time; the total follows it.                                                                |
+| C14 | Conditions   | Name a mod **family** (RePoE `type`) + tier ranked for the recipe's bases (implementation).                       |
+| C15 | Mod data     | RePoE mods / bases trimmed into `packages/shared/data/`, bundled as hashed assets (implementation).               |
 
 ## Still open
 

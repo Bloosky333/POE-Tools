@@ -1,4 +1,10 @@
-import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
+import type {
+  ButtonHTMLAttributes,
+  InputHTMLAttributes,
+  ReactNode,
+  SelectHTMLAttributes,
+  TextareaHTMLAttributes,
+} from 'react';
 import { SearchIcon } from '../components/icons.tsx';
 
 export const controlClass =
@@ -62,4 +68,61 @@ export function InlineField({
 /** Row of filter controls. */
 export function FilterBar({ children }: { children: ReactNode }) {
   return <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">{children}</div>;
+}
+
+const BUTTON_VARIANTS = {
+  primary: 'border-accent bg-accent text-on-accent hover:opacity-90',
+  secondary: 'border-line bg-surface-2 text-fg hover:border-subtle',
+  ghost: 'border-transparent text-muted hover:bg-surface-2 hover:text-fg',
+  danger: 'border-transparent text-loss hover:bg-loss-soft',
+} as const;
+
+/** Action button (`primary` for the main action of a view, `ghost` for row actions). */
+export function Button({
+  variant = 'secondary',
+  className = '',
+  type = 'button',
+  ...props
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: keyof typeof BUTTON_VARIANTS }) {
+  return (
+    <button
+      type={type}
+      className={`inline-flex h-8 items-center gap-1.5 rounded-md border px-3 text-sm font-medium whitespace-nowrap disabled:cursor-not-allowed disabled:opacity-50 ${BUTTON_VARIANTS[variant]} ${className}`}
+      {...props}
+    />
+  );
+}
+
+/** Multi-line text input. */
+export function TextArea({
+  className = '',
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return (
+    <textarea
+      className={`min-h-16 rounded-md border border-line bg-surface-2 px-2 py-1.5 text-sm text-fg outline-none hover:border-subtle focus-visible:border-accent ${className}`}
+      {...props}
+    />
+  );
+}
+
+/** Label above a control, for forms. */
+export function Field({
+  label,
+  hint,
+  className = '',
+  children,
+}: {
+  label: string;
+  hint?: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <label className={`flex min-w-0 flex-col gap-1 ${className}`}>
+      <span className="text-xs text-muted">{label}</span>
+      {children}
+      {hint && <span className="text-xs text-subtle">{hint}</span>}
+    </label>
+  );
 }
