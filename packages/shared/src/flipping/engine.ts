@@ -1,0 +1,246 @@
+import type { Flip, FlipLeg, FlipsFile, Hub } from './data.ts';
+
+/*
+ * Currency Flipping engine (spec 04, §5). Input: hourly digests of the currency exchange,
+ * reduced to markets between an item and a hub currency. A price `p` is in hub units per
+ * 1 item; `avg` is the hour's volume-weighted average (hubVolume / itemVolume).
+ */
+
+/** One market (item ↔ hub) during one hour. Hub ↔ hub markets use the rule of `marketSides`. */
+export interface MarketHour {
+  item: string;
+  hub: Hub;
+  itemVolume: number;
+  hubVolume: number;
+  /** Lowest / highest ratio of the hour, in hub units per 1 item. */
+  low: number;
+  high: number;
+}
+
+export interface ExchangeHour {
+  /** Start of the UTC hour, unix seconds. */
+  epoch: number;
+  markets: MarketHour[];
+}
+
+export interface FlipSettings {
+  /** Hours whose `high / low` exceeds this are treated as outliers (spread margin null). */
+  maxRangeRatio: number;
+  /** Flips with a leg trading less than this (divine, whole window) are not published. */
+  minLegValue: number;
+}
+
+export const DEFAULT_FLIP_SETTINGS: FlipSettings = { maxRangeRatio: 3, minLegValue: 10 };
+
+/** Rank of the hubs: in a hub ↔ hub market, the higher-ranked one is the `hub` side. */
+const HUB_RANK: Record<Hub, number> = { divine: 0, exalted: 1, chaos: 2 };
+
+/** Item and hub sides of a market between two hub currencies. */
+export function marketSides(a: Hub, b: Hub): { item: Hub; hub: Hub } {
+  return HUB_RANK[a] < HUB_RANK[b] ? { item: b, hub: a } : { item: a, hub: b };
+}
+
+interface Leg {
+  avg: number;
+  low: number;
+  high: number;
+  units: number;
+  /** Divine value traded on this leg during the hour. */
+  value: number;
+}
+
+interface HourView {
+  /** Divine value of 1 unit of each hub. */
+  value: Record<Hub, number>;
+  legs: Map<string, Map<Hub, Leg>>;
+  markets: MarketHour[];
+}
+
+const avgOf = (m: MarketHour) => m.hubVolume / m.itemVolume;
+
+function viewHour(hour: ExchangeHour, previous: Record<Hub, number> | null): HourView | null {
+  const traded = hour.markets.filter((m) => m.itemVolume > 0 && m.hubVolume > 0);
+  const find = (item: string, hub: Hub) => traded.find((m) => m.item === item && m.hub === hub);
+  const exalted = find('exalted', 'divine');
+  const chaosDiv = find('chaos', 'divine');
+  const chaosEx = find('chaos', 'exalted');
+  const exaltedValue = exalted ? avgOf(exalted) : previous?.exalted;
+  const chaosValue = chaosDiv
+    ? avgOf(chaosDiv)
+    : chaosEx && exaltedValue
+      ? avgOf(chaosEx) * exaltedValue
+      : previous?.chaos;
+  if (!exaltedValue || !chaosValue) return null;
+  const value: Record<Hub, number> = { divine: 1, exalted: exaltedValue, chaos: chaosValue };
+
+  const legs = new Map<string, Map<Hub, Leg>>();
+  for (const m of traded) {
+    const byHub = legs.get(m.item) ?? new Map<Hub, Leg>();
+    byHub.set(m.hub, {
+      avg: avgOf(m),
+      low: Math.min(m.low, m.high),
+      high: Math.max(m.low, m.high),
+      units: m.itemVolume,
+      value: m.hubVolume * value[m.hub],
+    });
+    legs.set(m.item, byHub);
+  }
+  return { value, legs, markets: traded };
+}
+
+/** Units of `to` received per 1 `from`: hour average and most favourable end of the range. */
+function conversion(view: HourView, from: Hub, to: Hub): { avg: number; best: number } {
+  const sides = marketSides(from, to);
+  const market = view.markets.find((m) => m.item === sides.item && m.hub === sides.hub);
+  if (!market) {
+    const rate = view.value[from] / view.value[to];
+    return { avg: rate, best: rate };
+  }
+  const low = Math.min(market.low, market.high);
+  const high = Math.max(market.low, market.high);
+  // Selling the item side gives `p` hub units; selling the hub side gives 1 / p items.
+  return from === sides.item
+    ? { avg: avgOf(market), best: high }
+    : { avg: 1 / avgOf(market), best: 1 / low };
+}
+
+interface Candidate {
+  kind: Flip['kind'];
+  item: string;
+  buyHub: Hub;
+  sellHub: Hub;
+}
+
+const keyOf = (c: Candidate) => `${c.kind}:${c.item}:${c.buyHub}:${c.sellHub}`;
+
+function marginIn(view: HourView, c: Candidate, settings: FlipSettings): number | null {
+  const legs = view.legs.get(c.item);
+  const buy = legs?.get(c.buyHub);
+  const sell = legs?.get(c.sellHub);
+  if (!buy || !sell) return null;
+  if (c.kind === 'spread') {
+    const ratio = buy.high / buy.low;
+    return ratio > settings.maxRangeRatio ? null : ratio - 1;
+  }
+  // Pay buyHub for the item, sell it for sellHub, convert sellHub back to buyHub.
+  return (sell.avg * conversion(view, c.sellHub, c.buyHub).avg) / buy.avg - 1;
+}
+
+function candidatesOf(view: HourView): Candidate[] {
+  const out: Candidate[] = [];
+  for (const [item, byHub] of view.legs) {
+    const hubs = [...byHub.keys()];
+    for (const hub of hubs) out.push({ kind: 'spread', item, buyHub: hub, sellHub: hub });
+    for (const buyHub of hubs)
+      for (const sellHub of hubs)
+        if (buyHub !== sellHub) out.push({ kind: 'cross', item, buyHub, sellHub });
+  }
+  return out;
+}
+
+/** Keeps 6 significant digits: plenty for prices, keeps files small. */
+const round = (value: number) => Number(value.toPrecision(6));
+
+/**
+ * Flips of the newest hour of `hours` (ascending by epoch), with their hourly margins over
+ * the whole window. Only flips with a positive margin in the newest hour are returned; for
+ * cross-pair flips only the best direction of each item is kept.
+ */
+export function computeFlips(
+  leagueId: string,
+  hours: readonly ExchangeHour[],
+  generatedAt: Date,
+  settings: FlipSettings = DEFAULT_FLIP_SETTINGS,
+): FlipsFile {
+  const views: (HourView | null)[] = [];
+  let previous: Record<Hub, number> | null = null;
+  for (const hour of hours) {
+    const view = viewHour(hour, previous);
+    if (view) previous = view.value;
+    views.push(view);
+  }
+  const file: FlipsFile = {
+    version: 1,
+    leagueId,
+    generatedAt: generatedAt.toISOString(),
+    hours: hours.map((h) => h.epoch),
+    flips: [],
+  };
+  const newest = views.at(-1);
+  if (!newest) return file;
+
+  // Window totals per leg (item ↔ hub market).
+  const totals = new Map<string, { units: number; value: number }>();
+  for (const view of views) {
+    for (const [item, byHub] of view?.legs ?? []) {
+      for (const [hub, leg] of byHub) {
+        const total = totals.get(`${item}:${hub}`) ?? { units: 0, value: 0 };
+        total.units += leg.units;
+        total.value += leg.value;
+        totals.set(`${item}:${hub}`, total);
+      }
+    }
+  }
+  const totalOf = (item: string, hub: Hub) =>
+    totals.get(`${item}:${hub}`) ?? { units: 0, value: 0 };
+
+  const bestCross = new Map<string, Flip>();
+  for (const c of candidatesOf(newest)) {
+    const margin = marginIn(newest, c, settings);
+    if (margin === null || margin <= 0) continue;
+    const buyTotal = totalOf(c.item, c.buyHub);
+    const sellTotal = totalOf(c.item, c.sellHub);
+    if (Math.min(buyTotal.value, sellTotal.value) < settings.minLegValue) continue;
+
+    const legs = newest.legs.get(c.item);
+    const buy = legs?.get(c.buyHub);
+    const sell = legs?.get(c.sellHub);
+    if (!buy || !sell) continue;
+    const quote = (hub: Hub, leg: Leg): FlipLeg => ({
+      hub,
+      avg: round(leg.avg),
+      low: round(leg.low),
+      high: round(leg.high),
+      units24h: round(totalOf(c.item, hub).units),
+      value24h: round(totalOf(c.item, hub).value),
+    });
+    let convert: Flip['convert'] = null;
+    let bestMargin = margin;
+    if (c.kind === 'cross') {
+      const rate = conversion(newest, c.sellHub, c.buyHub);
+      convert = { from: c.sellHub, to: c.buyHub, avg: round(rate.avg), best: round(rate.best) };
+      bestMargin = (sell.high * rate.best) / buy.low - 1;
+    }
+    const flip: Flip = {
+      id: keyOf(c),
+      kind: c.kind,
+      item: c.item,
+      buy: quote(c.buyHub, buy),
+      sell: quote(c.sellHub, sell),
+      convert,
+      margin: round(margin),
+      bestMargin: round(bestMargin),
+      units24h: round(Math.min(buyTotal.units, sellTotal.units)),
+      value24h: round(Math.min(buyTotal.value, sellTotal.value)),
+      hourly: views.map((view) => {
+        const m = view && marginIn(view, c, settings);
+        return m === null || m === undefined ? null : round(m);
+      }),
+    };
+    if (c.kind === 'spread') {
+      file.flips.push(flip);
+    } else {
+      const current = bestCross.get(c.item);
+      if (!current || current.margin < flip.margin) bestCross.set(c.item, flip);
+    }
+  }
+  file.flips.push(...bestCross.values());
+  file.flips.sort((a, b) => b.margin - a.margin);
+  return file;
+}
+
+/** Share (0–1) of the window's hours in which the flip made at least `minMargin`. */
+export function recurrence(hourly: readonly (number | null)[], minMargin: number): number {
+  if (hourly.length === 0) return 0;
+  return hourly.filter((m) => m !== null && m >= minMargin).length / hourly.length;
+}
