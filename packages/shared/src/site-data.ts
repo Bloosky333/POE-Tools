@@ -45,7 +45,8 @@ export const POE1_EXCHANGE_TYPES = [
 ] as const;
 
 export type ExchangeType =
-  (typeof POE2_EXCHANGE_TYPES)[number] | (typeof POE1_EXCHANGE_TYPES)[number];
+  | (typeof POE2_EXCHANGE_TYPES)[number]
+  | (typeof POE1_EXCHANGE_TYPES)[number];
 
 /** Every exchange type of both games, PoE 2's first (display order). */
 export const ALL_EXCHANGE_TYPES: readonly ExchangeType[] = [

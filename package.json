@@ -19,6 +19,7 @@
     "probe:exchange": "pnpm --filter @poe-tools/data-job probe:exchange",
     "probe:base-items": "pnpm --filter @poe-tools/data-job probe:base-items",
     "probe:poe1": "pnpm --filter @poe-tools/data-job probe:poe1",
+    "probe:crafting": "pnpm --filter @poe-tools/data-job probe:crafting",
     "job": "pnpm --filter @poe-tools/data-job job"
   },
   "devDependencies": {
