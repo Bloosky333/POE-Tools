@@ -20,6 +20,9 @@ decisions in `docs/specs/open-questions.md`.
 - `pnpm probe` — needs network access to poe.ninja; run via the "poe.ninja probe" workflow.
 - `pnpm job --data-dir <abs> --out <abs>` — data job (run hourly by the "Data" workflow;
   store on the orphan `data` branch, site data in `apps/web/public/data`, both gitignored).
+- `pnpm --filter @poe-tools/data-job dev-data --data-dir <data branch checkout> --out
+<abs>/apps/web/public/data` — local site data without network (history from the `data`
+  branch, current prices from the probe fixtures).
 
 ## Rules
 

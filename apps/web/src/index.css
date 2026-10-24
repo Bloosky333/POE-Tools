@@ -12,3 +12,13 @@
 body {
   font-variant-numeric: tabular-nums;
 }
+
+/* Chart series (validated reference palette, dataviz skill): slot 1 blue, slot 2 orange. */
+.viz-root {
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+}
+.dark .viz-root {
+  --series-1: #3987e5;
+  --series-2: #d95926;
+}
