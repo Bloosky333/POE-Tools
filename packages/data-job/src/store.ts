@@ -3,13 +3,22 @@ import { dirname, join } from 'node:path';
 import { POE2_EXCHANGE_TYPES, type ExchangeType } from '@poe-tools/shared';
 import { z } from 'zod';
 import type { DailyPoint, FxPoint } from './convert.ts';
-import { formatFxCsv, formatHistoryCsv, parseFxCsv, parseHistoryCsv } from './csv.ts';
+import {
+  formatFxCsv,
+  formatHistoryCsv,
+  formatPairsCsv,
+  parseFxCsv,
+  parseHistoryCsv,
+  parsePairsCsv,
+} from './csv.ts';
+import type { PairPoint } from './pairs.ts';
 
 /**
  * Persistent store, kept on the orphan `data` branch:
  *   <game>/<leagueId>/meta.json
  *   <game>/<leagueId>/fx.csv
  *   <game>/<leagueId>/history/<ExchangeType>.csv
+ *   <game>/<leagueId>/pairs/<ExchangeType>.csv   (daily rate per pay currency)
  */
 
 /** Bump to re-run the history backfill of every league (e.g. after a conversion fix). */
@@ -35,6 +44,7 @@ const EMPTY_META: LeagueMeta = {
 };
 
 export type LeagueHistory = Map<ExchangeType, DailyPoint[]>;
+export type LeaguePairs = Map<ExchangeType, PairPoint[]>;
 
 export function createStore(root: string, game = 'poe2') {
   const leagueDir = (leagueId: string) => join(root, game, leagueId);
@@ -89,6 +99,20 @@ export function createStore(root: string, game = 'poe2') {
           join(leagueDir(leagueId), 'history', `${type}.csv`),
           formatHistoryCsv(points),
         );
+      }
+    },
+    async readPairs(leagueId: string): Promise<LeaguePairs> {
+      const pairs: LeaguePairs = new Map();
+      for (const type of POE2_EXCHANGE_TYPES) {
+        const text = await readText(join(leagueDir(leagueId), 'pairs', `${type}.csv`));
+        pairs.set(type, text ? parsePairsCsv(text) : []);
+      }
+      return pairs;
+    },
+    async writePairs(leagueId: string, pairs: LeaguePairs): Promise<void> {
+      for (const [type, points] of pairs) {
+        if (!points.length) continue;
+        await writeText(join(leagueDir(leagueId), 'pairs', `${type}.csv`), formatPairsCsv(points));
       }
     },
   };

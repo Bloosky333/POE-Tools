@@ -9,6 +9,7 @@ import {
   type HistoryFile,
   type League,
   type LeaguesFile,
+  type PairsFile,
 } from '@poe-tools/shared';
 import type { DailyPoint, FxPoint } from './convert.ts';
 import { ICONS_DIR } from './icons.ts';
@@ -56,6 +57,9 @@ export function createSiteWriter(outDir: string, game = 'poe2') {
         };
         await writeJson(dataPaths.history(game, league.id, type), file);
       }
+    },
+    writePairs(file: PairsFile) {
+      return writeJson(dataPaths.pairs(game, file.leagueId), file);
     },
     writeFx(league: League, points: readonly FxPoint[]) {
       const file: FxFile = {
