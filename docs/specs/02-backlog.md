@@ -2,9 +2,8 @@
 
 Order is indicative. Each will get its own spec file before implementation.
 
-1. **Currency flipping suggester** — find items on the in-game currency exchange where
-   buying at one ratio and selling at another yields a margin; rank by margin × volume.
-   Needs buy/sell side ratios (exchange data) — check what poe.ninja exposes.
+1. **Currency flipping suggester** — spec drafted: [`04-currency-flipping.md`](./04-currency-flipping.md)
+   (data from GGG's hourly currency-exchange feed).
 2. **Cheapest currency path** — for an item purchasable on the currency exchange, tell
    whether it is cheaper to pay in divine, chaos or exalted (and whether converting first
    is worth it), using live cross rates. Reuses the exchange-rate service.

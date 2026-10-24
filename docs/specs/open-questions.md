@@ -36,6 +36,23 @@
 | Default filters  | Min volume 5 div/day (also required for BUY NOW), min price 0.05 div, hold 14 days.                                                                                                                                        |
 | Known limitation | Market-wide moves of the reference league (e.g. Runes of Aldur day ~55: divine +20% vs chaos, most items −10% in divine) drive WAIT/BUY for many items at once. Possible refinement: compare items against a market index. |
 
+## Currency flipping (M2, draft — `04-currency-flipping.md`)
+
+| #   | Topic       | Decision                                                                                                           |
+| --- | ----------- | ------------------------------------------------------------------------------------------------------------------ |
+| F1  | Flip types  | Both: spread (one market) and cross-pair (hub A → item → hub B → A).                                               |
+| F2  | Data source | GGG public currency-exchange feed (hourly digests), data job only; no OAuth app. poe.ninja kept for divine prices. |
+| F3  | Freshness   | Daily data is useless; the hourly feed (1–2 h old when shown) is accepted as a trial.                              |
+| F4  | Spread      | Hourly ratio range is a heuristic: count hours with trades only, rank only recurring spreads (last 24 h).          |
+| F5  | Cross-pair  | Loops through divine / exalted / chaos only; no item-to-item cycles.                                               |
+| F6  | Markets     | Only markets against divine, exalted or chaos.                                                                     |
+| F7  | Units       | Divine-only rule lifted for this tool: ratios in their own currencies; profit in %.                                |
+| F8  | Gold        | Show gold per 1 div of profit with a low / normal / high indicator.                                                |
+| F9  | Volume      | Min-volume selector in units of the item traded (24 h), not in divine.                                             |
+| F10 | Scope       | Every item on the currency exchange; no budget, no flip log for now.                                               |
+| F11 | Priority    | First backlog tool, before cheapest currency path.                                                                 |
+
 ## Still open
 
-None — specs agreed. New questions will be added here as implementation progresses.
+- Currency flipping: gold fee model and cost table, gold low/high thresholds, base item id mapping — see
+  `04-currency-flipping.md` §9.
