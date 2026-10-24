@@ -11,6 +11,8 @@ Order is indicative. Each will get its own spec file before implementation.
 3. **Crafting recipes tool** — catalogue of crafting recipes/methods with live cost per
    attempt and expected cost (scope to be defined: which recipes, data source for
    mod weights).
+4. **Sell Now** — done: [`06-sell-now.md`](./06-sell-now.md) (sell at last league's peak
+   or when falling with no recovery ahead).
 
 Shared needs anticipated in M1 design: exchange-rate service (1, 2, 3), price service
 (all), history service (1).

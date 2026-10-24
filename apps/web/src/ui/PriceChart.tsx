@@ -1,6 +1,6 @@
 import type { HistoryPoint } from '@poe-tools/shared';
 import { useId, useState, type PointerEvent } from 'react';
-import { formatDiv } from '../../lib/format.ts';
+import { formatDiv } from '../lib/format.ts';
 
 interface Props {
   reference: readonly HistoryPoint[];
@@ -8,8 +8,9 @@ interface Props {
   referenceLabel: string;
   currentLabel: string;
   today: number;
-  buyDay?: number | undefined;
-  sellDay?: number | undefined;
+  /** Shaded day range, e.g. the suggested buy → sell window. */
+  windowFrom?: number | undefined;
+  windowTo?: number | undefined;
   /** Draws the reference scaled to the current market level (market factor). */
   referenceScale?: number | null | undefined;
 }
@@ -20,7 +21,7 @@ const M = { top: 12, right: 16, bottom: 28, left: 52 };
 
 /**
  * Prices of both leagues (divine) by days since league start, with today's marker and
- * the suggested buy → sell window, and optionally the reference scaled to this league's
+ * a shaded day window, and optionally the reference scaled to this league's
  * market level. Hover shows the values for a day.
  */
 export function PriceChart(props: Props) {
@@ -86,11 +87,11 @@ export function PriceChart(props: Props) {
               />
             </clipPath>
           </defs>
-          {props.buyDay !== undefined && props.sellDay !== undefined && (
+          {props.windowFrom !== undefined && props.windowTo !== undefined && (
             <rect
-              x={x(props.buyDay)}
+              x={x(props.windowFrom)}
               y={M.top}
-              width={Math.max(0, x(props.sellDay) - x(props.buyDay))}
+              width={Math.max(0, x(props.windowTo) - x(props.windowFrom))}
               height={H - M.top - M.bottom}
               className="fill-accent-soft"
             />

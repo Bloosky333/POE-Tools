@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { CoinsIcon, HammerIcon, SwapIcon, TrendIcon } from '../components/icons.tsx';
+import { CoinsIcon, HammerIcon, SwapIcon, TrendDownIcon, TrendIcon } from '../components/icons.tsx';
 import type { ToolDefinition } from './types.ts';
 
 /** Every tool of the app. Adding a tool = a folder under `tools/` + one entry here. */
@@ -15,6 +15,17 @@ export const TOOLS: readonly ToolDefinition[] = [
     status: 'beta',
     path: 'tools/currency-speculation',
     component: lazy(() => import('./currency-speculation/CurrencySpeculationPage.tsx')),
+  },
+  {
+    id: 'sell-now',
+    icon: TrendDownIcon,
+    name: 'Sell Now',
+    description: 'What to sell before it drops, from where prices peaked in the previous league.',
+    category: 'economy',
+    games: ['poe2'],
+    status: 'beta',
+    path: 'tools/sell-now',
+    component: lazy(() => import('./sell-now/SellNowPage.tsx')),
   },
   {
     id: 'currency-flipping',

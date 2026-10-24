@@ -1,0 +1,281 @@
+import { EXCHANGE_TYPE_LABELS, POE2_EXCHANGE_TYPES, type SellSignal } from '@poe-tools/shared';
+import { useMemo } from 'react';
+import { formatPercent } from '../../lib/format.ts';
+import {
+  Card,
+  Chips,
+  Div,
+  FilterBar,
+  InlineField,
+  Input,
+  Notice,
+  PageHeader,
+  SearchInput,
+  Select,
+  Skeleton,
+  StatTile,
+} from '../../ui/index.ts';
+import { useViewParams, type SortKey, type ViewParams } from './params.ts';
+import { SellDetail } from './SellDetail.tsx';
+import { SellTable } from './SellTable.tsx';
+import { useSellSignals } from './useSellSignals.ts';
+import { VERDICT_LABELS } from './VerdictBadge.tsx';
+
+export default function SellNowPage() {
+  const [params, update] = useViewParams();
+  const { league, reference, today, data, signals, divineIcon } = useSellSignals();
+
+  const eligible = useMemo(
+    () => filterAndSort(signals, { ...params, type: 'all', q: '' }),
+    [signals, params],
+  );
+  const rows = useMemo(() => filterAndSort(signals, params), [signals, params]);
+  const selected = params.item ? signals.find((s) => s.item.id === params.item) : undefined;
+
+  if (!league || !reference) return <p>No league selected.</p>;
+
+  return (
+    <section className="space-y-5">
+      <PageHeader
+        title="Sell Now"
+        description={
+          <>
+            What to sell: items at the point where they peaked in{' '}
+            <span className="text-fg">{reference.name}</span>, or falling with no recovery last
+            league.
+          </>
+        }
+      />
+
+      {data.status === 'loading' && <Skeleton label="Loading price data" />}
+      {data.status === 'error' && (
+        <Notice>
+          Price data couldn&apos;t be loaded ({data.error.message}). The data job may not have run
+          yet.
+        </Notice>
+      )}
+      {data.status === 'ready' && (
+        <>
+          <StatTiles
+            signals={filterAndSort(signals, { ...params, type: 'all', q: '', verdict: 'all' })}
+            today={today}
+            leagueName={league.name}
+            divineIcon={divineIcon}
+          />
+
+          <Card className="space-y-3">
+            <CategoryChips
+              signals={eligible}
+              value={params.type}
+              onChange={(type) => update({ type })}
+            />
+            <Filters params={params} update={update} />
+          </Card>
+
+          <SellTable
+            rows={rows}
+            params={params}
+            currentHistory={data.data.currentHistory}
+            today={today}
+            divineIcon={divineIcon}
+            onSort={(key: SortKey) =>
+              update(
+                params.sort === key
+                  ? { desc: !params.desc }
+                  : {
+                      sort: key,
+                      desc: !['name', 'sellDay', 'change1d', 'change3d', 'change7d'].includes(key),
+                    },
+              )
+            }
+            onSelect={(item) => update({ item })}
+          />
+          <p className="text-xs text-subtle">
+            {rows.length} of {signals.length} items · expected loss is last league&apos;s move; in a
+            market rising against divine, flagged items mostly lag the market rather than drop.
+          </p>
+          {selected && (
+            <SellDetail
+              signal={selected}
+              reference={data.data.referenceHistory[selected.item.id] ?? []}
+              current={data.data.currentHistory[selected.item.id] ?? []}
+              referenceName={reference.name}
+              currentName={league.name}
+              today={today}
+              divineIcon={divineIcon}
+              onClose={() => update({ item: null })}
+            />
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+function StatTiles({
+  signals,
+  today,
+  leagueName,
+  divineIcon,
+}: {
+  signals: readonly SellSignal[];
+  today: number;
+  leagueName: string;
+  divineIcon: string | undefined;
+}) {
+  const count = (verdict: SellSignal['verdict']) =>
+    signals.filter((s) => s.verdict === verdict).length;
+  const top = signals
+    .filter((s) => s.verdict === 'sell-now')
+    .reduce<SellSignal | undefined>(
+      (best, s) => (best && best.score >= s.score ? best : s),
+      undefined,
+    );
+  return (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <StatTile label={leagueName} value={`Day ${today}`} />
+      <StatTile label="Sell now" value={count('sell-now')} tone="loss" />
+      <StatTile label="Sell soon" value={count('sell-soon')} tone="warn" />
+      <StatTile
+        label="Most urgent"
+        value={top ? formatPercent(-top.expectedLoss * 100) : '–'}
+        tone="accent"
+        detail={
+          top ? (
+            <span className="flex min-w-0 items-center gap-1">
+              <span className="truncate">{top.item.name}</span>
+              <span aria-hidden>·</span>
+              <Div value={top.item.price} icon={divineIcon} className="shrink-0" />
+            </span>
+          ) : undefined
+        }
+      />
+    </div>
+  );
+}
+
+function CategoryChips({
+  signals,
+  value,
+  onChange,
+}: {
+  signals: readonly SellSignal[];
+  value: ViewParams['type'];
+  onChange: (value: ViewParams['type']) => void;
+}) {
+  const counts = new Map<string, number>();
+  for (const s of signals) counts.set(s.item.type, (counts.get(s.item.type) ?? 0) + 1);
+  return (
+    <Chips<ViewParams['type']>
+      value={value}
+      onChange={onChange}
+      options={[
+        { value: 'all', label: 'All', count: signals.length },
+        ...POE2_EXCHANGE_TYPES.filter((t) => counts.get(t)).map((t) => ({
+          value: t,
+          label: EXCHANGE_TYPE_LABELS[t],
+          count: counts.get(t) ?? 0,
+        })),
+      ]}
+    />
+  );
+}
+
+function Filters({
+  params,
+  update,
+}: {
+  params: ViewParams;
+  update: (p: Partial<ViewParams>) => void;
+}) {
+  return (
+    <FilterBar>
+      <SearchInput placeholder="Search items" value={params.q} onChange={(q) => update({ q })} />
+      <InlineField label="Show">
+        <Select
+          value={params.verdict}
+          onChange={(e) => update({ verdict: e.target.value as ViewParams['verdict'] })}
+        >
+          <option value="flagged">
+            {VERDICT_LABELS['sell-now']} + {VERDICT_LABELS['sell-soon']}
+          </option>
+          <option value="sell-now">{VERDICT_LABELS['sell-now']}</option>
+          <option value="sell-soon">{VERDICT_LABELS['sell-soon']}</option>
+          <option value="all">All, with {VERDICT_LABELS.hold}</option>
+        </Select>
+      </InlineField>
+      <InlineField label="Min volume" unit="div/day">
+        <Input
+          type="number"
+          min={0}
+          step={1}
+          className="w-20"
+          value={params.minVolume}
+          onChange={(e) => update({ minVolume: Number(e.target.value) || 0 })}
+        />
+      </InlineField>
+      <InlineField label="Min price" unit="div">
+        <Input
+          type="number"
+          min={0}
+          step={0.01}
+          className="w-20"
+          value={params.minPrice}
+          onChange={(e) => update({ minPrice: Number(e.target.value) || 0 })}
+        />
+      </InlineField>
+    </FilterBar>
+  );
+}
+
+const VERDICT_ORDER: Record<SellSignal['verdict'], number> = {
+  'sell-now': 0,
+  'sell-soon': 1,
+  hold: 2,
+};
+
+export function filterAndSort(signals: readonly SellSignal[], params: ViewParams): SellSignal[] {
+  const q = params.q.trim().toLowerCase();
+  const rows = signals.filter(
+    (s) =>
+      s.item.volume >= params.minVolume &&
+      s.item.price >= params.minPrice &&
+      (params.type === 'all' || s.item.type === params.type) &&
+      (params.verdict === 'all' ||
+        (params.verdict === 'flagged' ? s.verdict !== 'hold' : s.verdict === params.verdict)) &&
+      (!q || s.item.name.toLowerCase().includes(q)),
+  );
+  const value = (s: SellSignal): number | string => {
+    switch (params.sort) {
+      case 'name':
+        return s.item.name;
+      case 'price':
+        return s.item.price;
+      case 'change1d':
+        return s.change[1] ?? Infinity;
+      case 'change3d':
+        return s.change[3] ?? Infinity;
+      case 'change7d':
+        return s.change[7] ?? Infinity;
+      case 'fromHigh':
+        return s.fromHigh ?? -Infinity;
+      case 'loss':
+        return s.expectedLoss;
+      case 'sellDay':
+        return s.sellDay ?? Infinity;
+      case 'confidence':
+        return s.confidence;
+      case 'volume':
+        return s.item.volume;
+      default:
+        // Urgency: SELL NOW before SELL SOON before HOLD, then expected loss × confidence.
+        return (2 - VERDICT_ORDER[s.verdict]) * 10 + s.score;
+    }
+  };
+  return rows.sort((a, b) => {
+    const va = value(a);
+    const vb = value(b);
+    const cmp = typeof va === 'string' ? va.localeCompare(String(vb)) : va - (vb as number);
+    return params.desc ? -cmp : cmp;
+  });
+}

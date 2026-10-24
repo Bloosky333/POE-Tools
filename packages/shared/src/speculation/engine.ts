@@ -261,7 +261,7 @@ export function suggest(input: EngineInput): Suggestion {
 }
 
 /** Day in [from, to] whose interpolated price is best according to `better`. */
-function argBest(
+export function argBest(
   series: Series,
   from: number,
   to: number,
@@ -320,14 +320,14 @@ function pearson(a: readonly number[], b: readonly number[]): number | null {
 }
 
 /** 0–1, saturating at 50 div/day in both leagues. */
-function liquidityScore(currentVolume: number, referenceVolume: number | null): number {
+export function liquidityScore(currentVolume: number, referenceVolume: number | null): number {
   const score = (v: number) => Math.min(1, Math.log10(1 + v) / Math.log10(51));
   return referenceVolume === null
     ? score(currentVolume)
     : (score(currentVolume) + score(referenceVolume)) / 2;
 }
 
-function completeness(ref: Series, from: number, to: number): number {
+export function completeness(ref: Series, from: number, to: number): number {
   if (to <= from) return 1;
   let known = 0;
   for (let day = from; day <= to; day++) if (ref.has(day)) known++;

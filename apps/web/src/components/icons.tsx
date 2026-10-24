@@ -27,6 +27,13 @@ export const TrendIcon = (p: SVGProps<SVGSVGElement>) => (
   </Icon>
 );
 
+export const TrendDownIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M3 7l6 6 4-4 8 8" />
+    <path d="M15 17h6v-6" />
+  </Icon>
+);
+
 export const SwapIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}>
     <path d="M7 4L3 8l4 4" />

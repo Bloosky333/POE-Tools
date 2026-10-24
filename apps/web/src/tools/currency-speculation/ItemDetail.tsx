@@ -1,8 +1,13 @@
-import { EXCHANGE_TYPE_LABELS, type HistoryPoint, type Suggestion } from '@poe-tools/shared';
+import {
+  EXCHANGE_TYPE_LABELS,
+  type HistoryPoint,
+  type SellSignal,
+  type Suggestion,
+} from '@poe-tools/shared';
+import { Link } from 'react-router';
 import { formatMultiplier, formatPercent } from '../../lib/format.ts';
-import { Div, ItemCell, RatioBar, Sheet, StatCard } from '../../ui/index.ts';
+import { Div, ItemCell, PriceChart, RatioBar, Sheet, StatCard } from '../../ui/index.ts';
 import { ActionBadge } from './ActionBadge.tsx';
-import { PriceChart } from './PriceChart.tsx';
 
 interface Props {
   suggestion: Suggestion;
@@ -13,6 +18,8 @@ interface Props {
   today: number;
   /** Market-wide current/reference price ratio today, null when unknown. */
   marketFactor: number | null;
+  /** Sell Now verdict of the item, linked when it says to sell. */
+  sell?: SellSignal | undefined;
   divineIcon: string | undefined;
   onClose: () => void;
 }
@@ -46,6 +53,16 @@ export function ItemDetail(props: Props) {
             <li key={reason}>{reason}</li>
           ))}
         </ul>
+        {props.sell && props.sell.verdict !== 'hold' && (
+          <p className="mt-2 text-sm">
+            <Link
+              to={`/tools/sell-now?verdict=all&item=${encodeURIComponent(s.item.id)}`}
+              className="font-medium text-accent hover:underline"
+            >
+              Sell Now says {props.sell.verdict === 'sell-now' ? 'sell now' : 'sell soon'} →
+            </Link>
+          </p>
+        )}
       </div>
 
       <PriceChart
@@ -55,8 +72,8 @@ export function ItemDetail(props: Props) {
         currentLabel={props.currentName}
         today={props.today}
         referenceScale={props.marketFactor}
-        buyDay={ref?.buyDay}
-        sellDay={ref?.sellDay}
+        windowFrom={ref?.buyDay}
+        windowTo={ref?.sellDay}
       />
 
       {ref && (
