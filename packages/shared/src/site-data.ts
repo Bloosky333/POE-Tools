@@ -127,4 +127,5 @@ export const dataPaths = {
     `${game}/${leagueId}/history/${type}.json`,
   fx: (game: string, leagueId: string) => `${game}/${leagueId}/fx.json`,
   pairs: (game: string, leagueId: string) => `${game}/${leagueId}/pairs.json`,
+  flips: (game: string, leagueId: string) => `${game}/${leagueId}/flips.json`,
 };

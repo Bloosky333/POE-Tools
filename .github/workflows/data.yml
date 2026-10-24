@@ -1,5 +1,6 @@
-# Hourly data job: refreshes poe.ninja prices, commits the daily history to the orphan
-# `data` branch, builds the site with fresh data and deploys it to GitHub Pages (main only).
+# Hourly data job: refreshes poe.ninja prices and currency-exchange flips, commits the daily
+# history to the orphan `data` branch, builds the site with fresh data and deploys it to
+# GitHub Pages (main only).
 name: Data
 
 on:
@@ -47,8 +48,27 @@ jobs:
             git worktree add --orphan -b data data-store
           fi
 
+      # Rolling 24 h window of GGG exchange data (flipping tool): kept in the Actions cache,
+      # not committed. A missing cache only costs a rebuild from the feed (24 requests).
+      - name: Restore exchange window
+        uses: actions/cache/restore@v4
+        with:
+          path: exchange-window
+          key: exchange-window-${{ github.run_id }}
+          restore-keys: exchange-window-
+
       - name: Run data job
-        run: pnpm job --data-dir "$GITHUB_WORKSPACE/data-store" --out "$GITHUB_WORKSPACE/apps/web/public/data"
+        run: >-
+          pnpm job --data-dir "$GITHUB_WORKSPACE/data-store"
+          --out "$GITHUB_WORKSPACE/apps/web/public/data"
+          --exchange-dir "$GITHUB_WORKSPACE/exchange-window"
+
+      - name: Save exchange window
+        if: always() && hashFiles('exchange-window/**') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: exchange-window
+          key: exchange-window-${{ github.run_id }}
 
       - name: Commit data
         working-directory: data-store
