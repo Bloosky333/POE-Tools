@@ -211,7 +211,13 @@ export async function runJob(options: JobOptions): Promise<void> {
     await store.writeMeta(league.id, meta);
   }
 
-  for (const league of tracked) {
+  // The site needs selectable leagues and their references; backtest-only leagues
+  // (`track`) stay in the store.
+  const published = tracked.filter(
+    (league) =>
+      league.selectable || tracked.some((l) => l.selectable && l.referenceLeagueId === league.id),
+  );
+  for (const league of published) {
     await site.writeHistory(league, await store.readHistory(league.id));
     await site.writeFx(league, await store.readFx(league.id));
     const busiest = busiestByLeague.get(league.id);

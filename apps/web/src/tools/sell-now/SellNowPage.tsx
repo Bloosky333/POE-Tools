@@ -24,7 +24,7 @@ import { VERDICT_LABELS } from './VerdictBadge.tsx';
 
 export default function SellNowPage() {
   const [params, update] = useViewParams();
-  const { league, reference, today, data, signals, unit } = useSellSignals();
+  const { game, league, reference, today, data, signals, unit } = useSellSignals();
 
   const eligible = useMemo(
     () => filterAndSort(signals, { ...params, type: 'all', q: '' }),
@@ -94,6 +94,8 @@ export default function SellNowPage() {
           <p className="text-xs text-subtle">
             {rows.length} of {signals.length} items · expected loss is last league&apos;s move; in a
             market rising against {unit.id}, flagged items mostly lag the market rather than drop.
+            {game === 'poe1' &&
+              ' In PoE 1 the signal is weak: replayed on Allflame vs Mirage, flagged items did only slightly worse than the market afterwards — treat them as hints.'}
           </p>
           {selected && (
             <SellDetail

@@ -109,6 +109,10 @@
 | P7  | Hubs       | PoE 1 hubs = chaos + divine (exalted in 7 markets of ~2,200 over 3 h); also the cheapest-currency pairs. |
 | P8  | 3.30 name  | Unknown until ExileCon: entry `poe1-3-30` resolves poe.ninja's new challenge league at launch.           |
 | P9  | Cheapest   | Cheapest Currency page built with the PoE 1 port, for both games (status beta).                          |
+| P10 | Backtest   | Allflame vs Mirage (2026-10-24, `--game poe1`): Speculation BUY NOW, 14-day hold, β = 1: 2,142 calls,    |
+|     |            | median ×1.16, 66 % rose (β = 0: ×1.10, 60 %; market ×1.07) → shared settings kept. Sell Now: SELL NOW    |
+|     |            | peak calls ×0.96 vs the market at 14 d (54 % cheaper later; PoE 2: ×0.88, 65 %), falling ×1.00; no       |
+|     |            | variant clearly better → defaults kept, weak signal noted on the page; re-run on 3.30 data.              |
 
 ## Still open
 

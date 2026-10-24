@@ -240,6 +240,8 @@ describe('runJob (PoE 1)', () => {
     );
     expect(leagues.leagues.map((l) => l.id)).toEqual(['poe1-3-30', 'allflame', 'mirage']);
     expect(await readdir(join(site, 'allflame'))).not.toContain('current.json');
+    // Mirage is kept for backtests only: stored, not published.
+    expect(await readdir(site)).not.toContain('mirage');
   });
 
   it('re-backfills a league once after it ended', async () => {
