@@ -1,7 +1,8 @@
 # Crafting Recipes (v1.0 — agreed 2026-10-24)
 
-Backlog item 3 (`02-backlog.md`). Game: **PoE 2** only (C7). Unit: **divine**. Decisions are
-logged in `open-questions.md` § "Crafting recipes" (C-numbered).
+Backlog item 3 (`02-backlog.md`). Games: **PoE 2** (unit **divine**) and **PoE 1** (unit
+**chaos**, divine alongside; §7, C16). Decisions are logged in `open-questions.md` §
+"Crafting recipes" (C-numbered).
 
 ## 1. Goal
 
@@ -35,7 +36,7 @@ Schema: `packages/shared/src/crafting/recipe.ts` (zod; validated on save and on 
 interface Recipe {
   id: string; // uuid
   name: string;
-  game: 'poe2';
+  game: 'poe2' | 'poe1';
   notes?: string;
   bases: {
     baseId: string;
@@ -46,7 +47,7 @@ interface Recipe {
   baseMods?: ModCondition; // what to look for on the base before step 1
   target?: ModCondition; // finished item, informative
   steps: Step[];
-  priceOverrides: Record<string, number>; // exchange item id → divine (C12)
+  priceOverrides: Record<string, number>; // exchange item id → game unit (C12)
   updatedAt: string; // ISO
 }
 
@@ -149,7 +150,26 @@ incomplete.
   and shopping list. Edit / Duplicate / Export / Delete.
 - `?recipe=<id>&edit=1` (`recipe=new` for a new one) — editor; Save validates.
 
-## 7. Later
+## 7. PoE 1 (C16)
+
+Same tool, model and engine; what changes with the game switch:
+
+- **Unit**: prices, base prices and overrides are in **chaos** (divine shown alongside, spec
+  07 §3). Prices come from the PoE 1 `current.json`.
+- **Recipes**: one list per game (`poe-tools:crafting-recipes:<game>`); a recipe carries its
+  `game`. Import keeps the recipes of the selected game and says how many of the other
+  game it left out.
+- **Mods / bases**: RePoE PoE 1 export (`https://repoe-fork.github.io/`) →
+  `crafting-{mods,bases}-poe1.json`, same trimming (probe workflow `source: crafting`,
+  `game: poe1`). Item classes add Rune Dagger, Thrusting One Hand Sword, Abyss Jewel and the
+  PoE 1 flasks. Influence, delve (fossil), bench and veiled mods are not in the list
+  (domain / spawn weights): conditions name natural mods and essence mods.
+- **Item picker**: Currency (catalysts, lifeforce, eldritch currency included), Essences,
+  Fossils, Resonators, Omens, Oils.
+- **Linked items**: a fossil offers the four chaotic resonators. PoE 1 has no crafting omens
+  on the exchange (3.29); the table is updated per league.
+
+## 8. Later
 
 - Computed odds from spawn weights (C2), filling `expectedUses` / `successChance`.
 - Desecration ("reveal one of three") and other mechanics as needed; a give-up exit for

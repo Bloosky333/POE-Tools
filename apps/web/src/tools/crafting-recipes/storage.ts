@@ -2,6 +2,7 @@ import {
   recipeSchema,
   recipesExportSchema,
   type CraftAction,
+  type Game,
   type Recipe,
   type RecipesExport,
   type Step,
@@ -13,25 +14,26 @@ import {
  * (C11). Invalid stored entries are dropped on load rather than breaking the page.
  */
 
-const STORAGE_KEY = 'poe-tools:crafting-recipes:poe2';
+/** One list per game (prices, items and mods differ). */
+const storageKey = (game: Game) => `poe-tools:crafting-recipes:${game}`;
 
-export function loadRecipes(): Recipe[] {
+export function loadRecipes(game: Game): Recipe[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(storageKey(game));
     const list: unknown = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(list)) return [];
     return list.flatMap((entry) => {
       const parsed = recipeSchema.safeParse(entry);
-      return parsed.success ? [parsed.data] : [];
+      return parsed.success && parsed.data.game === game ? [parsed.data] : [];
     });
   } catch {
     return [];
   }
 }
 
-export function storeRecipes(recipes: readonly Recipe[]): void {
+export function storeRecipes(game: Game, recipes: readonly Recipe[]): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(recipes));
+    localStorage.setItem(storageKey(game), JSON.stringify(recipes));
   } catch {
     // Storage full or unavailable: the change lives until the page reloads.
   }
@@ -43,11 +45,11 @@ export function newId(): string {
     : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
-export function newRecipe(now = new Date()): Recipe {
+export function newRecipe(game: Game, now = new Date()): Recipe {
   return {
     id: newId(),
     name: 'New recipe',
-    game: 'poe2',
+    game,
     bases: [],
     steps: [],
     priceOverrides: {},
@@ -105,20 +107,27 @@ export function parseImport(text: string): Recipe[] {
 }
 
 /**
- * Adds imported recipes: same id → replaced by the newer `updatedAt` (kept otherwise).
- * Returns the merged list and how many recipes were added or updated.
+ * Adds imported recipes of `game`: same id → replaced by the newer `updatedAt` (kept
+ * otherwise). Returns the merged list, how many recipes were added or updated and how many
+ * belong to the other game (left out).
  */
 export function mergeImport(
+  game: Game,
   existing: readonly Recipe[],
   imported: readonly Recipe[],
-): { recipes: Recipe[]; changed: number } {
+): { recipes: Recipe[]; changed: number; otherGame: number } {
   const byId = new Map(existing.map((r) => [r.id, r]));
   let changed = 0;
+  let otherGame = 0;
   for (const recipe of imported) {
+    if (recipe.game !== game) {
+      otherGame++;
+      continue;
+    }
     const current = byId.get(recipe.id);
     if (current && current.updatedAt >= recipe.updatedAt) continue;
     byId.set(recipe.id, recipe);
     changed++;
   }
-  return { recipes: [...byId.values()], changed };
+  return { recipes: [...byId.values()], changed, otherGame };
 }

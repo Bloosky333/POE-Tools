@@ -1,6 +1,9 @@
+import type { Game } from '../games.ts';
+import type { ExchangeType } from '../site-data.ts';
+
 /*
  * Curated companions of crafting currencies (spec 08 §5, C9), Craft of Exile style:
- * picking the key item offers these alongside it. Exchange item ids of PoE 2; maintained
+ * picking the key item offers these alongside it. Exchange item ids per game; maintained
  * per league (ids missing from the exchange are skipped by the picker).
  */
 
@@ -35,23 +38,36 @@ const LINKED: Record<string, readonly string[]> = {
   chance: ['omen-of-chance'],
 };
 
+/** PoE 1 (3.29): fossils go into a resonator; no crafting omens on the exchange. */
+const RESONATORS = [
+  'primitive-chaotic-resonator',
+  'potent-chaotic-resonator',
+  'powerful-chaotic-resonator',
+  'prime-chaotic-resonator',
+];
+
 /** Exchange types whose items are used for crafting (picker categories, display order). */
-export const CRAFTING_EXCHANGE_TYPES = [
-  'Currency',
-  'Ritual',
-  'Essences',
-  'Abyss',
-  'Breach',
-  'Runes',
-  'SoulCores',
-  'Idols',
-  'Delirium',
-  'Expedition',
-  'Verisium',
-] as const;
+export const CRAFTING_EXCHANGE_TYPES: Record<Game, readonly ExchangeType[]> = {
+  poe2: [
+    'Currency',
+    'Ritual',
+    'Essences',
+    'Abyss',
+    'Breach',
+    'Runes',
+    'SoulCores',
+    'Idols',
+    'Delirium',
+    'Expedition',
+    'Verisium',
+  ],
+  // PoE 1 catalysts and lifeforce are in Currency.
+  poe1: ['Currency', 'Essence', 'Fossil', 'Resonator', 'Omen', 'Oil'],
+};
 
 /** Companion item ids offered with `itemId` (omens of a currency, of an essence, of a bone). */
-export function linkedItems(itemId: string): readonly string[] {
+export function linkedItems(game: Game, itemId: string): readonly string[] {
+  if (game === 'poe1') return itemId.endsWith('-fossil') ? RESONATORS : [];
   const direct = LINKED[itemId];
   if (direct) return direct;
   if (itemId.startsWith('perfect-essence-')) return CRYSTALLISATION;

@@ -55,7 +55,7 @@ export const TOOLS: readonly ToolDefinition[] = [
     name: 'Crafting Recipes',
     description: 'Your crafting methods step by step, with live currency cost and expected total.',
     category: 'crafting',
-    games: ['poe2'],
+    games: ['poe2', 'poe1'],
     status: 'beta',
     path: 'tools/crafting-recipes',
     component: lazy(() => import('./crafting-recipes/CraftingRecipesPage.tsx')),

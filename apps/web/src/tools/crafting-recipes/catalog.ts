@@ -6,6 +6,7 @@ import {
   type CraftingBase,
   type CraftingMod,
   type CurrentItem,
+  type Game,
   type ModFamily,
   type Recipe,
 } from '@poe-tools/shared';
@@ -14,6 +15,7 @@ import type { UnitInfo } from '../../lib/unit.ts';
 
 /** Everything the recipe pages look up: priced items, mods and bases. */
 export interface Catalog {
+  game: Game;
   items: ReadonlyMap<string, CurrentItem>;
   /** Crafting items by picker category, most traded first. */
   categories: { type: string; label: string; items: CurrentItem[] }[];
@@ -26,18 +28,22 @@ export interface Catalog {
 }
 
 export function buildCatalog(
+  game: Game,
   items: readonly CurrentItem[],
   mods: readonly CraftingMod[],
   bases: readonly CraftingBase[],
   unit: UnitInfo,
 ): Catalog {
-  const categories = CRAFTING_EXCHANGE_TYPES.map((type) => ({
-    type,
-    label: EXCHANGE_TYPE_LABELS[type],
-    items: items.filter((i) => i.type === type).sort((a, b) => b.volume - a.volume),
-  })).filter((c) => c.items.length > 0);
+  const categories = CRAFTING_EXCHANGE_TYPES[game]
+    .map((type) => ({
+      type,
+      label: EXCHANGE_TYPE_LABELS[type],
+      items: items.filter((i) => i.type === type).sort((a, b) => b.volume - a.volume),
+    }))
+    .filter((c) => c.items.length > 0);
   const labels = new Map(modFamilies(mods).map((f) => [f.family, familyText(f)]));
   return {
+    game,
     items: new Map(items.map((i) => [i.id, i])),
     categories,
     mods,

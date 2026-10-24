@@ -156,7 +156,7 @@ function BasesEditor({
   draft: Recipe;
   onChange: (bases: Recipe['bases']) => void;
 }) {
-  const { bases, basesById } = useCatalog();
+  const { bases, basesById, unit } = useCatalog();
   const [q, setQ] = useState('');
   const matches = searchBases(bases, q);
   const update = (i: number, p: Partial<Recipe['bases'][number]>) =>
@@ -208,7 +208,7 @@ function BasesEditor({
                   ))}
                 </Select>
               </Field>
-              <Field label="Price (div)">
+              <Field label={`Price (${unit.short})`}>
                 <Input
                   type="number"
                   min={0}

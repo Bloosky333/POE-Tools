@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { GAMES } from '../games.ts';
 
 /*
  * Crafting recipe model (spec 08 §2). Recipes are made in the browser and stored in
@@ -84,7 +85,7 @@ export const baseOptionSchema = z.object({
   baseId: z.string().min(1),
   minItemLevel: z.number().int().positive().optional(),
   rarity: z.enum(RARITIES).optional(),
-  /** Typed-in price in divine (C5). */
+  /** Typed-in price in the game's unit: divine (PoE 2), chaos (PoE 1) (C5, C16). */
   price: z.number().nonnegative().default(0),
 });
 export type BaseOption = z.infer<typeof baseOptionSchema>;
@@ -93,13 +94,13 @@ export const recipeSchema = z
   .object({
     id: z.string().min(1),
     name: z.string().min(1),
-    game: z.literal('poe2'),
+    game: z.enum(GAMES),
     notes: z.string().optional(),
     bases: z.array(baseOptionSchema),
     baseMods: modConditionSchema.optional(),
     target: modConditionSchema.optional(),
     steps: z.array(stepSchema),
-    /** Item id → divine; replaces or fills in for the live price (C12). */
+    /** Item id → price in the game's unit; replaces or fills in for the live price (C12). */
     priceOverrides: z.record(z.string(), z.number().nonnegative()).default({}),
     updatedAt: z.iso.datetime(),
   })

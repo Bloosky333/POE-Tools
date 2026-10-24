@@ -23,7 +23,7 @@ export function ActionEditor({
   const catalog = useCatalog();
   const [open, setOpen] = useState(action.length === 0 && !optional);
   const chosen = new Set(action.map((u) => u.itemId));
-  const linked = [...new Set(action.flatMap((u) => linkedItems(u.itemId)))].filter(
+  const linked = [...new Set(action.flatMap((u) => linkedItems(catalog.game, u.itemId)))].filter(
     (id) => !chosen.has(id) && catalog.items.has(id),
   );
   const add = (itemId: string) => {
