@@ -101,4 +101,5 @@ export const dataPaths = {
   history: (game: string, leagueId: string, type: ExchangeType) =>
     `${game}/${leagueId}/history/${type}.json`,
   fx: (game: string, leagueId: string) => `${game}/${leagueId}/fx.json`,
+  flips: (game: string, leagueId: string) => `${game}/${leagueId}/flips.json`,
 };

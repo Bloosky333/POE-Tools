@@ -10,7 +10,8 @@ decisions in `docs/specs/open-questions.md`.
   `src/tools/registry.ts`.
 - `packages/shared` — code shared by web and data job (league config, time utils, zod
   schemas, later the suggestion engine). Consumed as TypeScript source, no build step.
-- `packages/data-job` — scheduled job talking to poe.ninja (only place allowed to).
+- `packages/data-job` — scheduled job talking to poe.ninja and GGG's exchange feed (only place
+  allowed to).
 - `fixtures/poe-ninja/`, `fixtures/ggg-exchange/` — real responses captured by the probe workflow.
 
 ## Commands
@@ -19,7 +20,7 @@ decisions in `docs/specs/open-questions.md`.
 - `pnpm build`, `pnpm dev`.
 - `pnpm probe` / `pnpm probe:exchange` / `pnpm probe:base-items` — need network access; run via the
   "poe.ninja probe" workflow (input `source`).
-- `pnpm job --data-dir <abs> --out <abs>` — data job (run hourly by the "Data" workflow;
+- `pnpm job --data-dir <abs> --out <abs> [--exchange-dir <abs>]` — data job (run hourly by the "Data" workflow;
   store on the orphan `data` branch, site data in `apps/web/public/data`, both gitignored).
 - `pnpm --filter @poe-tools/data-job dev-data --data-dir <data branch checkout> --out
 <abs>/apps/web/public/data` — local site data without network (history from the `data`

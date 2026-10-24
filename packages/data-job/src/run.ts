@@ -16,6 +16,8 @@ import {
   type FxPoint,
 } from './convert.ts';
 import { mergeFx, mergeHistory } from './csv.ts';
+import { updateFlips } from './exchange/update.ts';
+import type { WindowStore } from './exchange/window.ts';
 import { fetchDetails, fetchLeagues, fetchOverview } from './poe-ninja/api.ts';
 import type { NinjaClient } from './poe-ninja/client.ts';
 import type { ExchangeOverview } from './poe-ninja/schemas.ts';
@@ -31,6 +33,8 @@ export interface JobOptions {
   client: NinjaClient;
   store: Store;
   site: ReturnType<typeof createSiteWriter>;
+  /** Rolling windows of GGG exchange data; flips are not computed without it. */
+  windows?: WindowStore | undefined;
   now: Date;
   log: Logger;
   /** Minimum daily volume (div) for an item to get its details history. */
@@ -52,6 +56,7 @@ interface LeagueSnapshot {
  * - once per UTC day, for selectable leagues: refresh of those histories (details are
  *   the single source of an item's history, so its series stays consistent); items
  *   without details history get yesterday's overview snapshot instead;
+ * - selectable leagues: newest hour of GGG's currency-exchange feed → site `flips.json`;
  * - site history / fx files rebuilt from the store.
  */
 export async function runJob(options: JobOptions): Promise<void> {
@@ -86,6 +91,21 @@ export async function runJob(options: JobOptions): Promise<void> {
         },
         items: snapshot.items,
       });
+    }
+    if (league.selectable && options.windows) {
+      try {
+        await updateFlips({
+          client,
+          windows: options.windows,
+          site,
+          league,
+          items: snapshot.items,
+          now,
+          log,
+        });
+      } catch (error) {
+        log.warn(`${league.name}: flips not updated: ${error}`);
+      }
     }
     if (!needsBackfill && !(league.selectable && needsDaily)) continue;
 
