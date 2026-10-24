@@ -82,7 +82,19 @@
 | F15 | Spread      | Kept in v1 as a heuristic ranked on recurrence (the feed has no volume per ratio).                                                                       |
 | F16 | Value       | Min divine value traded per leg (24 h), default 120 div, tunable.                                                                                        |
 
+## PoE 1 port (draft — `06-poe1.md`)
+
+| #   | Topic      | Decision                                                                                                 |
+| --- | ---------- | -------------------------------------------------------------------------------------------------------- |
+| P1  | Unit       | PoE 1 prices in **chaos**, divine value shown alongside; "divine only" (Q10) stays for PoE 2.            |
+| P2  | Item scope | PoE 1 **exchange items only** (poe.ninja PoE 1 exchange categories); stash items (uniques, gems…) later. |
+| P3  | Timing     | **Ready for the 3.30 launch** (2026-11-13), 3.29 Curse of the Allflame as reference, backfilled first.   |
+| P4  | Tools      | Speculation, Flipping, Cheapest Currency and Sell Now; Crafting Recipes follows its PoE 2 spec.          |
+| P5  | Reference  | Same rule as Q11: only the previous league (3.30 → 3.29); 3.28 Mirage only for backtests.                |
+
 ## Still open
 
 - Currency flipping: recurrence thresholds (calibrate on data), gold (deferred), base item id mapping, Gemcutter's Prism in-game check — see
   `04-currency-flipping.md` §9.
+- PoE 1 port: public PoE 1 exchange feed, PoE 1 details route, chaos thresholds, 3.30 name, exalted as a
+  hub — see `06-poe1.md` §9.

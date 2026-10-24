@@ -13,4 +13,6 @@ Order is indicative. Each will get its own spec file before implementation.
    mod weights).
 
 Shared needs anticipated in M1 design: exchange-rate service (1, 2, 3), price service
-(all), history service (1).
+(all), history service (1). 4. **Sell Now** — what to sell today (reference peak or falling price); in development
+(spec `04-sell-now.md`, branch `ccr-9d59f9e2-b0syw5`). 5. **PoE 1 port** of tools 1–4 for the 3.30 launch — spec drafted:
+[`06-poe1.md`](./06-poe1.md).
