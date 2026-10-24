@@ -64,7 +64,8 @@ PoE 1 mapping (3.29 categories; redone for 3.30 at launch, categories change eac
 
 Liquid items only (spec 01 defaults: volume ≥ 5 div/day, price ≥ 0.05 div). Weight `w` of an
 item = its 7-day average daily volume in div, **capped at 40 %** of the mechanic's total so one
-item cannot be the whole index (tunable).
+item cannot be the whole index (tunable): the largest items get 40 % and the rest share the
+remainder pro rata; with fewer than 3 items (cap impossible) the shares are equal.
 
 | Metric       | Definition                                                                                                    |
 | ------------ | ------------------------------------------------------------------------------------------------------------- |
@@ -73,16 +74,16 @@ item cannot be the whole index (tunable).
 | Items        | Number of liquid items (+ the top 3 by volume shown in the row).                                              |
 | Trend 7 d    | `Σ w × N(d)/N(d−7)` / `Σ w`, divided by the market's median 7-day change (as Sell Now).                       |
 | Outlook 14 d | `Σ w × R(d+14)/R(d)` / `Σ w` over items with reference data, divided by the reference market's median change. |
-| Index chart  | Same weighted index, daily, for both leagues (base 1 on the current league's day 7).                          |
+| Index chart  | Same weighted index, daily, for both leagues (base 1 = today), last 30 days and last league's next 30.        |
 
 ## 4. Verdicts
 
-| Verdict         | Rule (defaults, tunable)                                                                   |
-| --------------- | ------------------------------------------------------------------------------------------ |
-| **AVOID**       | Outlook ≤ ×0.85 vs market, **or** trend 7 d ≤ ×0.85 and outlook ≤ ×1 (Sell Now's Falling). |
-| **FARM & HOLD** | Outlook ≥ ×1.15 vs market (farm now, sell later — link to Speculation).                    |
-| **FARM & SELL** | Otherwise, with market size ≥ 50 div/day (loot sells; sell as you go).                     |
-| **THIN**        | Otherwise (market too small to sell much).                                                 |
+| Verdict         | Rule (defaults, tunable)                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| **AVOID**       | Outlook ≤ ×0.85 vs market. (A Sell Now-style "falling" rule was dropped after the backtest, §6.) |
+| **FARM & HOLD** | Outlook ≥ ×1.15 vs market (farm now, sell later — link to Speculation).                          |
+| **FARM & SELL** | Otherwise, with market size ≥ 50 div/day (loot sells; sell as you go).                           |
+| **THIN**        | Otherwise (market too small to sell much).                                                       |
 
 - **Confidence**: spec 01 §4.4 applied to the mechanic index: `100 × phase × (0.4 similarity of
 the two index curves + 0.35 liquidity + 0.25 completeness)`, completeness = share of the
@@ -101,9 +102,32 @@ outlook, links to the item in Speculation / Sell Now, confidence breakdown, mapp
 ## 6. Backtest
 
 `pnpm --filter @poe-tools/data-job backtest-farm --data-dir <data branch checkout> [--game poe1]`:
-replay the verdicts over the current league's stored history (days 7–N) and compare each
-mechanic index 14 days later vs the market, per verdict (as `backtest-sell`). Thresholds
-(±15 %, 40 % cap, 50 div/day) are kept or changed from it and logged in `open-questions.md`.
+replays the verdicts over the current league's stored history (days 7–N) and compares each
+mechanic's index (same weights) 7 / 14 days later with the market's median move, per verdict.
+
+Results (2026-10-24, median index 14 days later vs the market, share that beat it):
+
+| Calls         | PoE 2 — FR vs RoA, days 7–48 | PoE 1 — Allflame vs Mirage, days 7–90 |
+| ------------- | ---------------------------: | ------------------------------------: |
+| All mechanics |           336 · ×1.03 · 56 % |                    924 · ×1.00 · 49 % |
+| FARM & HOLD   |           149 · ×1.04 · 57 % |                    256 · ×1.04 · 52 % |
+| FARM & SELL   |           140 · ×1.01 · 52 % |                    402 · ×0.98 · 48 % |
+| THIN          |                            – |                    109 · ×1.06 · 63 % |
+| AVOID         |            47 · ×1.07 · 60 % |                    157 · ×0.94 · 40 % |
+
+Findings:
+
+- **Weak signal.** In PoE 1 the verdicts order correctly (hold > sell > avoid, ±5 %); in PoE 2
+  FARM & HOLD is only slightly ahead and AVOID did _better_ at 14 days (but not at 7 days:
+  ×1.00, 49 %). PoE 2 has 8 mechanics × 42 days, highly correlated days: a small sample. The
+  page says so; treat verdicts as hints and re-run each league.
+- **Falling rule dropped**: mechanics falling ≥ 15 % in 7 days with a non-rising reference
+  rebounded (PoE 1: 35 calls, ×1.07 vs the market), as short drops did for Sell Now. Off by
+  default (`fallDrop: null`).
+- Hold threshold 10 % / 25 % and avoid threshold 10 % / 25 % changed little; a 25 % weight
+  cap helped PoE 1 (hold ×1.06) and hurt PoE 2 (×1.02); no cap was worse in PoE 1 (×0.97) →
+  defaults kept (±15 %, 40 % cap).
+- THIN is about liquidity, not direction (PoE 1: ×1.06).
 
 ## 7. League start
 

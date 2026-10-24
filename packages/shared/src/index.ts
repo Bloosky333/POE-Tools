@@ -7,3 +7,4 @@ export * from './sell-now/index.ts';
 export * from './flipping/index.ts';
 export * from './cheapest/index.ts';
 export * from './crafting/index.ts';
+export * from './farm/index.ts';

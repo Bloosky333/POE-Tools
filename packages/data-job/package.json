@@ -7,6 +7,7 @@
     "dev-data": "tsx src/dev-data.ts",
     "backtest": "tsx src/backtest.ts",
     "backtest-sell": "tsx src/backtest-sell.ts",
+    "backtest-farm": "tsx src/backtest-farm.ts",
     "probe": "tsx src/probe.ts",
     "probe:exchange": "tsx src/probe-exchange.ts",
     "probe:base-items": "tsx src/probe-base-items.ts",
