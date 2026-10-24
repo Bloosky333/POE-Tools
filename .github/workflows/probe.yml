@@ -9,10 +9,10 @@ on:
       source:
         description: What to probe
         type: choice
-        options: [exchange, ninja, base-items, poe1]
+        options: [exchange, ninja, base-items, poe1, crafting]
         default: exchange
       game:
-        description: Game (base-items only)
+        description: Game (base-items, crafting)
         type: choice
         options: [poe2, poe1]
         default: poe2
@@ -44,12 +44,16 @@ jobs:
           GAME: ${{ inputs.game }}
       - if: inputs.source == 'poe1'
         run: pnpm probe:poe1
+      - if: inputs.source == 'crafting'
+        run: pnpm probe:crafting
+        env:
+          GAME: ${{ inputs.game }}
       - name: Commit fixtures
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mkdir -p fixtures/poe-ninja/probe fixtures/ggg-exchange/probe fixtures/poe1 packages/data-job/data
-          git add fixtures/poe-ninja/probe fixtures/ggg-exchange/probe fixtures/poe1 packages/data-job/data
+          mkdir -p fixtures/poe-ninja/probe fixtures/ggg-exchange/probe fixtures/poe1 packages/data-job/data packages/shared/data
+          git add fixtures/poe-ninja/probe fixtures/ggg-exchange/probe fixtures/poe1 packages/data-job/data packages/shared/data
           if git diff --cached --quiet; then
             echo "No changes"
             exit 0

@@ -1,10 +1,18 @@
+import craftingBasesPoe1Url from '@poe-tools/shared/data/crafting-bases-poe1.json?url';
+import craftingBasesPoe2Url from '@poe-tools/shared/data/crafting-bases-poe2.json?url';
+import craftingModsPoe1Url from '@poe-tools/shared/data/crafting-mods-poe1.json?url';
+import craftingModsPoe2Url from '@poe-tools/shared/data/crafting-mods-poe2.json?url';
 import {
   EXCHANGE_TYPES,
+  craftingBasesFileSchema,
+  craftingModsFileSchema,
   currentFileSchema,
   dataPaths,
   flipsFileSchema,
   pairsFileSchema,
   historyFileSchema,
+  type CraftingBasesFile,
+  type CraftingModsFile,
   type CurrentFile,
   type FlipsFile,
   type PairsFile,
@@ -103,4 +111,32 @@ export function useAsync<T>(key: string, load: () => Promise<T>): AsyncState<T> 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
   return state.key === key ? state.value : { status: 'loading' };
+}
+
+const CRAFTING_URLS: Record<Game, { mods: string; bases: string }> = {
+  poe2: { mods: craftingModsPoe2Url, bases: craftingBasesPoe2Url },
+  poe1: { mods: craftingModsPoe1Url, bases: craftingBasesPoe1Url },
+};
+
+/** Static crafting data (mod list, bases), bundled as hashed assets and fetched on demand. */
+export function fetchCraftingData(
+  game: Game,
+): Promise<{ mods: CraftingModsFile; bases: CraftingBasesFile }> {
+  return Promise.all([
+    fetchAsset(CRAFTING_URLS[game].mods, craftingModsFileSchema),
+    fetchAsset(CRAFTING_URLS[game].bases, craftingBasesFileSchema),
+  ]).then(([mods, bases]) => ({ mods, bases }));
+}
+
+function fetchAsset<T>(url: string, schema: z.ZodType<T>): Promise<T> {
+  let promise = cache.get(url) as Promise<T> | undefined;
+  if (!promise) {
+    promise = fetch(url).then(async (res) => {
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+      return schema.parse(await res.json());
+    });
+    promise.catch(() => cache.delete(url));
+    cache.set(url, promise);
+  }
+  return promise;
 }

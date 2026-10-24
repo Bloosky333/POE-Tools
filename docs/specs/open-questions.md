@@ -114,7 +114,28 @@
 |     |            | peak calls ×0.96 vs the market at 14 d (54 % cheaper later; PoE 2: ×0.88, 65 %), falling ×1.00; no       |
 |     |            | variant clearly better → defaults kept, weak signal noted on the page; re-run on 3.30 data.              |
 
-## What to Farm (`08-what-to-farm.md`)
+## Crafting recipes (`08-crafting-recipes.md`)
+
+| #   | Topic        | Decision                                                                                                          |
+| --- | ------------ | ----------------------------------------------------------------------------------------------------------------- |
+| C1  | Source       | Recipes built in an **in-app editor**, stored in localStorage.                                                    |
+| C2  | Odds         | **Typed in** for v1 (expected uses, success %); model keeps mod ids so computed odds can plug in later.           |
+| C3  | Mods         | Picked from a **mod list** (RePoE PoE 2 export, trimmed by the probe workflow).                                   |
+| C4  | Loop cost    | Expected uses **per currency** in the loop (e.g. Augment ×30, Annul ×25).                                         |
+| C5  | Base price   | Typed in per base (divine); a gate restarting from the base re-buys it.                                           |
+| C6  | Purpose      | Catalogue + live cost + expected total; no tracker, no method comparison in v1.                                   |
+| C7  | Game         | PoE 2 first; PoE 1 added (C16).                                                                                   |
+| C8  | Gate failure | Go to an earlier step (or a new base), optionally after a recovery action; no "continue" / "abandon".             |
+| C9  | Item picker  | All crafting items, **category first**, plus curated **linked items** (omens per currency, Craft of Exile style). |
+| C10 | Total        | Average only.                                                                                                     |
+| C11 | Sharing      | JSON export/import only.                                                                                          |
+| C12 | No price     | Manual price override per item in the recipe.                                                                     |
+| C13 | Bases        | One base selected at a time; the total follows it.                                                                |
+| C14 | Conditions   | Name a mod **family** (RePoE `type`) + tier ranked for the recipe's bases (implementation).                       |
+| C15 | Mod data     | RePoE mods / bases trimmed into `packages/shared/data/`, bundled as hashed assets (implementation).               |
+| C16 | PoE 1        | Same tool for PoE 1: chaos unit, RePoE PoE 1 mods / bases, one recipe list per game; fossils link resonators.     |
+
+## What to Farm (`09-what-to-farm.md`)
 
 | #   | Topic      | Decision                                                                                                                                                                         |
 | --- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
