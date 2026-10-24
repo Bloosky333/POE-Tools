@@ -29,9 +29,9 @@ market-wide spread table, price charts, home-page widget, alerts, PoE 1.
 - **Cross rates**: `core.rates` of the hourly overview (exalted/chaos per divine).
 - **No on-demand refresh**: the browser never calls poe.ninja, and a proxy/workflow
   trigger is not worth the infra. Each leg displays its own age instead.
-- Before relying on `rate`, the data job must confirm its direction per pair
-  (open point in `03-poe-ninja-api.md`) by cross-checking against `primaryValue`; a test
-  with the probe fixtures pins the result.
+- Rate directions are verified (`03-poe-ninja-api.md`): details `rate` = pay currency per
+  item, overview `maxVolumeRate` = its inverse. The same page records how much (and how
+  persistently) pairs disagree — to be validated in game before trusting a verdict.
 
 ### 2.2 Coverage
 
@@ -41,11 +41,13 @@ market-wide spread table, price charts, home-page widget, alerts, PoE 1.
 
 ### 2.3 Published / stored files
 
-- Site data: per-pair block per item, either in `current.json` or a new
-  `poe2/<league>/pairs.json` (implementation choice; keep startup payload in budget):
-  `{ itemId: { divine?: {rate, volumeDiv, asOf}, exalted?: {…}, chaos?: {…} } }`, with
-  `rate` normalised to **units of pay currency per item**. Schema in
-  `packages/shared/src/site-data.ts`.
+- Site data: `poe2/<league>/pairs.json` (separate file, loaded by this tool only; ~25 KB
+  gzipped), schema `pairsFileSchema` in `packages/shared/src/site-data.ts`:
+  `{ items: { itemId: { divine?: {rate, volume, asOf, source}, exalted?: …, chaos?: … } } }`.
+  `rate` = **units of pay currency per item**; `volume` = that pair's daily volume in
+  divine (`null` when only the hourly pair is known); `source` = `daily` (latest completed
+  day ≤ 7 days old, `asOf` = end of that day) or `hourly` (busiest pair, `asOf` = fetch
+  time; keeps the daily volume).
 - `data` branch: daily per-pair history
   `poe2/<league>/pairs/<ExchangeType>.csv` — `date,item,pair,rate,volume_div`
   (not used by the v1 UI; enables a later chart/backtest of gap persistence).

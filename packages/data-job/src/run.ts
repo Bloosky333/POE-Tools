@@ -4,6 +4,7 @@ import {
   getTrackedLeagues,
   utcDate,
   type CurrentItem,
+  type ExchangeType,
   type League,
 } from '@poe-tools/shared';
 import {
@@ -17,6 +18,13 @@ import {
 } from './convert.ts';
 import { mergeFx, mergeHistory } from './csv.ts';
 import { syncIcons } from './icons.ts';
+import {
+  buildPairQuotes,
+  busiestPairs,
+  detailsToPairPoints,
+  type BusiestPair,
+  type PairPoint,
+} from './pairs.ts';
 import { fetchDetails, fetchLeagues, fetchOverview } from './poe-ninja/api.ts';
 import type { NinjaClient } from './poe-ninja/client.ts';
 import type { ExchangeOverview } from './poe-ninja/schemas.ts';
@@ -54,8 +62,10 @@ interface LeagueSnapshot {
  *   poe.ninja's details route;
  * - once per UTC day, for selectable leagues: refresh of those histories (details are
  *   the single source of an item's history, so its series stays consistent); items
- *   without details history get yesterday's overview snapshot instead;
- * - site history / fx files rebuilt from the store.
+ *   without details history get yesterday's overview snapshot instead; the same details
+ *   give the daily rate per pay currency (`pairs/`);
+ * - site history / fx files rebuilt from the store; per-pair rates (`pairs.json`) of
+ *   selectable leagues from the store plus the hourly busiest pair.
  */
 export async function runJob(options: JobOptions): Promise<void> {
   const { client, store, site, now, log } = options;
@@ -67,6 +77,7 @@ export async function runJob(options: JobOptions): Promise<void> {
   const ninjaLeagues = new Set((await fetchLeagues(client)).map((league) => league.id));
   const tracked = getTrackedLeagues('poe2');
   checkLeagues(tracked, ninjaLeagues, log);
+  const busiestByLeague = new Map<string, Map<string, BusiestPair>>();
 
   for (const league of tracked) {
     if (!ninjaLeagues.has(league.ninjaName)) continue;
@@ -78,6 +89,7 @@ export async function runJob(options: JobOptions): Promise<void> {
     const snapshot = await fetchSnapshot(client, league);
     log.info(`${league.name}: ${snapshot.items.length} items`);
     const firstOverview = snapshot.overviews[0];
+    if (league.selectable) busiestByLeague.set(league.id, busiestPairs(snapshot.overviews));
     if (league.selectable && firstOverview) {
       const items = await syncIcons(snapshot.items, {
         storeDir: store.root,
@@ -100,6 +112,7 @@ export async function runJob(options: JobOptions): Promise<void> {
 
     let history = await store.readHistory(league.id);
     let fx = await store.readFx(league.id);
+    let pairs = await store.readPairs(league.id);
     if (needsBackfill && meta.backfilledAt !== null) {
       log.info(`${league.name}: re-running backfill v${BACKFILL_VERSION}`);
       history = new Map(
@@ -116,12 +129,13 @@ export async function runJob(options: JobOptions): Promise<void> {
       .slice(0, maxItems);
     const result = toFetch.length
       ? await fetchHistories(client, league, toFetch, today, log)
-      : { points: [], fx: [], fetched: [] };
+      : { points: [], pairs: [], fx: [], fetched: [] };
     if (!result) {
       log.warn(`${league.name}: history refresh postponed`);
     } else {
       fx = mergeFx(fx, result.fx);
-      history = replaceItemHistories(history, result.points, toFetch);
+      history = replaceItemSeries(history, result.points, toFetch);
+      pairs = replaceItemSeries(pairs, result.pairs, toFetch);
       meta.detailsFetched = [...new Set([...meta.detailsFetched, ...result.fetched])];
       log.info(`${league.name}: history refreshed for ${result.fetched.length} items`);
       if (needsBackfill) {
@@ -151,12 +165,23 @@ export async function runJob(options: JobOptions): Promise<void> {
 
     await store.writeHistory(league.id, history);
     await store.writeFx(league.id, fx);
+    await store.writePairs(league.id, pairs);
     await store.writeMeta(league.id, meta);
   }
 
   for (const league of tracked) {
     await site.writeHistory(league, await store.readHistory(league.id));
     await site.writeFx(league, await store.readFx(league.id));
+    const busiest = busiestByLeague.get(league.id);
+    if (busiest) {
+      const points = [...(await store.readPairs(league.id)).values()].flat();
+      await site.writePairs({
+        version: 1,
+        leagueId: league.id,
+        generatedAt: now.toISOString(),
+        items: buildPairQuotes(points, busiest, now),
+      });
+    }
   }
   await site.copyIcons(store.root);
   await site.writeLeagues(tracked, now);
@@ -195,7 +220,7 @@ async function fetchHistories(
   items: readonly CurrentItem[],
   today: string,
   log: Logger,
-): Promise<{ points: DailyPoint[]; fx: FxPoint[]; fetched: string[] } | null> {
+): Promise<{ points: DailyPoint[]; pairs: PairPoint[]; fx: FxPoint[]; fetched: string[] } | null> {
   const divine = await fetchDetails(client, league.ninjaName, 'Currency', 'divine-orb');
   if (!divine) {
     log.warn(`${league.name}: Divine Orb details not found`);
@@ -205,6 +230,7 @@ async function fetchHistories(
   const fxByDate = new Map(fx.map((point) => [point.date, point]));
 
   const points: DailyPoint[] = [];
+  const pairs: PairPoint[] = [];
   const fetched: string[] = [];
   for (const item of items) {
     let details;
@@ -219,20 +245,21 @@ async function fetchHistories(
       continue;
     }
     points.push(...detailsToDailyPoints(details, item.id, fxByDate, today));
+    pairs.push(...detailsToPairPoints(details, item.id, today));
     fetched.push(item.id);
   }
-  return { points, fx, fetched };
+  return { points, pairs, fx, fetched };
 }
 
-/** Replaces the whole history of every item in `items` that has new points. */
-function replaceItemHistories(
-  history: LeagueHistory,
-  points: readonly DailyPoint[],
+/** Replaces the whole series of every item in `items` that has new points. */
+function replaceItemSeries<P extends { item: string }>(
+  history: Map<ExchangeType, P[]>,
+  points: readonly P[],
   items: readonly CurrentItem[],
-): LeagueHistory {
+): Map<ExchangeType, P[]> {
   const replaced = new Set(points.map((p) => p.item));
   const typeOf = new Map(items.map((item) => [item.id, item.type]));
-  const next: LeagueHistory = new Map(
+  const next = new Map(
     [...history].map(([type, list]) => [type, list.filter((p) => !replaced.has(p.item))]),
   );
   for (const point of points) {

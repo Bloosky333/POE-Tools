@@ -74,10 +74,20 @@ Forbidden Rites, 2026-10-23: 632 items over 14 categories, ~200 with ≥ 10 div 
 Runes of Aldur: 148 daily points (2026-05-29 → 2026-10-23), i.e. the **complete daily
 history** of a league in one request per item.
 
-Open points for the data job:
+Notes:
 
-- Exact meaning/direction of `rate` per pair (divine-per-item vs item-per-divine) — to
-  cross-check against `primaryValue` across several items before relying on it.
+- **Rate directions (verified, pinned by `packages/data-job/src/pairs.test.ts`)**: the
+  details `rate` is **units of the pair currency per item** (Chaos Orb/divine 0.111 ×
+  9.01 chaos per divine ≈ 1; Divine Orb/exalted = `core.rates.exalted`). The overview
+  `maxVolumeRate` is the **inverse**, items per unit of `maxVolumeCurrency`
+  (`1 / maxVolumeRate = primaryValue` for every divine-paired line).
+- **Pairs disagree a lot and persistently.** Forbidden Rites, 2026-10-15 → 10-24, in
+  divine at core cross rates: Sione's Temper ≈ 1 via divine, ≈ 0.8 via chaos, ≈ 0.15 via
+  exalted; Uncut Skill Gem 19 ≈ 0.14 / 0.13 / 0.025; Artificer's Orb ≈ 0.011 / 0.004 /
+  0.0012. The exalted pair is 5–12× cheaper for 10+ days, which an open market would
+  arbitrage away — real (tool #2's premise) or an artefact of how poe.ninja derives pair
+  rates; to be checked in game. The overview's busiest-pair rate can also differ from the
+  same pair's details rate (Sione's Temper/exalted: 205 vs 97 ex per item).
 - `id` uses `detailsId` (e.g. `chaos-orb`); `id=divine` → 404.
 
 ## Consequences for the design

@@ -1,7 +1,12 @@
 import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { currentFileSchema, historyFileSchema, leaguesFileSchema } from '@poe-tools/shared';
+import {
+  currentFileSchema,
+  historyFileSchema,
+  leaguesFileSchema,
+  pairsFileSchema,
+} from '@poe-tools/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createNinjaClient } from './poe-ninja/client.ts';
 import { runJob, type Logger } from './run.ts';
@@ -79,6 +84,11 @@ describe('runJob', () => {
     const chaos = history.get('Currency')?.filter((p) => p.item === 'chaos') ?? [];
     expect(chaos).toHaveLength(147);
     expect(chaos.every((p) => p.source === 'details')).toBe(true);
+    const chaosPairs = (await store.readPairs('runes-of-aldur'))
+      .get('Currency')
+      ?.filter((p) => p.item === 'chaos');
+    expect(new Set(chaosPairs?.map((p) => p.pair))).toEqual(new Set(['divine', 'exalted']));
+    expect(chaosPairs?.every((p) => p.date < '2026-10-23')).toBe(true);
 
     // Forbidden Rites: no details fixtures → backfill postponed, yesterday closed from
     // the snapshot.
@@ -101,6 +111,13 @@ describe('runJob', () => {
     expect(withIcon.every((i) => i.icon.startsWith('icons/'))).toBe(true);
     expect((await readdir(join(root, 'site', 'icons'))).length).toBeGreaterThan(500);
     expect(current.rates.exalted).toBeGreaterThan(0);
+    // Forbidden Rites has no daily pair rates yet: only the hourly busiest pair.
+    const pairs = pairsFileSchema.parse(
+      JSON.parse(await readFile(join(site, 'forbidden-rites', 'pairs.json'), 'utf8')),
+    );
+    expect(Object.keys(pairs.items).length).toBeGreaterThan(500);
+    expect(pairs.items.chaos?.divine).toMatchObject({ source: 'hourly', volume: null });
+    expect(await readdir(join(site, 'runes-of-aldur'))).not.toContain('pairs.json');
     const roaHistory = historyFileSchema.parse(
       JSON.parse(await readFile(join(site, 'runes-of-aldur', 'history', 'Currency.json'), 'utf8')),
     );

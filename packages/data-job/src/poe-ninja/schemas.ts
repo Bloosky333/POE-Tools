@@ -18,6 +18,10 @@ export const exchangeOverviewSchema = z.object({
       id: z.string(),
       primaryValue: z.number(),
       volumePrimaryValue: z.number().nullish(),
+      /** Pair currency with the most volume over the last day. */
+      maxVolumeCurrency: z.string().nullish(),
+      /** Items per 1 unit of `maxVolumeCurrency` (inverse of the details `rate`). */
+      maxVolumeRate: z.number().nullish(),
       sparkline: z.object({ totalChange: z.number().nullish() }).nullish(),
     }),
   ),

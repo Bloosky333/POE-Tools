@@ -6,10 +6,16 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
-import { POE2_EXCHANGE_TYPES, getTrackedLeagues, type CurrentItem } from '@poe-tools/shared';
+import {
+  DAY_MS,
+  POE2_EXCHANGE_TYPES,
+  getTrackedLeagues,
+  type CurrentItem,
+} from '@poe-tools/shared';
 import { overviewToItems } from './convert.ts';
 import { ICONS_DIR, iconFileName } from './icons.ts';
-import { exchangeOverviewSchema } from './poe-ninja/schemas.ts';
+import { buildPairQuotes, busiestPairs } from './pairs.ts';
+import { exchangeOverviewSchema, type ExchangeOverview } from './poe-ninja/schemas.ts';
 import { createSiteWriter } from './site.ts';
 import { createStore } from './store.ts';
 
@@ -34,6 +40,7 @@ for (const league of leagues) {
   if (!league.selectable) continue;
 
   const items = new Map<string, CurrentItem>();
+  const overviews: ExchangeOverview[] = [];
   let rates = { exalted: 0, chaos: 0 };
   for (const type of POE2_EXCHANGE_TYPES) {
     const file = join(FIXTURES, `exchange-overview-${type.toLowerCase()}-${league.id}.json`);
@@ -44,6 +51,7 @@ for (const league of leagues) {
       continue;
     }
     const overview = exchangeOverviewSchema.parse(JSON.parse(text));
+    overviews.push(overview);
     rates = { exalted: overview.core.rates.exalted ?? 0, chaos: overview.core.rates.chaos ?? 0 };
     for (const item of overviewToItems(overview, type))
       if (!items.has(item.id)) items.set(item.id, item);
@@ -59,6 +67,16 @@ for (const league of leagues) {
       const file = iconFileName(item.icon);
       return { ...item, icon: file && icons.has(file) ? `${ICONS_DIR}/${file}` : '' };
     }),
+  });
+  // Stored daily rates may be older than the 7-day limit: date them from the newest row.
+  const pairPoints = [...(await store.readPairs(league.id)).values()].flat();
+  const newest = pairPoints.reduce((max, p) => (p.date > max ? p.date : max), '');
+  const now = newest ? new Date(Date.parse(newest) + DAY_MS) : new Date();
+  await site.writePairs({
+    version: 1,
+    leagueId: league.id,
+    generatedAt: now.toISOString(),
+    items: buildPairQuotes(pairPoints, busiestPairs(overviews), now),
   });
 }
 await site.copyIcons(dataDir);

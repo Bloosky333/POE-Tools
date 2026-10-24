@@ -53,6 +53,14 @@
 | Q34 | Pair history | Store daily per-pair CSV on the `data` branch (not used by v1 UI).                                            |
 | Q35 | Rounding     | Whole units: round paid amount up, show waste and a "same price buys N'" hint; verdict uses real costs.       |
 
+### Implementation decisions (M2a)
+
+| Topic      | Decision                                                                                                                                             |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Pair data  | Separate `pairs.json` (not in `current.json`, keeps the startup payload). Daily quotes older than 7 days are dropped.                                |
+| Pair store | `pairs/<ExchangeType>.csv` filled by the existing daily details pass of selectable leagues; reference leagues only get it on a backfill re-run.      |
+| Open check | Pairs differ 5–12× for 10+ days (exalted cheapest) — verify in game that these rates are payable before relying on the tool (`03-poe-ninja-api.md`). |
+
 ## Still open
 
 None — specs agreed. New questions will be added here as implementation progresses.
