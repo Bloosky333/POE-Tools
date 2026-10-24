@@ -5,6 +5,7 @@
   "scripts": {
     "job": "tsx src/main.ts",
     "dev-data": "tsx src/dev-data.ts",
+    "backtest": "tsx src/backtest.ts",
     "probe": "tsx src/probe.ts",
     "probe:exchange": "tsx src/probe-exchange.ts",
     "probe:base-items": "tsx src/probe-base-items.ts",

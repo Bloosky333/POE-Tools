@@ -13,6 +13,7 @@ import { HOUR_S } from './exchange/feed.ts';
 import { updateFlips } from './exchange/update.ts';
 import { createWindowStore } from './exchange/window.ts';
 import { createNinjaClient } from './poe-ninja/client.ts';
+import { ICONS_DIR, iconFileName } from './icons.ts';
 import { exchangeOverviewSchema } from './poe-ninja/schemas.ts';
 import { createSiteWriter } from './site.ts';
 import { createStore } from './store.ts';
@@ -54,12 +55,17 @@ for (const league of leagues) {
     for (const item of overviewToItems(overview, type))
       if (!items.has(item.id)) items.set(item.id, item);
   }
+  // No network: keep icons already in the data branch, others stay empty.
+  const icons = new Set(await readdir(join(dataDir, ICONS_DIR)).catch(() => []));
   await site.writeCurrent({
     version: 1,
     leagueId: league.id,
     fetchedAt: new Date().toISOString(),
     rates,
-    items: [...items.values()],
+    items: [...items.values()].map((item) => {
+      const file = iconFileName(item.icon);
+      return { ...item, icon: file && icons.has(file) ? `${ICONS_DIR}/${file}` : '' };
+    }),
   });
 
   // Flips from the captured exchange hours, as if the job ran right after the newest one.
@@ -86,5 +92,6 @@ for (const league of leagues) {
     });
   }
 }
+await site.copyIcons(dataDir);
 await site.writeLeagues(leagues, new Date());
 console.log(`Site data written to ${outDir}`);

@@ -1,5 +1,5 @@
 import { EXCHANGE_TYPE_LABELS, type HistoryPoint, type Suggestion } from '@poe-tools/shared';
-import { formatMultiplier } from '../../lib/format.ts';
+import { formatMultiplier, formatPercent } from '../../lib/format.ts';
 import { Div, ItemCell, RatioBar, Sheet, StatCard } from '../../ui/index.ts';
 import { ActionBadge } from './ActionBadge.tsx';
 import { PriceChart } from './PriceChart.tsx';
@@ -11,6 +11,8 @@ interface Props {
   referenceName: string;
   currentName: string;
   today: number;
+  /** Market-wide current/reference price ratio today, null when unknown. */
+  marketFactor: number | null;
   divineIcon: string | undefined;
   onClose: () => void;
 }
@@ -52,6 +54,7 @@ export function ItemDetail(props: Props) {
         referenceLabel={props.referenceName}
         currentLabel={props.currentName}
         today={props.today}
+        referenceScale={props.marketFactor}
         buyDay={ref?.buyDay}
         sellDay={ref?.sellDay}
       />
@@ -67,8 +70,17 @@ export function ItemDetail(props: Props) {
           <StatCard label={`Sell · day ${ref.sellDay}`}>
             <Div value={ref.sellPrice} icon={divineIcon} />
           </StatCard>
-          <StatCard label="Multiplier" tone={ref.multiplierFromBuy >= 1 ? 'gain' : 'loss'}>
+          <StatCard label="Last league ×" tone={ref.multiplierFromBuy >= 1 ? 'gain' : 'loss'}>
             {formatMultiplier(ref.multiplierFromBuy)}
+          </StatCard>
+          <StatCard
+            label="Premium vs market"
+            tone={ref.premium === null ? 'default' : ref.premium > 1 ? 'loss' : 'gain'}
+          >
+            {ref.premium === null ? '–' : formatPercent((ref.premium - 1) * 100)}
+          </StatCard>
+          <StatCard label="Expected ×" tone={ref.expectedMultiplier >= 1 ? 'gain' : 'loss'}>
+            {formatMultiplier(ref.expectedMultiplier)}
           </StatCard>
           <StatCard label="Projected sell price">
             <Div value={s.projectedSellPrice} icon={divineIcon} />

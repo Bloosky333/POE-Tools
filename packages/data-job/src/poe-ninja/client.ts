@@ -41,6 +41,15 @@ export function createNinjaClient(options: NinjaClientOptions = {}) {
     lastRequestAt = Date.now();
   }
 
+  /** Throttled GET returning raw bytes (used for icons). */
+  async function getBinary(pathOrUrl: string): Promise<{ status: number; body: Uint8Array }> {
+    await throttle();
+    const res = await fetchImpl(new URL(pathOrUrl, NINJA_BASE_URL).toString(), {
+      headers: { 'User-Agent': USER_AGENT },
+    });
+    return { status: res.status, body: new Uint8Array(await res.arrayBuffer()) };
+  }
+
   async function get(pathOrUrl: string): Promise<NinjaResponse> {
     const url = new URL(pathOrUrl, NINJA_BASE_URL).toString();
     for (let attempt = 0; ; attempt++) {
@@ -67,7 +76,7 @@ export function createNinjaClient(options: NinjaClientOptions = {}) {
     }
   }
 
-  return { get };
+  return { get, getBinary };
 }
 
 export type NinjaClient = ReturnType<typeof createNinjaClient>;

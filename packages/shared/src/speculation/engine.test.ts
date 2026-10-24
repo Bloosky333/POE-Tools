@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { CurrentItem, HistoryPoint } from '../site-data.ts';
-import { suggest, type SellMode } from './engine.ts';
+import { DEFAULT_ENGINE_SETTINGS, marketFactor, suggest, type SellMode } from './engine.ts';
 import { Series } from './series.ts';
 
 const item = (overrides: Partial<CurrentItem> = {}): CurrentItem => ({
@@ -151,5 +151,76 @@ describe('suggest', () => {
     });
     expect(early.breakdown.phase).toBe(0.5);
     expect(early.confidence).toBeLessThanOrEqual(50);
+  });
+
+  describe('price level vs the reference league', () => {
+    // Reference rises 2 → 3 (×1.5) between day 10 and day 20.
+    const base = { reference: rising, current: rising, today: 10, mode: horizon(10) };
+
+    it('keeps BUY NOW when the premium is only market-wide', () => {
+      // Item at 4 = 2× reference, but the whole market is 2× as well.
+      const s = suggest({ ...base, item: item({ price: 4 }), marketFactor: 2 });
+      expect(s.action).toBe('buy');
+      expect(s.reference?.premium).toBeCloseTo(1);
+      expect(s.reference?.expectedMultiplier).toBeCloseTo(1.5);
+      expect(s.projectedSellPrice).toBeCloseTo(6);
+    });
+
+    it('expects the item premium to fade and drops BUY NOW to NEUTRAL', () => {
+      // Item at 4 = 2× reference while the market is at 1× → 100% premium.
+      const s = suggest({ ...base, item: item({ price: 4 }), marketFactor: 1 });
+      expect(s.reference?.premium).toBeCloseTo(2);
+      expect(s.reference?.multiplier).toBeCloseTo(1.5);
+      expect(s.reference?.expectedMultiplier).toBeCloseTo(0.75);
+      expect(s.projectedSellPrice).toBeCloseTo(3);
+      expect(s.action).toBe('neutral');
+      expect(s.reasons.join(' ')).toMatch(/100% premium/);
+      expect(s.score).toBeLessThan(0);
+    });
+
+    it('does not boost items cheaper than the market', () => {
+      const s = suggest({ ...base, item: item({ price: 1 }), marketFactor: 1 });
+      expect(s.reference?.premium).toBeCloseTo(0.5);
+      expect(s.reference?.expectedMultiplier).toBeCloseTo(1.5);
+    });
+
+    it('applies the damping setting partially', () => {
+      const s = suggest({
+        ...base,
+        item: item({ price: 4 }),
+        marketFactor: 1,
+        settings: { ...DEFAULT_ENGINE_SETTINGS, premiumDamping: 0.5 },
+      });
+      expect(s.reference?.expectedMultiplier).toBeCloseTo(1.5 / Math.SQRT2);
+    });
+
+    it('never turns a reference rise into AVOID', () => {
+      const s = suggest({ ...base, item: item({ price: 20 }), marketFactor: 1 });
+      expect(s.action).toBe('neutral');
+    });
+  });
+});
+
+describe('marketFactor', () => {
+  const ref = (price: number) => series(20, () => price);
+  const items = Array.from({ length: 11 }, (_, i) =>
+    item({ id: `i${i}`, price: i === 10 ? 50 : 2 + i * 0.1 }),
+  );
+  const history = Object.fromEntries(items.map((it) => [it.id, ref(1)]));
+
+  it('is the median current/reference ratio of liquid items', () => {
+    expect(marketFactor(items, history, 10)).toBeCloseTo(2.5);
+  });
+
+  it('ignores illiquid, cheap and unreferenced items, and needs enough of them', () => {
+    const extra = [
+      item({ id: 'thin', price: 100, volume: 1 }),
+      item({ id: 'cheap', price: 0.01 }),
+      item({ id: 'new', price: 100 }),
+      item({ id: 'divine', price: 100 }),
+    ];
+    const withDivine = { ...history, thin: ref(1), cheap: ref(1), divine: ref(1) };
+    expect(marketFactor([...items, ...extra], withDivine, 10)).toBeCloseTo(2.5);
+    expect(marketFactor(items.slice(0, 9), history, 10)).toBeNull();
   });
 });

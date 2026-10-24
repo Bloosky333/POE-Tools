@@ -25,6 +25,8 @@ decisions in `docs/specs/open-questions.md`.
 - `pnpm --filter @poe-tools/data-job dev-data --data-dir <data branch checkout> --out
 <abs>/apps/web/public/data` — local site data without network (history from the `data`
   branch, current prices from the probe fixtures).
+- `pnpm --filter @poe-tools/data-job backtest --data-dir <data branch checkout>` — replays the
+  speculation engine over stored history to tune its settings (e.g. `premiumDamping`).
 
 ## Rules
 
@@ -32,6 +34,7 @@ decisions in `docs/specs/open-questions.md`.
   `docs/ui-guidelines.md` before adding a tool. Raw Tailwind palette colors fail a test.
 - External data (poe.ninja, GGG currency-exchange feed): call only from the data job,
   throttled, with the `USER_AGENT` from `packages/data-job/src/poe-ninja/client.ts`. Never
-  from the browser.
+  from the browser — item icons are self-hosted (`packages/data-job/src/icons.ts`), never
+  hotlinked.
 - Prices are expressed in divine.
 - Pin exact dependency versions.

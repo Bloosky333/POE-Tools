@@ -23,13 +23,6 @@ export function SuggestionsTable({
   onSort,
   onSelect,
 }: Props) {
-  const multiplierOf = (s: Suggestion) =>
-    s.reference
-      ? s.action === 'wait'
-        ? s.reference.multiplierFromBuy
-        : s.reference.multiplier
-      : null;
-
   const columns: Column<Suggestion, SortKey>[] = [
     {
       id: 'item',
@@ -91,9 +84,10 @@ export function SuggestionsTable({
       label: 'Multiplier',
       sortKey: 'multiplier',
       align: 'right',
-      title: 'Reference-league price change from the buy day to the sell day',
+      title:
+        'Expected price change from the buy day to the sell day: the reference-league change, reduced when the item is already pricier than last league',
       render: (s) => {
-        const m = multiplierOf(s);
+        const m = s.reference?.expectedMultiplier ?? null;
         const tone = m === null ? 'text-subtle' : m >= 1.3 ? 'text-gain' : m < 1 ? 'text-loss' : '';
         return <span className={`text-base font-semibold ${tone}`}>{formatMultiplier(m)}</span>;
       },
@@ -111,7 +105,7 @@ export function SuggestionsTable({
       id: 'projected',
       label: 'Projected',
       align: 'right',
-      title: 'Current price × multiplier',
+      title: 'Current price × expected multiplier',
       render: (s) => <Div value={s.projectedSellPrice} icon={divineIcon} />,
     },
     {

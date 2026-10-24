@@ -18,6 +18,7 @@ import {
 import { mergeFx, mergeHistory } from './csv.ts';
 import { updateFlips } from './exchange/update.ts';
 import type { WindowStore } from './exchange/window.ts';
+import { syncIcons } from './icons.ts';
 import { fetchDetails, fetchLeagues, fetchOverview } from './poe-ninja/api.ts';
 import type { NinjaClient } from './poe-ninja/client.ts';
 import type { ExchangeOverview } from './poe-ninja/schemas.ts';
@@ -41,6 +42,8 @@ export interface JobOptions {
   historyMinVolume?: number;
   /** Max items whose details history is refreshed per league per day. */
   maxHistoryItems?: number;
+  /** fetch used to download icons from GGG's CDN (tests inject a fake). */
+  iconFetch?: typeof fetch;
 }
 
 interface LeagueSnapshot {
@@ -81,6 +84,12 @@ export async function runJob(options: JobOptions): Promise<void> {
     log.info(`${league.name}: ${snapshot.items.length} items`);
     const firstOverview = snapshot.overviews[0];
     if (league.selectable && firstOverview) {
+      const items = await syncIcons(snapshot.items, {
+        storeDir: store.root,
+        client,
+        log,
+        ...(options.iconFetch ? { fetchImpl: options.iconFetch } : {}),
+      });
       await site.writeCurrent({
         version: 1,
         leagueId: league.id,
@@ -89,7 +98,7 @@ export async function runJob(options: JobOptions): Promise<void> {
           exalted: firstOverview.core.rates.exalted ?? 0,
           chaos: firstOverview.core.rates.chaos ?? 0,
         },
-        items: snapshot.items,
+        items,
       });
     }
     if (league.selectable && options.windows) {
@@ -169,6 +178,7 @@ export async function runJob(options: JobOptions): Promise<void> {
     await site.writeHistory(league, await store.readHistory(league.id));
     await site.writeFx(league, await store.readFx(league.id));
   }
+  await site.copyIcons(store.root);
   await site.writeLeagues(tracked, now);
 }
 
