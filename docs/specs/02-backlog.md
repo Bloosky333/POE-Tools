@@ -9,8 +9,8 @@ Order is indicative. Each will get its own spec file before implementation.
    is worth it), using live cross rates. Reuses the exchange-rate service.
    → Specified in [`04-cheapest-currency.md`](./04-cheapest-currency.md) (direct payment only).
 3. **Crafting recipes tool** — catalogue of crafting recipes/methods with live cost per
-   attempt and expected cost (scope to be defined: which recipes, data source for
-   mod weights).
+   attempt and expected cost → draft in [`08-crafting-recipes.md`](./08-crafting-recipes.md)
+   (in-app editor, typed-in odds first).
 4. **Sell Now** — done: [`06-sell-now.md`](./06-sell-now.md) (sell at last league's peak
    or when falling with no recovery ahead).
 5. **PoE 1** — done: every economy tool for PoE 1, ready for the 3.30 launch
