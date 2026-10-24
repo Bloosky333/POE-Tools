@@ -155,3 +155,31 @@ Run at 2026-10-23T23:57:58.200Z
 - URL: `https://poe.ninja/poe2/api/economy/exchange/current/details?league=Forbidden%20Rites&type=Runes&id=adept-rune`
 - Status: 200, content-type: application/json
 - Shape: { item: { id: string, name: string, image: string, category: string, detailsId: string }, pairs: array(3) of { id: string, rate: number, volumePrimaryValue: number, history: array(34) of object }, core: { items: array(3) of object, rates: { exalted: number, chaos: number }, primary: string, secondary: string } }
+
+# poe.ninja probe
+
+Run at 2026-10-24T04:30:54.280Z
+
+## exchange-details-uncut-skill-gem-level-19-Forbidden Rites
+
+- URL: `https://poe.ninja/poe2/api/economy/exchange/current/details?league=Forbidden%20Rites&type=UncutGems&id=uncut-skill-gem-level-19`
+- Status: 200, content-type: application/json
+- Shape: { item: { id: string, name: string, image: string, category: string, detailsId: string }, pairs: array(3) of { id: string, rate: number, volumePrimaryValue: number, history: array(50) of object }, core: { items: array(3) of object, rates: { exalted: number, chaos: number }, primary: string, secondary: string } }
+
+## exchange-details-siones-temper-Forbidden Rites
+
+- URL: `https://poe.ninja/poe2/api/economy/exchange/current/details?league=Forbidden%20Rites&type=LineageSupportGems&id=siones-temper`
+- Status: 200, content-type: application/json
+- Shape: { item: { id: string, name: string, image: string, category: string, detailsId: string }, pairs: array(3) of { id: string, rate: number, volumePrimaryValue: number, history: array(50) of object }, core: { items: array(3) of object, rates: { exalted: number, chaos: number }, primary: string, secondary: string } }
+
+## exchange-details-artificers-orb-Forbidden Rites
+
+- URL: `https://poe.ninja/poe2/api/economy/exchange/current/details?league=Forbidden%20Rites&type=Currency&id=artificers-orb`
+- Status: 200, content-type: application/json
+- Shape: { item: { id: string, name: string, image: string, category: string, detailsId: string }, pairs: array(3) of { id: string, rate: number, volumePrimaryValue: number, history: array(49) of object }, core: { items: array(3) of object, rates: { exalted: number, chaos: number }, primary: string, secondary: string } }
+
+## exchange-details-adept-rune-Forbidden Rites
+
+- URL: `https://poe.ninja/poe2/api/economy/exchange/current/details?league=Forbidden%20Rites&type=Runes&id=adept-rune`
+- Status: 200, content-type: application/json
+- Shape: { item: { id: string, name: string, image: string, category: string, detailsId: string }, pairs: array(3) of { id: string, volumePrimaryValue: number, history: array(34) of object }, core: { items: array(3) of object, rates: { exalted: number, chaos: number }, primary: string, secondary: string } }
