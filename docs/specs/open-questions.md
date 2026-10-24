@@ -37,6 +37,22 @@
 | Price level      | Expected multiplier `M_eff = M × max(1, π)^−β` (spec 01 §4.2b), premium `π` = item price vs reference price × market factor (median N/R of liquid items). Only premiums damp (β = 1); AVOID stays on the raw curve. Backtest FR vs RoA days 7–35, 14-day hold (`pnpm --filter @poe-tools/data-job backtest`): BUY NOW calls rose 81 % (median ×1.25) vs 78 % (×1.21) without. Premium alone does not predict losses (×1.09, like NEUTRAL). Re-tune per league. |
 | Known limitation | Market-wide moves of the reference league (e.g. Runes of Aldur day ~55: divine +20% vs chaos, most items −10% in divine) drive WAIT/BUY for many items at once. Possible refinement: compare items against a market index.                                                                                                                                                                                                                                     |
 
+## Tool #2 — Cheapest Currency (spec `04-cheapest-currency.md`)
+
+| #   | Topic        | Decision                                                                                                      |
+| --- | ------------ | ------------------------------------------------------------------------------------------------------------- |
+| Q25 | Core job     | **Single-item lookup**: item + quantity → which currency to pay with.                                         |
+| Q26 | Freshness    | Per-pair rates **daily** (existing details pass) + busiest pair **hourly** from the overview; leg ages shown. |
+| Q27 | On-demand    | **No** instant refresh (no proxy, no workflow trigger) — browser never calls poe.ninja.                       |
+| Q28 | Coverage     | Illiquid items without details: shown with **partial data** (busiest pair + blended price) and a label.       |
+| Q29 | Paths        | **Direct payment only** (divine / exalted / chaos); no conversion step, no multi-hop.                         |
+| Q30 | Inputs       | Item + quantity (no wallet).                                                                                  |
+| Q31 | Verdict      | Recommend only if ≥ 5 % cheaper than the next pair **and** that pair trades ≥ 1 div/day; tunable.             |
+| Q32 | Extras       | Recent lookups / favourites. No spread table, no chart, **no home-page widget**.                              |
+| Q33 | Item scope   | All 14 exchange categories.                                                                                   |
+| Q34 | Pair history | Store daily per-pair CSV on the `data` branch (not used by v1 UI).                                            |
+| Q35 | Rounding     | Whole units: round paid amount up, show waste and a "same price buys N'" hint; verdict uses real costs.       |
+
 ## Still open
 
 None — specs agreed. New questions will be added here as implementation progresses.
