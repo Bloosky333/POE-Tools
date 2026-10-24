@@ -1,4 +1,12 @@
-import { ENABLED_GAMES, GAMES, LEAGUES, getLeague, leagueDay, type Game } from '@poe-tools/shared';
+import {
+  ENABLED_GAMES,
+  GAMES,
+  LEAGUES,
+  getLeague,
+  hasStarted,
+  leagueDay,
+  type Game,
+} from '@poe-tools/shared';
 import { Link } from 'react-router';
 import type { Theme } from '../lib/settings.ts';
 import { useNow } from '../lib/useNow.ts';
@@ -82,7 +90,7 @@ export function TopBar({ onToggleNav }: { onToggleNav: () => void }) {
               </option>
             ))}
           </select>
-          {league && (
+          {league && hasStarted(league, new Date(now)) && (
             <span className="hidden rounded-md bg-accent-soft px-2 py-1 text-xs font-medium text-accent lg:inline">
               Day {leagueDay(league.startsAt, new Date(now))}
             </span>

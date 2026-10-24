@@ -1,5 +1,6 @@
-import { POE2_EXCHANGE_TYPES, type ExchangeType } from '@poe-tools/shared';
+import { ECONOMY, isExchangeType, type ExchangeType, type Game } from '@poe-tools/shared';
 import { useSearchParams } from 'react-router';
+import { useSettings } from '../../lib/useSettings.ts';
 
 /** Which verdicts are listed: flagged = SELL NOW + SELL SOON. */
 export type VerdictFilter = 'flagged' | 'sell-now' | 'sell-soon' | 'all';
@@ -31,19 +32,22 @@ export type SortKey =
 
 const VERDICTS: readonly VerdictFilter[] = ['flagged', 'sell-now', 'sell-soon', 'all'];
 
-const DEFAULTS: ViewParams = {
+/** Defaults of a game: liquidity filters carry the game's unit. */
+export const defaultsFor = (game: Game): ViewParams => ({
   verdict: 'flagged',
-  minVolume: 5,
-  minPrice: 0.05,
+  minVolume: ECONOMY[game].minVolume,
+  minPrice: ECONOMY[game].minPrice,
   type: 'all',
   q: '',
   sort: 'score',
   desc: true,
   item: null,
-};
+});
 
 export function useViewParams(): [ViewParams, (patch: Partial<ViewParams>) => void] {
   const [search, setSearch] = useSearchParams();
+  const { game } = useSettings().settings;
+  const DEFAULTS = defaultsFor(game);
   const num = (key: string, fallback: number) => {
     const value = Number(search.get(key));
     return search.has(key) && Number.isFinite(value) ? value : fallback;
@@ -56,7 +60,7 @@ export function useViewParams(): [ViewParams, (patch: Partial<ViewParams>) => vo
       : DEFAULTS.verdict,
     minVolume: num('minVolume', DEFAULTS.minVolume),
     minPrice: num('minPrice', DEFAULTS.minPrice),
-    type: POE2_EXCHANGE_TYPES.includes(type as ExchangeType) ? (type as ExchangeType) : 'all',
+    type: type && isExchangeType(game, type) ? type : 'all',
     q: search.get('q') ?? '',
     sort: (search.get('sort') as SortKey | null) ?? DEFAULTS.sort,
     desc: search.get('dir') !== 'asc',

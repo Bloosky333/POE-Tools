@@ -12,7 +12,7 @@ import { createNinjaClient } from './poe-ninja/client.ts';
 import { runJob, type Logger } from './run.ts';
 import { createSiteWriter } from './site.ts';
 import { createStore } from './store.ts';
-import { probeFixture } from './test/fixtures.ts';
+import { poe1Fixture, probeFixture } from './test/fixtures.ts';
 
 /** Serves probe fixtures; unknown overviews are empty, unknown details are 404. */
 function fakeFetch(calls: string[]): typeof fetch {
@@ -137,5 +137,134 @@ describe('runJob', () => {
       '/poe2/api/economy/exchange/current/details?league=Forbidden%20Rites&type=Currency&id=divine-orb',
     ]);
     expect(nextCalls.filter((c) => c.includes('Runes%20of%20Aldur'))).toEqual([]);
+  });
+});
+
+/** Serves the PoE 1 probe fixtures (Allflame) for every league but Mirage. */
+function poe1Fetch(calls: string[], leagues: { id: string; name: string }[]): typeof fetch {
+  const emptyOverview = JSON.stringify({
+    ...(JSON.parse(poe1Fixture('overview-currency.json')) as object),
+    lines: [],
+    items: [],
+  });
+  return async (input) => {
+    const url = new URL(String(input));
+    calls.push(url.pathname + url.search);
+    const league = url.searchParams.get('league');
+    const type = url.searchParams.get('type')?.toLowerCase();
+    const suffix = league === 'Mirage' ? '-mirage' : '';
+    let body: string | null = null;
+    if (url.pathname === '/poe1/api/economy/leagues') body = JSON.stringify(leagues);
+    else if (url.pathname.endsWith('/overview')) {
+      body = tryPoe1(`overview-${type}${suffix}.json`) ?? emptyOverview;
+    } else if (url.pathname.endsWith('/details')) {
+      const id = url.searchParams.get('id');
+      body = tryPoe1(`details-${id}-${league === 'Mirage' ? 'mirage' : 'allflame'}.json`);
+    }
+    return body === null
+      ? new Response('', { status: 404 })
+      : new Response(body, { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+}
+
+function tryPoe1(name: string): string | null {
+  try {
+    return poe1Fixture(name);
+  } catch {
+    return null;
+  }
+}
+
+describe('runJob (PoE 1)', () => {
+  let root: string;
+  const warnings: string[] = [];
+  const log: Logger = { info: () => {}, warn: (m) => warnings.push(m) };
+  const LISTED = [
+    { id: 'Allflame', name: 'Allflame' },
+    { id: 'Hardcore Allflame', name: 'Hardcore Allflame' },
+    { id: 'Standard', name: 'Standard' },
+    { id: 'Hardcore', name: 'Hardcore' },
+  ];
+
+  beforeEach(async () => {
+    root = await mkdtemp(join(tmpdir(), 'poe-tools-job1-'));
+    warnings.length = 0;
+  });
+  afterEach(() => rm(root, { recursive: true, force: true }));
+
+  async function run(now: Date, calls: string[], listed = LISTED) {
+    await runJob({
+      client: createNinjaClient({ fetchImpl: poe1Fetch(calls, listed), sleep: async () => {} }),
+      store: createStore(join(root, 'store'), 'poe1'),
+      site: createSiteWriter(join(root, 'site'), 'poe1'),
+      now,
+      log,
+      iconFetch: async () =>
+        new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0])),
+    });
+  }
+
+  it('backfills the reference league in chaos before the next league starts', async () => {
+    const calls: string[] = [];
+    await run(new Date('2026-10-24T12:00:00Z'), calls);
+    expect(calls.every((c) => c.startsWith('/poe1/'))).toBe(true);
+    // The 3.30 league has not started: no request for it, no warning.
+    expect(calls.some((c) => c.includes('3.30'))).toBe(false);
+    expect(warnings.filter((w) => w.includes('3.30'))).toEqual([]);
+
+    const store = createStore(join(root, 'store'), 'poe1');
+    const meta = await store.readMeta('allflame');
+    expect(meta.backfilledAt).not.toBeNull();
+    const oil = (await store.readHistory('allflame'))
+      .get('Oil')
+      ?.filter((p) => p.item === 'golden-oil');
+    expect(oil?.length).toBeGreaterThan(80);
+    expect(oil?.at(-1)?.price).toBeGreaterThan(200);
+    // The Divine Orb is an item in PoE 1, priced in chaos; chaos itself is the unit.
+    const currency = (await store.readHistory('allflame')).get('Currency') ?? [];
+    expect(currency.some((p) => p.item === 'divine' && p.price > 200)).toBe(true);
+    expect(currency.some((p) => p.item === 'chaos')).toBe(false);
+    expect((await store.readFx('allflame')).at(-1)?.rates.divine).toBeLessThan(0.01);
+
+    // Mirage (ended, unlisted) is still fetched; its Chaos Orb details are not captured.
+    expect(calls.some((c) => c.includes('league=Mirage'))).toBe(true);
+    expect(warnings.some((w) => w.includes('Mirage: Chaos Orb details'))).toBe(true);
+
+    const site = join(root, 'site', 'poe1');
+    const history = historyFileSchema.parse(
+      JSON.parse(await readFile(join(site, 'allflame', 'history', 'Oil.json'), 'utf8')),
+    );
+    expect(history.items['golden-oil']?.[0]?.[0]).toBe(1);
+    const leagues = leaguesFileSchema.parse(
+      JSON.parse(await readFile(join(site, 'leagues.json'), 'utf8')),
+    );
+    expect(leagues.leagues.map((l) => l.id)).toEqual(['poe1-3-30', 'allflame', 'mirage']);
+    expect(await readdir(join(site, 'allflame'))).not.toContain('current.json');
+  });
+
+  it('re-backfills a league once after it ended', async () => {
+    await run(new Date('2026-10-24T12:00:00Z'), []);
+    const calls: string[] = [];
+    await run(new Date('2026-11-10T12:00:00Z'), calls);
+    expect(calls.some((c) => c.includes('league=Allflame') && c.includes('/details'))).toBe(true);
+    const later: string[] = [];
+    await run(new Date('2026-11-10T13:00:00Z'), later);
+    expect(later.some((c) => c.includes('league=Allflame'))).toBe(false);
+  });
+
+  it('uses the new challenge league for the unnamed 3.30 entry once it started', async () => {
+    const calls: string[] = [];
+    await run(new Date('2026-11-14T12:00:00Z'), calls, [
+      { id: 'Keepers', name: 'Keepers' },
+      ...LISTED,
+    ]);
+    expect(calls.some((c) => c.includes('league=Keepers'))).toBe(true);
+    expect(warnings.some((w) => w.includes('using poe.ninja league "Keepers"'))).toBe(true);
+    const current = currentFileSchema.parse(
+      JSON.parse(await readFile(join(root, 'site', 'poe1', 'poe1-3-30', 'current.json'), 'utf8')),
+    );
+    expect(current.unit).toBe('chaos');
+    expect(current.rates.divine).toBeLessThan(0.01);
+    expect(current.items.find((i) => i.id === 'divine')?.price).toBeGreaterThan(200);
   });
 });

@@ -5,7 +5,8 @@ import {
   type FlipLeg,
   type Hub,
 } from '@poe-tools/shared';
-import { Div, ItemCell, Sheet, StatCard } from '../../ui/index.ts';
+import { Amount, ItemCell, Sheet, StatCard } from '../../ui/index.ts';
+import type { UnitInfo } from '../../lib/unit.ts';
 import type { FlipRow } from './logic.ts';
 import {
   HUB_NAMES,
@@ -21,10 +22,11 @@ interface Props {
   hours: readonly number[];
   minMargin: number;
   hubIcons: Partial<Record<Hub, string>>;
+  unit: UnitInfo;
   onClose: () => void;
 }
 
-export function FlipDetail({ row, hours, minMargin, hubIcons, onClose }: Props) {
+export function FlipDetail({ row, hours, minMargin, hubIcons, unit, onClose }: Props) {
   const { flip, item } = row;
   const name = item?.name ?? flip.item;
   const prices = quotePrices(flip);
@@ -85,7 +87,7 @@ export function FlipDetail({ row, hours, minMargin, hubIcons, onClose }: Props) 
           {flip.units24h.toLocaleString('en-US')} items
         </StatCard>
         <StatCard label="Value 24 h (thinnest leg)">
-          <Div value={flip.value24h} icon={hubIcons.divine} />
+          <Amount value={flip.value24h} unit={unit} />
         </StatCard>
       </dl>
 

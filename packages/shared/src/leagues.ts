@@ -16,6 +16,16 @@ export const leagueSchema = z.object({
   selectable: z.boolean(),
   /** League whose price curves are used as reference for this one. */
   referenceLeagueId: z.string().nullable(),
+  /**
+   * The data job also follows this league though nothing selectable references it (its
+   * history is kept for backtests). Selectable leagues and their references always are.
+   */
+  track: z.boolean().default(false),
+  /**
+   * Set while the league's name is not announced: the data job uses poe.ninja's current
+   * challenge league once the league has started (spec 07 §2).
+   */
+  ninjaNameAuto: z.boolean().default(false),
 });
 
 export type League = z.infer<typeof leagueSchema>;
@@ -24,7 +34,8 @@ export const leaguesSchema = z.array(leagueSchema);
 
 /**
  * Source of truth for league metadata. A new league is added here (one PR per league).
- * `ninjaName` = league id in poe.ninja's `/poe2/api/economy/leagues` (verified 2026-10-23).
+ * `ninjaName` = league id in poe.ninja's `/<game>/api/economy/leagues` (verified: PoE 2
+ * 2026-10-23, PoE 1 2026-10-24).
  */
 export const LEAGUES: readonly League[] = leaguesSchema.parse([
   {
@@ -49,6 +60,42 @@ export const LEAGUES: readonly League[] = leaguesSchema.parse([
     selectable: false,
     referenceLeagueId: null,
   },
+  {
+    // Announced at ExileCon (early November): update name, ninjaName and start then.
+    id: 'poe1-3-30',
+    game: 'poe1',
+    name: '3.30',
+    ninjaName: '3.30',
+    ninjaNameAuto: true,
+    version: '3.30',
+    startsAt: '2026-11-13T21:00:00Z',
+    endsAt: null,
+    selectable: true,
+    referenceLeagueId: 'allflame',
+  },
+  {
+    id: 'allflame',
+    game: 'poe1',
+    name: 'Allflame',
+    ninjaName: 'Allflame',
+    version: '3.29',
+    startsAt: '2026-07-24T20:00:00Z',
+    endsAt: '2026-11-09T21:00:00Z',
+    selectable: false,
+    referenceLeagueId: 'mirage',
+  },
+  {
+    id: 'mirage',
+    game: 'poe1',
+    name: 'Mirage',
+    ninjaName: 'Mirage',
+    version: '3.28',
+    startsAt: '2026-03-06T20:00:00Z',
+    endsAt: '2026-07-20T21:00:00Z',
+    selectable: false,
+    referenceLeagueId: null,
+    track: true,
+  },
 ]);
 
 export function getLeague(id: string): League | undefined {
@@ -66,9 +113,19 @@ export function getReferenceLeague(league: League): League | undefined {
   return league.referenceLeagueId ? getLeague(league.referenceLeagueId) : undefined;
 }
 
-/** Leagues the data job follows: selectable leagues and the leagues they reference. */
+/**
+ * Leagues the data job follows: selectable leagues, the leagues they reference and leagues
+ * marked `track` (with their own reference, for backtests).
+ */
 export function getTrackedLeagues(game: League['game']): League[] {
-  const selectable = LEAGUES.filter((league) => league.game === game && league.selectable);
-  const referenced = selectable.flatMap((league) => getReferenceLeague(league) ?? []);
-  return [...new Set([...selectable, ...referenced])];
+  const roots = LEAGUES.filter(
+    (league) => league.game === game && (league.selectable || league.track),
+  );
+  const tracked = new Set([...roots, ...roots.flatMap((l) => getReferenceLeague(l) ?? [])]);
+  return LEAGUES.filter((league) => tracked.has(league));
+}
+
+/** Whether the league has started at `now`. */
+export function hasStarted(league: League, now: Date): boolean {
+  return Date.parse(league.startsAt) <= now.getTime();
 }

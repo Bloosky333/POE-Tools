@@ -1,11 +1,13 @@
 import { cp, mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import {
+  ECONOMY,
   dataPaths,
   leagueDayOfDate,
   type CurrentFile,
   type FlipsFile,
   type FxFile,
+  type Game,
   type HistoryFile,
   type League,
   type LeaguesFile,
@@ -16,7 +18,8 @@ import { ICONS_DIR } from './icons.ts';
 import type { LeagueHistory } from './store.ts';
 
 /** Writes the JSON files the web app reads (`apps/web/public/data` in CI). */
-export function createSiteWriter(outDir: string, game = 'poe2') {
+export function createSiteWriter(outDir: string, game: Game = 'poe2') {
+  const { fxCurrencies } = ECONOMY[game];
   async function writeJson(relativePath: string, value: unknown) {
     const path = join(outDir, relativePath);
     await mkdir(dirname(path), { recursive: true });
@@ -65,11 +68,14 @@ export function createSiteWriter(outDir: string, game = 'poe2') {
       const file: FxFile = {
         version: 1,
         leagueId: league.id,
+        currencies: [...fxCurrencies],
         points: points
-          .map((p) => [leagueDayOfDate(league.startsAt, p.date), p.exalted, p.chaos] as const)
+          .map((p): FxFile['points'][number] => [
+            leagueDayOfDate(league.startsAt, p.date),
+            ...fxCurrencies.map((c) => p.rates[c] ?? null),
+          ])
           .filter(([day]) => day >= 0)
-          .sort((a, b) => a[0] - b[0])
-          .map(([day, exalted, chaos]) => [day, exalted, chaos]),
+          .sort((a, b) => a[0] - b[0]),
       };
       return writeJson(dataPaths.fx(game, league.id), file);
     },

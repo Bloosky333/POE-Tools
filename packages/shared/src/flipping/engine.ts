@@ -1,3 +1,4 @@
+import { ECONOMY, type Game } from '../games.ts';
 import type { Flip, FlipLeg, FlipsFile, Hub } from './data.ts';
 
 /*
@@ -26,11 +27,25 @@ export interface ExchangeHour {
 export interface FlipSettings {
   /** Hours whose `high / low` exceeds this are treated as outliers (spread margin null). */
   maxRangeRatio: number;
-  /** Flips with a leg trading less than this (divine, whole window) are not published. */
+  /** Flips with a leg trading less than this (`unit`, whole window) are not published. */
   minLegValue: number;
+  /** Hub currencies of the game's exchange. */
+  hubs: readonly Hub[];
+  /** Unit of values (`value24h`): one of the hubs. */
+  unit: Hub;
 }
 
-export const DEFAULT_FLIP_SETTINGS: FlipSettings = { maxRangeRatio: 3, minLegValue: 10 };
+export function flipSettingsFor(game: Game): FlipSettings {
+  const economy = ECONOMY[game];
+  return {
+    maxRangeRatio: 3,
+    minLegValue: economy.flipMinLegValue,
+    hubs: economy.hubs,
+    unit: economy.unit,
+  };
+}
+
+export const DEFAULT_FLIP_SETTINGS: FlipSettings = flipSettingsFor('poe2');
 
 /** Rank of the hubs: in a hub ↔ hub market, the higher-ranked one is the `hub` side. */
 const HUB_RANK: Record<Hub, number> = { divine: 0, exalted: 1, chaos: 2 };
@@ -45,33 +60,56 @@ interface Leg {
   low: number;
   high: number;
   units: number;
-  /** Divine value traded on this leg during the hour. */
+  /** Value traded on this leg during the hour, in the settings' unit. */
   value: number;
 }
 
 interface HourView {
-  /** Divine value of 1 unit of each hub. */
-  value: Record<Hub, number>;
+  /** Value of 1 unit of each hub, in the settings' unit. */
+  value: Partial<Record<Hub, number>>;
   legs: Map<string, Map<Hub, Leg>>;
   markets: MarketHour[];
 }
 
 const avgOf = (m: MarketHour) => m.hubVolume / m.itemVolume;
 
-function viewHour(hour: ExchangeHour, previous: Record<Hub, number> | null): HourView | null {
+/**
+ * Value of each hub in the settings' unit, from the hub ↔ hub markets of the hour: a hub
+ * traded directly against an already valued hub first, then through another hub; a hub
+ * not traded this hour keeps its value of the previous hour.
+ */
+function hubValues(
+  traded: readonly MarketHour[],
+  previous: Partial<Record<Hub, number>> | null,
+  settings: FlipSettings,
+): Partial<Record<Hub, number>> | null {
+  const value: Partial<Record<Hub, number>> = { [settings.unit]: 1 };
+  const isHub = (id: string): id is Hub => (settings.hubs as readonly string[]).includes(id);
+  for (let pass = 0; pass < settings.hubs.length; pass++) {
+    for (const m of traded) {
+      if (!isHub(m.item)) continue;
+      const itemValue = value[m.item];
+      const hubValue = value[m.hub];
+      // Market `item` ↔ `hub`: 1 item = avg hub units.
+      if (itemValue === undefined && hubValue !== undefined) value[m.item] = avgOf(m) * hubValue;
+      if (hubValue === undefined && itemValue !== undefined) value[m.hub] = itemValue / avgOf(m);
+    }
+  }
+  for (const hub of settings.hubs) {
+    const last = previous?.[hub];
+    if (value[hub] === undefined && last !== undefined) value[hub] = last;
+  }
+  return settings.hubs.every((hub) => value[hub]) ? value : null;
+}
+
+function viewHour(
+  hour: ExchangeHour,
+  previous: Partial<Record<Hub, number>> | null,
+  settings: FlipSettings,
+): HourView | null {
   const traded = hour.markets.filter((m) => m.itemVolume > 0 && m.hubVolume > 0);
-  const find = (item: string, hub: Hub) => traded.find((m) => m.item === item && m.hub === hub);
-  const exalted = find('exalted', 'divine');
-  const chaosDiv = find('chaos', 'divine');
-  const chaosEx = find('chaos', 'exalted');
-  const exaltedValue = exalted ? avgOf(exalted) : previous?.exalted;
-  const chaosValue = chaosDiv
-    ? avgOf(chaosDiv)
-    : chaosEx && exaltedValue
-      ? avgOf(chaosEx) * exaltedValue
-      : previous?.chaos;
-  if (!exaltedValue || !chaosValue) return null;
-  const value: Record<Hub, number> = { divine: 1, exalted: exaltedValue, chaos: chaosValue };
+  const value = hubValues(traded, previous, settings);
+  if (!value) return null;
 
   const legs = new Map<string, Map<Hub, Leg>>();
   for (const m of traded) {
@@ -81,7 +119,7 @@ function viewHour(hour: ExchangeHour, previous: Record<Hub, number> | null): Hou
       low: Math.min(m.low, m.high),
       high: Math.max(m.low, m.high),
       units: m.itemVolume,
-      value: m.hubVolume * value[m.hub],
+      value: m.hubVolume * (value[m.hub] ?? 0),
     });
     legs.set(m.item, byHub);
   }
@@ -93,7 +131,7 @@ function conversion(view: HourView, from: Hub, to: Hub): { avg: number; best: nu
   const sides = marketSides(from, to);
   const market = view.markets.find((m) => m.item === sides.item && m.hub === sides.hub);
   if (!market) {
-    const rate = view.value[from] / view.value[to];
+    const rate = (view.value[from] ?? 0) / (view.value[to] ?? 1);
     return { avg: rate, best: rate };
   }
   const low = Math.min(market.low, market.high);
@@ -153,9 +191,9 @@ export function computeFlips(
   settings: FlipSettings = DEFAULT_FLIP_SETTINGS,
 ): FlipsFile {
   const views: (HourView | null)[] = [];
-  let previous: Record<Hub, number> | null = null;
+  let previous: Partial<Record<Hub, number>> | null = null;
   for (const hour of hours) {
-    const view = viewHour(hour, previous);
+    const view = viewHour(hour, previous, settings);
     if (view) previous = view.value;
     views.push(view);
   }

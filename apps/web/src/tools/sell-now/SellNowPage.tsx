@@ -1,10 +1,10 @@
-import { EXCHANGE_TYPE_LABELS, POE2_EXCHANGE_TYPES, type SellSignal } from '@poe-tools/shared';
+import { EXCHANGE_TYPE_LABELS, ALL_EXCHANGE_TYPES, type SellSignal } from '@poe-tools/shared';
 import { useMemo } from 'react';
 import { formatPercent } from '../../lib/format.ts';
 import {
   Card,
   Chips,
-  Div,
+  Amount,
   FilterBar,
   InlineField,
   Input,
@@ -15,6 +15,7 @@ import {
   Skeleton,
   StatTile,
 } from '../../ui/index.ts';
+import type { UnitInfo } from '../../lib/unit.ts';
 import { useViewParams, type SortKey, type ViewParams } from './params.ts';
 import { SellDetail } from './SellDetail.tsx';
 import { SellTable } from './SellTable.tsx';
@@ -23,7 +24,7 @@ import { VERDICT_LABELS } from './VerdictBadge.tsx';
 
 export default function SellNowPage() {
   const [params, update] = useViewParams();
-  const { league, reference, today, data, signals, divineIcon } = useSellSignals();
+  const { league, reference, today, data, signals, unit } = useSellSignals();
 
   const eligible = useMemo(
     () => filterAndSort(signals, { ...params, type: 'all', q: '' }),
@@ -60,7 +61,7 @@ export default function SellNowPage() {
             signals={filterAndSort(signals, { ...params, type: 'all', q: '', verdict: 'all' })}
             today={today}
             leagueName={league.name}
-            divineIcon={divineIcon}
+            unit={unit}
           />
 
           <Card className="space-y-3">
@@ -69,7 +70,7 @@ export default function SellNowPage() {
               value={params.type}
               onChange={(type) => update({ type })}
             />
-            <Filters params={params} update={update} />
+            <Filters params={params} update={update} unit={unit.short} />
           </Card>
 
           <SellTable
@@ -77,7 +78,7 @@ export default function SellNowPage() {
             params={params}
             currentHistory={data.data.currentHistory}
             today={today}
-            divineIcon={divineIcon}
+            unit={unit}
             onSort={(key: SortKey) =>
               update(
                 params.sort === key
@@ -92,7 +93,7 @@ export default function SellNowPage() {
           />
           <p className="text-xs text-subtle">
             {rows.length} of {signals.length} items · expected loss is last league&apos;s move; in a
-            market rising against divine, flagged items mostly lag the market rather than drop.
+            market rising against {unit.id}, flagged items mostly lag the market rather than drop.
           </p>
           {selected && (
             <SellDetail
@@ -102,7 +103,7 @@ export default function SellNowPage() {
               referenceName={reference.name}
               currentName={league.name}
               today={today}
-              divineIcon={divineIcon}
+              unit={unit}
               onClose={() => update({ item: null })}
             />
           )}
@@ -116,12 +117,12 @@ function StatTiles({
   signals,
   today,
   leagueName,
-  divineIcon,
+  unit,
 }: {
   signals: readonly SellSignal[];
   today: number;
   leagueName: string;
-  divineIcon: string | undefined;
+  unit: UnitInfo;
 }) {
   const count = (verdict: SellSignal['verdict']) =>
     signals.filter((s) => s.verdict === verdict).length;
@@ -145,7 +146,7 @@ function StatTiles({
             <span className="flex min-w-0 items-center gap-1">
               <span className="truncate">{top.item.name}</span>
               <span aria-hidden>·</span>
-              <Div value={top.item.price} icon={divineIcon} className="shrink-0" />
+              <Amount value={top.item.price} unit={unit} className="shrink-0" />
             </span>
           ) : undefined
         }
@@ -171,7 +172,7 @@ function CategoryChips({
       onChange={onChange}
       options={[
         { value: 'all', label: 'All', count: signals.length },
-        ...POE2_EXCHANGE_TYPES.filter((t) => counts.get(t)).map((t) => ({
+        ...ALL_EXCHANGE_TYPES.filter((t) => counts.get(t)).map((t) => ({
           value: t,
           label: EXCHANGE_TYPE_LABELS[t],
           count: counts.get(t) ?? 0,
@@ -184,7 +185,9 @@ function CategoryChips({
 function Filters({
   params,
   update,
+  unit,
 }: {
+  unit: string;
   params: ViewParams;
   update: (p: Partial<ViewParams>) => void;
 }) {
@@ -204,7 +207,7 @@ function Filters({
           <option value="all">All, with {VERDICT_LABELS.hold}</option>
         </Select>
       </InlineField>
-      <InlineField label="Min volume" unit="div/day">
+      <InlineField label="Min volume" unit={`${unit}/day`}>
         <Input
           type="number"
           min={0}
@@ -214,7 +217,7 @@ function Filters({
           onChange={(e) => update({ minVolume: Number(e.target.value) || 0 })}
         />
       </InlineField>
-      <InlineField label="Min price" unit="div">
+      <InlineField label="Min price" unit={unit}>
         <Input
           type="number"
           min={0}

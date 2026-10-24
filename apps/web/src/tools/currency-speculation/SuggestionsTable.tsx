@@ -1,6 +1,7 @@
 import { EXCHANGE_TYPE_LABELS, type HistoryPoint, type Suggestion } from '@poe-tools/shared';
 import { formatMultiplier, formatPercent } from '../../lib/format.ts';
-import { DataTable, Div, ItemCell, ScoreMeter, Sparkline, type Column } from '../../ui/index.ts';
+import { DataTable, Amount, ItemCell, ScoreMeter, Sparkline, type Column } from '../../ui/index.ts';
+import type { UnitInfo } from '../../lib/unit.ts';
 import { ActionBadge } from './ActionBadge.tsx';
 import type { SortKey, ViewParams } from './params.ts';
 
@@ -9,7 +10,7 @@ interface Props {
   params: ViewParams;
   currentHistory: Record<string, HistoryPoint[]>;
   today: number;
-  divineIcon: string | undefined;
+  unit: UnitInfo;
   onSort: (key: SortKey) => void;
   onSelect: (itemId: string) => void;
 }
@@ -19,7 +20,7 @@ export function SuggestionsTable({
   params,
   currentHistory,
   today,
-  divineIcon,
+  unit,
   onSort,
   onSelect,
 }: Props) {
@@ -53,7 +54,7 @@ export function SuggestionsTable({
       align: 'right',
       title: 'Current price',
       className: 'font-medium',
-      render: (s) => <Div value={s.item.price} icon={divineIcon} />,
+      render: (s) => <Amount value={s.item.price} unit={unit} />,
     },
     {
       id: 'trend',
@@ -106,7 +107,7 @@ export function SuggestionsTable({
       label: 'Projected',
       align: 'right',
       title: 'Current price × expected multiplier',
-      render: (s) => <Div value={s.projectedSellPrice} icon={divineIcon} />,
+      render: (s) => <Amount value={s.projectedSellPrice} unit={unit} />,
     },
     {
       id: 'confidence',
@@ -123,7 +124,7 @@ export function SuggestionsTable({
       align: 'right',
       title: 'Traded per day',
       className: 'text-muted',
-      render: (s) => <Div value={s.item.volume} icon={divineIcon} />,
+      render: (s) => <Amount value={s.item.volume} unit={unit} />,
     },
   ];
 

@@ -6,7 +6,8 @@ import {
 } from '@poe-tools/shared';
 import { Link } from 'react-router';
 import { formatMultiplier, formatPercent } from '../../lib/format.ts';
-import { Div, ItemCell, PriceChart, RatioBar, Sheet, StatCard } from '../../ui/index.ts';
+import { Amount, ItemCell, PriceChart, RatioBar, Sheet, StatCard } from '../../ui/index.ts';
+import type { UnitInfo } from '../../lib/unit.ts';
 import { ActionBadge } from './ActionBadge.tsx';
 
 interface Props {
@@ -20,12 +21,12 @@ interface Props {
   marketFactor: number | null;
   /** Sell Now verdict of the item, linked when it says to sell. */
   sell?: SellSignal | undefined;
-  divineIcon: string | undefined;
+  unit: UnitInfo;
   onClose: () => void;
 }
 
 export function ItemDetail(props: Props) {
-  const { suggestion: s, divineIcon } = props;
+  const { suggestion: s, unit } = props;
   const ref = s.reference;
 
   return (
@@ -37,8 +38,8 @@ export function ItemDetail(props: Props) {
           <ItemCell icon={s.item.icon} name={s.item.name} size="lg" />
           <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-muted">
             {EXCHANGE_TYPE_LABELS[s.item.type]} ·
-            <Div value={s.item.price} icon={divineIcon} className="text-fg" /> now ·
-            <Div value={s.item.volume} icon={divineIcon} /> traded per day
+            <Amount value={s.item.price} unit={unit} className="text-fg" /> now ·
+            <Amount value={s.item.volume} unit={unit} /> traded per day
           </p>
         </>
       }
@@ -71,6 +72,7 @@ export function ItemDetail(props: Props) {
         referenceLabel={props.referenceName}
         currentLabel={props.currentName}
         today={props.today}
+        unit={props.unit}
         referenceScale={props.marketFactor}
         windowFrom={ref?.buyDay}
         windowTo={ref?.sellDay}
@@ -79,13 +81,13 @@ export function ItemDetail(props: Props) {
       {ref && (
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <StatCard label={`${props.referenceName} today`}>
-            <Div value={ref.priceToday} icon={divineIcon} />
+            <Amount value={ref.priceToday} unit={unit} />
           </StatCard>
           <StatCard label={`Buy · day ${ref.buyDay}`}>
-            <Div value={ref.buyPrice} icon={divineIcon} />
+            <Amount value={ref.buyPrice} unit={unit} />
           </StatCard>
           <StatCard label={`Sell · day ${ref.sellDay}`}>
-            <Div value={ref.sellPrice} icon={divineIcon} />
+            <Amount value={ref.sellPrice} unit={unit} />
           </StatCard>
           <StatCard label="Last league ×" tone={ref.multiplierFromBuy >= 1 ? 'gain' : 'loss'}>
             {formatMultiplier(ref.multiplierFromBuy)}
@@ -100,7 +102,7 @@ export function ItemDetail(props: Props) {
             {formatMultiplier(ref.expectedMultiplier)}
           </StatCard>
           <StatCard label="Projected sell price">
-            <Div value={s.projectedSellPrice} icon={divineIcon} />
+            <Amount value={s.projectedSellPrice} unit={unit} />
           </StatCard>
           <StatCard label="Confidence">{s.confidence} / 100</StatCard>
         </dl>

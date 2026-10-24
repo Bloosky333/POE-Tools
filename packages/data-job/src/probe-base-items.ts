@@ -1,17 +1,25 @@
 /**
- * Regenerates `data/exchange-base-items.json`: names of the base item ids used by GGG's
- * currency-exchange feed (`Metadata/Items/...`), from the RePoE PoE 2 export. The data job
- * matches these names against poe.ninja items. Run via the probe workflow
- * (`source: base-items`) when the job warns about unmapped ids (new league / patch).
+ * Regenerates `data/exchange-base-items[-poe1].json`: names of the base item ids used by
+ * GGG's currency-exchange feed (`Metadata/Items/...`), from the RePoE export of the game
+ * (`GAME` env, default poe2). The data job matches these names against poe.ninja items. Run
+ * via the probe workflow (`source: base-items`, `game`) when the job warns about unmapped
+ * ids (new league / patch).
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
+import { GAMES, type Game } from '@poe-tools/shared';
 import { z } from 'zod';
-import { EXCHANGE_FEED_URL } from './exchange/feed.ts';
+import { EXCHANGE_FEED_URLS } from './exchange/feed.ts';
+import { BASE_ITEMS_FILES } from './exchange/update.ts';
 import { createNinjaClient } from './poe-ninja/client.ts';
 
-const REPOE_URL = 'https://repoe-fork.github.io/poe2/base_items.json';
-const OUT_FILE = join(import.meta.dirname, '../data/exchange-base-items.json');
+const game: Game = GAMES.find((g) => g === process.env.GAME) ?? 'poe2';
+const REPOE_URLS: Record<Game, string> = {
+  poe2: 'https://repoe-fork.github.io/poe2/base_items.json',
+  poe1: 'https://repoe-fork.github.io/base_items.json',
+};
+const REPOE_URL = REPOE_URLS[game];
+const OUT_FILE = BASE_ITEMS_FILES[game];
 const HOURS = 24;
 const HOUR = 3600;
 
@@ -32,7 +40,7 @@ async function main() {
 
   const newest = Math.floor(Date.now() / 1000 / HOUR) * HOUR - 2 * HOUR;
   for (let i = 0; i < HOURS; i++) {
-    const res = await client.get(`${EXCHANGE_FEED_URL}/${newest - i * HOUR}`);
+    const res = await client.get(`${EXCHANGE_FEED_URLS[game]}/${newest - i * HOUR}`);
     console.log(`${res.status} ${res.url}`);
     if (res.status !== 200) continue;
     for (const market of marketsSchema.parse(JSON.parse(res.body)).markets) {

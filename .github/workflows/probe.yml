@@ -11,6 +11,11 @@ on:
         type: choice
         options: [exchange, ninja, base-items, poe1]
         default: exchange
+      game:
+        description: Game (base-items only)
+        type: choice
+        options: [poe2, poe1]
+        default: poe2
 
 concurrency:
   group: probe-${{ github.ref }}
@@ -35,6 +40,8 @@ jobs:
         run: pnpm probe:exchange
       - if: inputs.source == 'base-items'
         run: pnpm probe:base-items
+        env:
+          GAME: ${{ inputs.game }}
       - if: inputs.source == 'poe1'
         run: pnpm probe:poe1
       - name: Commit fixtures

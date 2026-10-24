@@ -37,8 +37,17 @@ describe('history csv', () => {
 
 describe('fx csv', () => {
   it('round-trips missing values', () => {
-    const points = [{ date: '2026-09-05', exalted: 500, chaos: null }];
-    expect(parseFxCsv(formatFxCsv(points))).toEqual(points);
+    const points = [{ date: '2026-09-05', rates: { exalted: 500 } }];
+    const csv = formatFxCsv(points, 'divine', ['exalted', 'chaos']);
+    expect(csv.split('\n')[0]).toBe('date,exalted_per_div,chaos_per_div');
+    expect(parseFxCsv(csv, ['exalted', 'chaos'])).toEqual(points);
+  });
+
+  it('names PoE 1 columns per chaos', () => {
+    const points = [{ date: '2026-09-05', rates: { divine: 0.003 } }];
+    const csv = formatFxCsv(points, 'chaos', ['divine']);
+    expect(csv.split('\n')[0]).toBe('date,divine_per_c');
+    expect(parseFxCsv(csv, ['divine'])).toEqual(points);
   });
 });
 

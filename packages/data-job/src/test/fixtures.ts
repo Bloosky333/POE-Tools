@@ -21,3 +21,14 @@ export function exchangeFixture(epoch: number): string | null {
     return null;
   }
 }
+
+const POE1_DIR = join(import.meta.dirname, '../../../../fixtures/poe1');
+
+/** PoE 1 probe fixture (`fixtures/poe1/`). */
+export function poe1Fixture(name: string): string {
+  return readFileSync(join(POE1_DIR, name), 'utf8');
+}
+
+export function poe1Json(name: string): unknown {
+  return JSON.parse(poe1Fixture(name));
+}

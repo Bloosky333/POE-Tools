@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { POE2_EXCHANGE_TYPES, type ExchangeType } from '@poe-tools/shared';
+import { ECONOMY, EXCHANGE_TYPES, type ExchangeType, type Game } from '@poe-tools/shared';
 import { z } from 'zod';
 import type { DailyPoint, FxPoint } from './convert.ts';
 import {
@@ -46,8 +46,9 @@ const EMPTY_META: LeagueMeta = {
 export type LeagueHistory = Map<ExchangeType, DailyPoint[]>;
 export type LeaguePairs = Map<ExchangeType, PairPoint[]>;
 
-export function createStore(root: string, game = 'poe2') {
+export function createStore(root: string, game: Game = 'poe2') {
   const leagueDir = (leagueId: string) => join(root, game, leagueId);
+  const { unit, fxCurrencies } = ECONOMY[game];
 
   async function readText(path: string): Promise<string | null> {
     try {
@@ -66,6 +67,7 @@ export function createStore(root: string, game = 'poe2') {
   return {
     /** Root directory of the store (also holds `icons/`). */
     root,
+    game,
     async readMeta(leagueId: string): Promise<LeagueMeta> {
       const text = await readText(join(leagueDir(leagueId), 'meta.json'));
       return text ? metaSchema.parse(JSON.parse(text)) : structuredClone(EMPTY_META);
@@ -79,14 +81,14 @@ export function createStore(root: string, game = 'poe2') {
     },
     async readFx(leagueId: string): Promise<FxPoint[]> {
       const text = await readText(join(leagueDir(leagueId), 'fx.csv'));
-      return text ? parseFxCsv(text) : [];
+      return text ? parseFxCsv(text, fxCurrencies) : [];
     },
     async writeFx(leagueId: string, points: readonly FxPoint[]): Promise<void> {
-      await writeText(join(leagueDir(leagueId), 'fx.csv'), formatFxCsv(points));
+      await writeText(join(leagueDir(leagueId), 'fx.csv'), formatFxCsv(points, unit, fxCurrencies));
     },
     async readHistory(leagueId: string): Promise<LeagueHistory> {
       const history: LeagueHistory = new Map();
-      for (const type of POE2_EXCHANGE_TYPES) {
+      for (const type of EXCHANGE_TYPES[game]) {
         const text = await readText(join(leagueDir(leagueId), 'history', `${type}.csv`));
         history.set(type, text ? parseHistoryCsv(text) : []);
       }
@@ -97,13 +99,13 @@ export function createStore(root: string, game = 'poe2') {
         if (!points.length) continue;
         await writeText(
           join(leagueDir(leagueId), 'history', `${type}.csv`),
-          formatHistoryCsv(points),
+          formatHistoryCsv(points, unit),
         );
       }
     },
     async readPairs(leagueId: string): Promise<LeaguePairs> {
       const pairs: LeaguePairs = new Map();
-      for (const type of POE2_EXCHANGE_TYPES) {
+      for (const type of EXCHANGE_TYPES[game]) {
         const text = await readText(join(leagueDir(leagueId), 'pairs', `${type}.csv`));
         pairs.set(type, text ? parsePairsCsv(text) : []);
       }
@@ -112,7 +114,10 @@ export function createStore(root: string, game = 'poe2') {
     async writePairs(leagueId: string, pairs: LeaguePairs): Promise<void> {
       for (const [type, points] of pairs) {
         if (!points.length) continue;
-        await writeText(join(leagueDir(leagueId), 'pairs', `${type}.csv`), formatPairsCsv(points));
+        await writeText(
+          join(leagueDir(leagueId), 'pairs', `${type}.csv`),
+          formatPairsCsv(points, unit),
+        );
       }
     },
   };

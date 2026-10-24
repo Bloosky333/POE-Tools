@@ -1,3 +1,4 @@
+import { ECONOMY, type CoreCurrency, type Game } from '../games.ts';
 import type { CurrentItem, HistoryPoint } from '../site-data.ts';
 import { Series } from './series.ts';
 
@@ -15,8 +16,14 @@ export interface EngineSettings {
   buyMultiplier: number;
   /** WAIT when the price is expected to dip by at least this fraction first. */
   dipThreshold: number;
-  /** Minimum current daily volume (div) for BUY NOW. */
+  /** Minimum current daily volume (game unit) for BUY NOW and the market factor. */
   minVolume: number;
+  /** Minimum price (game unit) of an item counted in the market factor. */
+  minPrice: number;
+  /** Daily volume (game unit) at which the liquidity part of confidence saturates. */
+  liquiditySaturation: number;
+  /** The unit currency, left out of the market factor. */
+  unit: CoreCurrency;
   /** Days of history compared to judge trajectory similarity. */
   similarityWindow: number;
   /**
@@ -26,18 +33,25 @@ export interface EngineSettings {
   premiumDamping: number;
 }
 
-export const DEFAULT_ENGINE_SETTINGS: EngineSettings = {
-  buyMultiplier: 1.3,
-  dipThreshold: 0.1,
-  minVolume: 5,
-  similarityWindow: 14,
-  premiumDamping: 1,
-};
+/** Default settings of a game: unit-free values are shared, the rest from its economy. */
+export function engineSettingsFor(game: Game): EngineSettings {
+  const economy = ECONOMY[game];
+  return {
+    buyMultiplier: 1.3,
+    dipThreshold: 0.1,
+    minVolume: economy.minVolume,
+    minPrice: economy.minPrice,
+    liquiditySaturation: economy.liquiditySaturation,
+    unit: economy.unit,
+    similarityWindow: 14,
+    premiumDamping: 1,
+  };
+}
+
+export const DEFAULT_ENGINE_SETTINGS: EngineSettings = engineSettingsFor('poe2');
 
 /** Items needed to estimate the market factor. */
 const MARKET_MIN_ITEMS = 10;
-/** Minimum price (div) of an item counted in the market factor. */
-const MARKET_MIN_PRICE = 0.05;
 
 export interface ConfidenceBreakdown {
   /** 0–1: how closely the current league follows the reference recently. */
@@ -102,7 +116,7 @@ export interface EngineInput {
 
 /**
  * Market-wide price level of the current league relative to the reference league on the
- * same day: median of N(today) / R(today) over liquid items. Divine's own value differs
+ * same day: median of N(today) / R(today) over liquid items. The unit's own value differs
  * between leagues, so an item at 2× last league's price is only expensive if the market
  * as a whole is not. Null when too few items can be compared.
  */
@@ -110,12 +124,17 @@ export function marketFactor(
   items: readonly CurrentItem[],
   referenceHistory: Readonly<Record<string, readonly HistoryPoint[]>>,
   today: number,
-  minVolume: number = DEFAULT_ENGINE_SETTINGS.minVolume,
+  settings: Pick<EngineSettings, 'minVolume' | 'minPrice' | 'unit'> = DEFAULT_ENGINE_SETTINGS,
 ): number | null {
   const d = Math.floor(today);
   const ratios: number[] = [];
   for (const item of items) {
-    if (item.id === 'divine' || item.price < MARKET_MIN_PRICE || item.volume < minVolume) continue;
+    if (
+      item.id === settings.unit ||
+      item.price < settings.minPrice ||
+      item.volume < settings.minVolume
+    )
+      continue;
     const history = referenceHistory[item.id];
     const ref = history && new Series(history).priceAt(d);
     if (ref) ratios.push(item.price / ref);
@@ -141,7 +160,7 @@ export function suggest(input: EngineInput): Suggestion {
   if (refToday === null || lastDay === null || lastDay <= d) {
     const breakdown = {
       similarity: 0,
-      liquidity: liquidityScore(item.volume, null),
+      liquidity: liquidityScore(item.volume, null, settings.liquiditySaturation),
       completeness: 0,
       phase,
     };
@@ -193,7 +212,7 @@ export function suggest(input: EngineInput): Suggestion {
   // Confidence.
   const breakdown: ConfidenceBreakdown = {
     similarity: similarity(ref, cur, d, settings.similarityWindow),
-    liquidity: liquidityScore(item.volume, ref.volumeAt(d)),
+    liquidity: liquidityScore(item.volume, ref.volumeAt(d), settings.liquiditySaturation),
     completeness: completeness(ref, d, sellDay),
     phase,
   };
@@ -319,9 +338,13 @@ function pearson(a: readonly number[], b: readonly number[]): number | null {
   return va > 0 && vb > 0 ? cov / Math.sqrt(va * vb) : null;
 }
 
-/** 0–1, saturating at 50 div/day in both leagues. */
-export function liquidityScore(currentVolume: number, referenceVolume: number | null): number {
-  const score = (v: number) => Math.min(1, Math.log10(1 + v) / Math.log10(51));
+/** 0–1, saturating at `saturation` per day (PoE 2: 50 div) in both leagues. */
+export function liquidityScore(
+  currentVolume: number,
+  referenceVolume: number | null,
+  saturation = DEFAULT_ENGINE_SETTINGS.liquiditySaturation,
+): number {
+  const score = (v: number) => Math.min(1, Math.log10(1 + v) / Math.log10(1 + saturation));
   return referenceVolume === null
     ? score(currentVolume)
     : (score(currentVolume) + score(referenceVolume)) / 2;

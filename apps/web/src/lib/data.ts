@@ -1,11 +1,12 @@
 import {
-  POE2_EXCHANGE_TYPES,
+  EXCHANGE_TYPES,
   currentFileSchema,
   dataPaths,
   flipsFileSchema,
   historyFileSchema,
   type CurrentFile,
   type FlipsFile,
+  type Game,
   type HistoryPoint,
 } from '@poe-tools/shared';
 import { useEffect, useState } from 'react';
@@ -37,9 +38,9 @@ export function fetchData<T>(path: string, schema: z.ZodType<T>): Promise<T> {
 /** `{ itemId: points }` over every exchange type of a league. */
 export type LeagueHistory = Record<string, HistoryPoint[]>;
 
-export async function fetchLeagueHistory(game: string, leagueId: string): Promise<LeagueHistory> {
+export async function fetchLeagueHistory(game: Game, leagueId: string): Promise<LeagueHistory> {
   const files = await Promise.all(
-    POE2_EXCHANGE_TYPES.map((type) =>
+    EXCHANGE_TYPES[game].map((type) =>
       fetchData(dataPaths.history(game, leagueId, type), historyFileSchema).catch((error) => {
         if (error instanceof DataNotFoundError) return null;
         throw error;

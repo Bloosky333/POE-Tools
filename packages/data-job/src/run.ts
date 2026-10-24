@@ -1,17 +1,22 @@
 import {
+  CORE_CURRENCIES,
   DAY_MS,
-  POE2_EXCHANGE_TYPES,
+  ECONOMY,
+  EXCHANGE_TYPES,
   getTrackedLeagues,
+  hasStarted,
   utcDate,
+  type CurrentFile,
   type CurrentItem,
   type ExchangeType,
+  type Game,
   type League,
 } from '@poe-tools/shared';
 import {
-  DIVINE_ID,
+  CURRENCY_DETAILS_ID,
   detailsToDailyPoints,
-  fxFromDivineDetails,
   fxFromOverview,
+  fxFromUnitDetails,
   overviewToItems,
   type DailyPoint,
   type FxPoint,
@@ -46,7 +51,7 @@ export interface JobOptions {
   windows?: WindowStore | undefined;
   now: Date;
   log: Logger;
-  /** Minimum daily volume (div) for an item to get its details history. */
+  /** Minimum daily volume (game unit) for an item to get its details history. */
   historyMinVolume?: number;
   /** Max items whose details history is refreshed per league per day. */
   maxHistoryItems?: number;
@@ -54,13 +59,19 @@ export interface JobOptions {
   iconFetch?: typeof fetch;
 }
 
+const CURRENCY_NAMES: Record<string, string> = {
+  divine: 'Divine Orb',
+  exalted: 'Exalted Orb',
+  chaos: 'Chaos Orb',
+};
+
 interface LeagueSnapshot {
   overviews: ExchangeOverview[];
   items: CurrentItem[];
 }
 
 /**
- * One run of the data job (scheduled hourly):
+ * One run of the data job for the store's game (scheduled hourly):
  * - current prices of selectable leagues → site `current.json`;
  * - once per league (or per `BACKFILL_VERSION`): full history of every liquid item from
  *   poe.ninja's details route;
@@ -71,27 +82,37 @@ interface LeagueSnapshot {
  * - selectable leagues: newest hour of GGG's currency-exchange feed → site `flips.json`;
  * - site history / fx files rebuilt from the store; per-pair rates (`pairs.json`) of
  *   selectable leagues from the store plus the hourly busiest pair.
+ *
+ * Leagues not listed by poe.ninja are skipped, except ended ones (their data stays
+ * available); a league is backfilled once more after its end so its curve is complete.
  */
 export async function runJob(options: JobOptions): Promise<void> {
   const { client, store, site, now, log } = options;
-  const minVolume = options.historyMinVolume ?? 2;
+  const game: Game = store.game;
+  const economy = ECONOMY[game];
+  const minVolume = options.historyMinVolume ?? economy.historyMinVolume;
   const maxItems = options.maxHistoryItems ?? 400;
   const today = utcDate(now);
   const yesterday = utcDate(now.getTime() - DAY_MS);
 
-  const ninjaLeagues = new Set((await fetchLeagues(client)).map((league) => league.id));
-  const tracked = getTrackedLeagues('poe2');
-  checkLeagues(tracked, ninjaLeagues, log);
+  const listed = (await fetchLeagues(client, game)).map((league) => league.id);
+  const ninjaLeagues = new Set(listed);
+  const tracked = resolveNinjaNames(getTrackedLeagues(game), listed, now, log);
+  checkLeagues(tracked, ninjaLeagues, now, log);
   const busiestByLeague = new Map<string, Map<string, BusiestPair>>();
 
   for (const league of tracked) {
-    if (!ninjaLeagues.has(league.ninjaName)) continue;
+    const ended = league.endsAt !== null && Date.parse(league.endsAt) <= now.getTime();
+    if (!hasStarted(league, now) || (!ninjaLeagues.has(league.ninjaName) && !ended)) continue;
     const meta = await store.readMeta(league.id);
-    const needsBackfill = meta.backfilledAt === null || meta.backfillVersion !== BACKFILL_VERSION;
+    const needsBackfill =
+      meta.backfilledAt === null ||
+      meta.backfillVersion !== BACKFILL_VERSION ||
+      (ended && meta.backfilledAt < (league.endsAt ?? ''));
     const needsDaily = meta.lastClosedDate === null || meta.lastClosedDate < yesterday;
     if (!league.selectable && !needsBackfill) continue;
 
-    const snapshot = await fetchSnapshot(client, league);
+    const snapshot = await fetchSnapshot(client, game, league);
     log.info(`${league.name}: ${snapshot.items.length} items`);
     const firstOverview = snapshot.overviews[0];
     if (league.selectable) busiestByLeague.set(league.id, busiestPairs(snapshot.overviews));
@@ -106,10 +127,8 @@ export async function runJob(options: JobOptions): Promise<void> {
         version: 1,
         leagueId: league.id,
         fetchedAt: now.toISOString(),
-        rates: {
-          exalted: firstOverview.core.rates.exalted ?? 0,
-          chaos: firstOverview.core.rates.chaos ?? 0,
-        },
+        unit: economy.unit,
+        rates: coreRates(firstOverview),
         items,
       });
     }
@@ -120,6 +139,7 @@ export async function runJob(options: JobOptions): Promise<void> {
           windows: options.windows,
           site,
           league,
+          game,
           items: snapshot.items,
           now,
           log,
@@ -144,11 +164,13 @@ export async function runJob(options: JobOptions): Promise<void> {
     // Items with details history: previously fetched ones plus newly liquid ones.
     const fetched = new Set(meta.detailsFetched);
     const toFetch = snapshot.items
-      .filter((item) => item.id !== DIVINE_ID && (fetched.has(item.id) || item.volume >= minVolume))
+      .filter(
+        (item) => item.id !== economy.unit && (fetched.has(item.id) || item.volume >= minVolume),
+      )
       .sort((a, b) => b.volume - a.volume)
       .slice(0, maxItems);
     const result = toFetch.length
-      ? await fetchHistories(client, league, toFetch, today, log)
+      ? await fetchHistories(client, game, league, toFetch, today, log)
       : { points: [], pairs: [], fx: [], fetched: [] };
     if (!result) {
       log.warn(`${league.name}: history refresh postponed`);
@@ -168,7 +190,7 @@ export async function runJob(options: JobOptions): Promise<void> {
     if (firstOverview && league.selectable) {
       const withDetails = new Set(meta.detailsFetched);
       const points: DailyPoint[] = snapshot.items
-        .filter((item) => item.id !== DIVINE_ID && item.price > 0 && !withDetails.has(item.id))
+        .filter((item) => item.id !== economy.unit && item.price > 0 && !withDetails.has(item.id))
         .map((item) => ({
           date: yesterday,
           item: item.id,
@@ -178,7 +200,7 @@ export async function runJob(options: JobOptions): Promise<void> {
         }));
       history = addSnapshotPoints(history, points, snapshot.items);
       if (!fx.some((p) => p.date === yesterday)) {
-        fx = mergeFx(fx, [fxFromOverview(firstOverview, yesterday)]);
+        fx = mergeFx(fx, [fxFromOverview(firstOverview, yesterday, economy.fxCurrencies)]);
       }
     }
     if (result) meta.lastClosedDate = yesterday;
@@ -207,25 +229,69 @@ export async function runJob(options: JobOptions): Promise<void> {
   await site.writeLeagues(tracked, now);
 }
 
-function checkLeagues(tracked: readonly League[], ninjaLeagues: Set<string>, log: Logger) {
+/** Units of the other core currencies per 1 unit, from an overview. */
+function coreRates(overview: ExchangeOverview): CurrentFile['rates'] {
+  const rates: CurrentFile['rates'] = {};
+  for (const currency of CORE_CURRENCIES) {
+    const rate = overview.core.rates[currency];
+    if (rate) rates[currency] = rate;
+  }
+  return rates;
+}
+
+/** Leagues that are not trade leagues of the challenge (and so never tracked). */
+const OTHER_LEAGUE = /^(HC |Hardcore|Ruthless|SSF|Standard)/;
+
+/**
+ * A started league whose name was unknown when it was added (`ninjaNameAuto`) takes
+ * poe.ninja's current challenge league (first listed) when no tracked league has it.
+ */
+function resolveNinjaNames(
+  tracked: readonly League[],
+  listed: readonly string[],
+  now: Date,
+  log: Logger,
+): League[] {
+  const known = new Set(tracked.map((league) => league.ninjaName));
+  const challenge = listed.find((id) => !OTHER_LEAGUE.test(id));
+  return tracked.map((league) => {
+    if (!league.ninjaNameAuto || !hasStarted(league, now) || listed.includes(league.ninjaName))
+      return league;
+    if (!challenge || known.has(challenge)) return league;
+    log.warn(`${league.name}: using poe.ninja league "${challenge}": set its name in leagues.ts`);
+    return { ...league, ninjaName: challenge };
+  });
+}
+
+function checkLeagues(
+  tracked: readonly League[],
+  ninjaLeagues: Set<string>,
+  now: Date,
+  log: Logger,
+) {
   for (const league of tracked) {
-    if (!ninjaLeagues.has(league.ninjaName) && league.endsAt === null) {
+    const ended = league.endsAt !== null && Date.parse(league.endsAt) <= now.getTime();
+    if (!ninjaLeagues.has(league.ninjaName) && !ended && hasStarted(league, now)) {
       log.warn(`League "${league.ninjaName}" not listed by poe.ninja: update leagues.ts`);
     }
   }
   const known = new Set(tracked.map((league) => league.ninjaName));
   for (const id of ninjaLeagues) {
-    if (!known.has(id) && !id.startsWith('HC ') && id !== 'Standard' && id !== 'Hardcore') {
+    if (!known.has(id) && !OTHER_LEAGUE.test(id)) {
       log.warn(`poe.ninja lists unknown league "${id}": new league? update leagues.ts`);
     }
   }
 }
 
-async function fetchSnapshot(client: NinjaClient, league: League): Promise<LeagueSnapshot> {
+async function fetchSnapshot(
+  client: NinjaClient,
+  game: Game,
+  league: League,
+): Promise<LeagueSnapshot> {
   const overviews: ExchangeOverview[] = [];
   const items = new Map<string, CurrentItem>();
-  for (const type of POE2_EXCHANGE_TYPES) {
-    const overview = await fetchOverview(client, league.ninjaName, type);
+  for (const type of EXCHANGE_TYPES[game]) {
+    const overview = await fetchOverview(client, game, league.ninjaName, type);
     overviews.push(overview);
     for (const item of overviewToItems(overview, type)) {
       if (!items.has(item.id)) items.set(item.id, item);
@@ -236,17 +302,25 @@ async function fetchSnapshot(client: NinjaClient, league: League): Promise<Leagu
 
 async function fetchHistories(
   client: NinjaClient,
+  game: Game,
   league: League,
   items: readonly CurrentItem[],
   today: string,
   log: Logger,
 ): Promise<{ points: DailyPoint[]; pairs: PairPoint[]; fx: FxPoint[]; fetched: string[] } | null> {
-  const divine = await fetchDetails(client, league.ninjaName, 'Currency', 'divine-orb');
-  if (!divine) {
-    log.warn(`${league.name}: Divine Orb details not found`);
+  const { unit, fxCurrencies } = ECONOMY[game];
+  const unitDetails = await fetchDetails(
+    client,
+    game,
+    league.ninjaName,
+    'Currency',
+    CURRENCY_DETAILS_ID[unit],
+  );
+  if (!unitDetails) {
+    log.warn(`${league.name}: ${CURRENCY_NAMES[unit]} details not found`);
     return null;
   }
-  const fx = fxFromDivineDetails(divine, today);
+  const fx = fxFromUnitDetails(unitDetails, today, fxCurrencies);
   const fxByDate = new Map(fx.map((point) => [point.date, point]));
 
   const points: DailyPoint[] = [];
@@ -255,7 +329,7 @@ async function fetchHistories(
   for (const item of items) {
     let details;
     try {
-      details = await fetchDetails(client, league.ninjaName, item.type, item.detailsId);
+      details = await fetchDetails(client, game, league.ninjaName, item.type, item.detailsId);
     } catch (error) {
       log.warn(`${league.name}: details failed for ${item.type}/${item.detailsId}: ${error}`);
       continue;
@@ -264,7 +338,7 @@ async function fetchHistories(
       log.warn(`${league.name}: no details for ${item.type}/${item.detailsId}`);
       continue;
     }
-    points.push(...detailsToDailyPoints(details, item.id, fxByDate, today));
+    points.push(...detailsToDailyPoints(details, item.id, fxByDate, today, unit));
     pairs.push(...detailsToPairPoints(details, item.id, today));
     fetched.push(item.id);
   }

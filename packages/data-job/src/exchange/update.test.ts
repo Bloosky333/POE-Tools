@@ -1,17 +1,24 @@
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { POE2_EXCHANGE_TYPES, flipsFileSchema, getTrackedLeagues } from '@poe-tools/shared';
+import {
+  POE1_EXCHANGE_TYPES,
+  POE2_EXCHANGE_TYPES,
+  computeFlips,
+  flipSettingsFor,
+  flipsFileSchema,
+  getTrackedLeagues,
+} from '@poe-tools/shared';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { overviewToItems } from '../convert.ts';
 import { createNinjaClient } from '../poe-ninja/client.ts';
 import { exchangeOverviewSchema } from '../poe-ninja/schemas.ts';
 import type { Logger } from '../run.ts';
 import { createSiteWriter } from '../site.ts';
-import { exchangeFixture, probeFixture } from '../test/fixtures.ts';
+import { exchangeFixture, poe1Fixture, probeFixture } from '../test/fixtures.ts';
 import { exchangeDigestSchema } from './feed.ts';
 import { HUB_BASE_IDS, buildItemMap, digestToHour } from './ingest.ts';
-import { updateFlips } from './update.ts';
+import { BASE_ITEMS_FILES, updateFlips } from './update.ts';
 import { createWindowStore } from './window.ts';
 
 const HOURS = [1792807200, 1792810800, 1792814400]; // 2026-10-24 02:00–04:00 UTC
@@ -111,5 +118,47 @@ describe('updateFlips', () => {
     await run(new Date('2026-10-24T06:20:00Z'));
     expect(calls).toHaveLength(4);
     expect(calls[0]).toBe(NEWEST + 3600);
+  });
+});
+
+const poe1Names = JSON.parse(await readFile(BASE_ITEMS_FILES.poe1, 'utf8')) as Record<
+  string,
+  string
+>;
+
+describe('PoE 1 feed (chaos and divine hubs)', () => {
+  const poe1Items = POE1_EXCHANGE_TYPES.flatMap((type) => {
+    try {
+      const text = poe1Fixture(`overview-${type.toLowerCase()}.json`);
+      return overviewToItems(exchangeOverviewSchema.parse(JSON.parse(text)), type);
+    } catch {
+      return [];
+    }
+  });
+  const hours = [1792818000, 1792821600, 1792825200].map((epoch) => {
+    const digest = exchangeDigestSchema.parse(JSON.parse(poe1Fixture(`exchange-${epoch}.json`)));
+    const map = buildItemMap(poe1Names, poe1Items, {}, ['chaos', 'divine']);
+    return digestToHour(digest, epoch, 'Allflame', map, ['chaos', 'divine']).hour;
+  });
+
+  it('prices markets against chaos or divine only', () => {
+    const newest = must(hours.at(-1));
+    expect(newest.markets.length).toBeGreaterThan(400);
+    expect(new Set(newest.markets.map((m) => m.hub))).toEqual(new Set(['chaos', 'divine']));
+    // Chaos ↔ divine market: chaos is the item side, ~330 chaos per divine.
+    const chaos = must(newest.markets.find((m) => m.item === 'chaos' && m.hub === 'divine'));
+    expect(chaos.itemVolume / chaos.hubVolume).toBeGreaterThan(250);
+    expect(chaos.itemVolume / chaos.hubVolume).toBeLessThan(400);
+  });
+
+  it('computes flips with values in chaos', () => {
+    const file = computeFlips('allflame', hours, new Date(), flipSettingsFor('poe1'));
+    expect(file.flips.length).toBeGreaterThan(50);
+    const cross = file.flips.filter((f) => f.kind === 'cross');
+    expect(cross.length).toBeGreaterThan(0);
+    for (const flip of cross) {
+      expect(new Set([flip.buy.hub, flip.sell.hub])).toEqual(new Set(['chaos', 'divine']));
+    }
+    expect(file.flips.every((f) => f.value24h >= 2000)).toBe(true);
   });
 });

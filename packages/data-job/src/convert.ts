@@ -1,7 +1,7 @@
-import type { CurrentItem, ExchangeType } from '@poe-tools/shared';
+import type { CoreCurrency, CurrentItem, ExchangeType } from '@poe-tools/shared';
 import type { ExchangeDetails, ExchangeOverview } from './poe-ninja/schemas.ts';
 
-/** One price observation of an item on a UTC calendar date, in divine. */
+/** One price observation of an item on a UTC calendar date, in the game's unit. */
 export interface DailyPoint {
   date: string;
   item: string;
@@ -10,14 +10,18 @@ export interface DailyPoint {
   source: 'details' | 'snapshot';
 }
 
-/** Units of exalted / chaos per 1 divine on a date. */
+/** Units of other core currencies per 1 unit of the game (PoE 2: per divine) on a date. */
 export interface FxPoint {
   date: string;
-  exalted: number | null;
-  chaos: number | null;
+  rates: Partial<Record<CoreCurrency, number>>;
 }
 
-export const DIVINE_ID = 'divine';
+/** poe.ninja `detailsId` of each core currency (its own item). */
+export const CURRENCY_DETAILS_ID: Record<CoreCurrency, string> = {
+  divine: 'divine-orb',
+  exalted: 'exalted-orb',
+  chaos: 'chaos-orb',
+};
 
 /** Keeps 6 significant digits: plenty for prices, keeps files small. */
 export function round(value: number): number {
@@ -45,25 +49,38 @@ export function overviewToItems(overview: ExchangeOverview, type: ExchangeType):
   });
 }
 
-/** Today's exchange rates from an overview `core` block. */
-export function fxFromOverview(overview: ExchangeOverview, date: string): FxPoint {
-  return {
-    date,
-    exalted: overview.core.rates.exalted ?? null,
-    chaos: overview.core.rates.chaos ?? null,
-  };
+/** Today's exchange rates (units per 1 unit) of `currencies` from an overview `core` block. */
+export function fxFromOverview(
+  overview: ExchangeOverview,
+  date: string,
+  currencies: readonly CoreCurrency[],
+): FxPoint {
+  const rates: FxPoint['rates'] = {};
+  for (const currency of currencies) {
+    const rate = overview.core.rates[currency];
+    if (rate) rates[currency] = rate;
+  }
+  return { date, rates };
 }
 
-/** Daily exalted/chaos per divine from the Divine Orb details (pair rate = units per divine). */
-export function fxFromDivineDetails(details: ExchangeDetails, beforeDate: string): FxPoint[] {
+/**
+ * Daily rates of `currencies` from the details of the unit's own item (PoE 2: Divine Orb,
+ * PoE 1: Chaos Orb), whose pair rate is units of the pair currency per 1 unit.
+ */
+export function fxFromUnitDetails(
+  details: ExchangeDetails,
+  beforeDate: string,
+  currencies: readonly CoreCurrency[],
+): FxPoint[] {
   const byDate = new Map<string, FxPoint>();
   for (const pair of details.pairs) {
-    if (pair.id !== 'exalted' && pair.id !== 'chaos') continue;
+    const currency = currencies.find((c) => c === pair.id);
+    if (!currency) continue;
     for (const point of pair.history) {
       const date = point.timestamp.slice(0, 10);
       if (date >= beforeDate || !point.rate) continue;
-      const fx = byDate.get(date) ?? { date, exalted: null, chaos: null };
-      fx[pair.id] = point.rate;
+      const fx = byDate.get(date) ?? { date, rates: {} };
+      fx.rates[currency] = point.rate;
       byDate.set(date, fx);
     }
   }
@@ -71,7 +88,7 @@ export function fxFromDivineDetails(details: ExchangeDetails, beforeDate: string
 }
 
 /**
- * Converts an item's per-pair history into one daily price in divine: the
+ * Converts an item's per-pair history into one daily price in the game's unit: the
  * volume-weighted average price actually paid over all pairs that day
  * (Σ divine traded / Σ items traded).
  *
@@ -86,14 +103,15 @@ export function detailsToDailyPoints(
   itemId: string,
   fx: ReadonlyMap<string, FxPoint>,
   beforeDate: string,
+  unit: CoreCurrency = 'divine',
 ): DailyPoint[] {
   const days = new Map<string, { volume: number; units: number; prices: number[] }>();
   for (const pair of details.pairs) {
     for (const point of pair.history) {
       const date = point.timestamp.slice(0, 10);
-      const divPerUnit = divinePerUnit(pair.id, fx.get(date));
-      if (date >= beforeDate || !point.rate || divPerUnit === null) continue;
-      const price = point.rate * divPerUnit;
+      const perPairUnit = unitPerPairUnit(pair.id, unit, fx.get(date));
+      if (date >= beforeDate || !point.rate || perPairUnit === null) continue;
+      const price = point.rate * perPairUnit;
       const volume = point.volumePrimaryValue ?? 0;
       const day = days.get(date) ?? { volume: 0, units: 0, prices: [] };
       day.volume += volume;
@@ -119,8 +137,9 @@ function median(values: readonly number[]): number {
   return sorted.length % 2 ? (sorted[mid] ?? 0) : ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
 }
 
-function divinePerUnit(currency: string, fx: FxPoint | undefined): number | null {
-  if (currency === DIVINE_ID) return 1;
-  const rate = currency === 'exalted' ? fx?.exalted : currency === 'chaos' ? fx?.chaos : null;
+/** Value of 1 `currency` in the game's unit on a day (null: no rate). */
+function unitPerPairUnit(currency: string, unit: CoreCurrency, fx: FxPoint | undefined) {
+  if (currency === unit) return 1;
+  const rate = fx?.rates[currency as CoreCurrency];
   return rate ? 1 / rate : null;
 }

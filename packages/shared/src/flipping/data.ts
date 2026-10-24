@@ -1,7 +1,11 @@
 import { z } from 'zod';
+import { CORE_CURRENCIES } from '../games.ts';
 
-/** Hub currencies of the currency exchange (spec 04, §1). Ids are poe.ninja item ids. */
-export const HUBS = ['divine', 'exalted', 'chaos'] as const;
+/**
+ * Hub currencies of the currency exchange (spec 04, §1; PoE 1: chaos and divine only, spec
+ * 07 §5.2). Ids are poe.ninja item ids.
+ */
+export const HUBS = CORE_CURRENCIES;
 export type Hub = (typeof HUBS)[number];
 export const hubSchema = z.enum(HUBS);
 
@@ -14,7 +18,7 @@ export const flipLegSchema = z.object({
   high: z.number(),
   /** Item units traded on this market over the window. */
   units24h: z.number(),
-  /** Divine value traded on this market over the window. */
+  /** Value traded on this market over the window, in the game's unit. */
   value24h: z.number(),
 });
 export type FlipLeg = z.infer<typeof flipLegSchema>;
@@ -35,7 +39,7 @@ export const flipSchema = z.object({
   margin: z.number(),
   /** Margin at the most favourable end of every range of the newest hour. */
   bestMargin: z.number(),
-  /** Minimum over the legs of the units / divine value traded over the window. */
+  /** Minimum over the legs of the units / value (game unit) traded over the window. */
   units24h: z.number(),
   value24h: z.number(),
   /** Margin of each hour of the file's `hours` (null: not computable that hour). */

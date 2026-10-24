@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
   detailsToDailyPoints,
-  fxFromDivineDetails,
   fxFromOverview,
+  fxFromUnitDetails,
   overviewToItems,
 } from './convert.ts';
 import { exchangeDetailsSchema, exchangeOverviewSchema } from './poe-ninja/schemas.ts';
-import { probeJson } from './test/fixtures.ts';
+import { poe1Json, probeJson } from './test/fixtures.ts';
 
 const overview = exchangeOverviewSchema.parse(
   probeJson('exchange-overview-currency-runes-of-aldur.json'),
@@ -35,22 +35,21 @@ describe('overviewToItems', () => {
   });
 
   it('reads exchange rates per divine', () => {
-    expect(fxFromOverview(overview, TODAY)).toEqual({
+    expect(fxFromOverview(overview, TODAY, ['exalted', 'chaos'])).toEqual({
       date: TODAY,
-      exalted: 546.1,
-      chaos: 9.01,
+      rates: { exalted: 546.1, chaos: 9.01 },
     });
   });
 });
 
 describe('details conversion', () => {
-  const fx = fxFromDivineDetails(divine, TODAY);
+  const fx = fxFromUnitDetails(divine, TODAY, ['exalted', 'chaos']);
   const fxByDate = new Map(fx.map((p) => [p.date, p]));
 
   it('extracts daily rates for completed days only', () => {
     expect(fx[0]?.date).toBe('2026-05-29');
     expect(fx.at(-1)?.date).toBe('2026-10-22');
-    expect(fx.every((p) => p.exalted && p.chaos)).toBe(true);
+    expect(fx.every((p) => p.rates.exalted && p.rates.chaos)).toBe(true);
   });
 
   it('converts the Chaos Orb history to a divine price close to the overview', () => {
@@ -73,7 +72,7 @@ describe('details conversion', () => {
         probeJson(`exchange-details-${fixture}-forbidden-rites.json`),
       );
       const dates = details.pairs.flatMap((p) => p.history.map((h) => h.timestamp.slice(0, 10)));
-      const fxMap = new Map(dates.map((date) => [date, { date, ...rates }]));
+      const fxMap = new Map(dates.map((date) => [date, { date, rates }]));
       const point = detailsToDailyPoints(details, fixture, fxMap, TODAY).find(
         (p) => p.date === '2026-10-22',
       );
@@ -106,5 +105,34 @@ describe('details conversion', () => {
     const points = detailsToDailyPoints(chaos, 'chaos', new Map(), TODAY);
     // Without fx only the divine pair is usable, which still gives a price per day.
     expect(points.every((p) => p.price > 0)).toBe(true);
+  });
+});
+
+describe('PoE 1 (chaos unit)', () => {
+  const POE1_TODAY = '2026-10-24';
+  const chaosDetails = exchangeDetailsSchema.parse(poe1Json('details-chaos-orb-allflame.json'));
+  const fx = fxFromUnitDetails(chaosDetails, POE1_TODAY, ['divine']);
+  const fxByDate = new Map(fx.map((p) => [p.date, p]));
+
+  it('reads divine per chaos from the Chaos Orb details', () => {
+    expect(fx[0]?.date).toBe('2026-07-25');
+    expect(fx.at(-1)?.date).toBe('2026-10-23');
+    // ~330 chaos per divine late in the league.
+    expect(1 / (fx.at(-1)?.rates.divine ?? 1)).toBeGreaterThan(200);
+  });
+
+  it('prices items in chaos over the chaos and divine pairs', () => {
+    const oil = exchangeDetailsSchema.parse(poe1Json('details-golden-oil-allflame.json'));
+    const last = detailsToDailyPoints(oil, 'golden-oil', fxByDate, POE1_TODAY, 'chaos').at(-1);
+    expect(last?.date).toBe('2026-10-23');
+    // Overview on the 24th: 287.5 c.
+    expect(last?.price).toBeGreaterThan(200);
+    expect(last?.price).toBeLessThan(400);
+  });
+
+  it('prices the Divine Orb itself in chaos', () => {
+    const divineOrb = exchangeDetailsSchema.parse(poe1Json('details-divine-orb-allflame.json'));
+    const last = detailsToDailyPoints(divineOrb, 'divine', fxByDate, POE1_TODAY, 'chaos').at(-1);
+    expect(last?.price).toBeCloseTo(1 / (fx.at(-1)?.rates.divine ?? 1), -1);
   });
 });
