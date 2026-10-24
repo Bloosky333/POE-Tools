@@ -28,8 +28,9 @@ Out of scope for v1: budget allocation, flip log / tracking, item-to-item cycles
 ## 3. Data source — GGG currency exchange feed
 
 `GET https://web.poecdn.com/api/currency-exchange/poe2/{hourEpoch}` — official, public,
-no OAuth (used the same way by poe2scout). Facts below are from third-party code and notes;
-they are to be confirmed by the probe (§8, step 1).
+no OAuth (used the same way by poe2scout). **Verified by the probe — see
+[`05-ggg-exchange-api.md`](./05-ggg-exchange-api.md)** (field semantics, VWAP, observed
+ranges). Summary:
 
 - One response = **one complete past hour**, every market of every league
   (~2–3k markets; ~2k for Forbidden Rites). The current hour is never available, so data is
@@ -166,5 +167,5 @@ Stale data (> 3 h) → `Notice` warning, same as other tools.
 - **Gold cost table source** (wiki table, game data export).
 - **Gold low/high**: relative to the median of listed flips (proposed) vs fixed values.
 - **Base id mapping source**.
-- Whether `lowest_ratio`/`highest_ratio` really bound executed trades or offered orders
-  (probe).
+- **Revisit after the probe** (`05-ggg-exchange-api.md`): optimistic vs VWAP margins (F12),
+  units-only volume filter (F9), what a spread flip can claim from an hourly range.
