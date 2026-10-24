@@ -4,8 +4,8 @@
  * matches these names against poe.ninja items. Run via the probe workflow
  * (`source: base-items`) when the job warns about unmapped ids (new league / patch).
  */
-import { readFile, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { z } from 'zod';
 import { EXCHANGE_FEED_URL } from './exchange/feed.ts';
 import { createNinjaClient } from './poe-ninja/client.ts';
@@ -52,6 +52,7 @@ async function main() {
     if (name) names[id] = name;
     else missing.push(id);
   }
+  await mkdir(dirname(OUT_FILE), { recursive: true });
   await writeFile(OUT_FILE, JSON.stringify(names, null, 2) + '\n');
   console.log(`${Object.keys(names).length} names written, ${missing.length} ids without name`);
   for (const id of missing) console.log(`::warning::No RePoE name for ${id}`);
