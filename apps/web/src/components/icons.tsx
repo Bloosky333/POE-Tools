@@ -59,6 +59,13 @@ export const HammerIcon = (p: SVGProps<SVGSVGElement>) => (
   </Icon>
 );
 
+export const PickaxeIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M4 9c4-4.5 12-4.5 16 0" />
+    <path d="M12 5.5L5 20" />
+  </Icon>
+);
+
 export const MenuIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}>
     <path d="M4 6h16M4 12h16M4 18h16" />

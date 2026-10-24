@@ -70,7 +70,7 @@ remainder pro rata; with fewer than 3 items (cap impossible) the shares are equa
 | Metric       | Definition                                                                                                    |
 | ------------ | ------------------------------------------------------------------------------------------------------------- |
 | Market size  | Sum of daily volume (div/day) of its liquid items.                                                            |
-| Loot value   | Volume-weighted average price of its liquid items (the "typical unit you would sell").                        |
+| Loot value   | Average price of a unit traded: market size / units traded (units = volume / price).                          |
 | Items        | Number of liquid items (+ the top 3 by volume shown in the row).                                              |
 | Trend 7 d    | `Σ w × N(d)/N(d−7)` / `Σ w`, divided by the market's median 7-day change (as Sell Now).                       |
 | Outlook 14 d | `Σ w × R(d+14)/R(d)` / `Σ w` over items with reference data, divided by the reference market's median change. |
@@ -88,8 +88,8 @@ remainder pro rata; with fewer than 3 items (cap impossible) the shares are equa
 - **Confidence**: spec 01 §4.4 applied to the mechanic index: `100 × phase × (0.4 similarity of
 the two index curves + 0.35 liquidity + 0.25 completeness)`, completeness = share of the
   mechanic's volume with reference history.
-- **Ranking**: FARM & HOLD, FARM & SELL, THIN, AVOID; within each, outlook × confidence. The
-  baseline row is pinned where its own values place it, greyed, without a verdict.
+- **Ranking**: FARM & HOLD, FARM & SELL, THIN, AVOID; within each, (outlook − 1) × confidence. The
+  baseline row (greyed, no verdict) is listed after FARM & SELL, for comparison.
 
 ## 5. UI
 

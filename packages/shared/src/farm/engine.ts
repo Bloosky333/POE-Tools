@@ -83,7 +83,7 @@ export interface FarmSignal {
   items: FarmItem[];
   /** Traded per day over its liquid items (game unit). */
   marketSize: number;
-  /** Volume-weighted average price of its liquid items (game unit). */
+  /** Average price of a unit of its loot traded (game unit). */
   lootValue: number;
   /** Weighted 7-day move vs the market (ratio, 1 = like the market); null when unknown. */
   trend: number | null;
@@ -95,7 +95,7 @@ export interface FarmSignal {
   index: { current: HistoryPoint[]; reference: HistoryPoint[] };
   confidence: number;
   breakdown: ConfidenceBreakdown;
-  /** Ranking within a verdict: outlook × confidence. */
+  /** Ranking within a verdict: (outlook − 1) × confidence, 0 without an outlook. */
   score: number;
 }
 
@@ -177,7 +177,9 @@ function signalOf(
   );
   const members: Member[] = raw.map((m, i) => ({ ...m, weight: shares[i] ?? 0 }));
   const marketSize = items.reduce((s, i) => s + i.volume, 0);
-  const lootValue = marketSize ? items.reduce((s, i) => s + i.volume * i.price, 0) / marketSize : 0;
+  // Average price of a unit traded: volume is in the game's unit, so units = volume / price.
+  const unitsTraded = items.reduce((s, i) => s + i.volume / i.price, 0);
+  const lootValue = unitsTraded ? marketSize / unitsTraded : 0;
 
   const horizonDay = d + settings.horizon;
   const outlookDay =
@@ -323,7 +325,7 @@ function signalOf(
     index,
     confidence,
     breakdown,
-    score: (outlook ?? 1) * (confidence / 100),
+    score: ((outlook ?? 1) - 1) * (confidence / 100),
   };
 }
 
