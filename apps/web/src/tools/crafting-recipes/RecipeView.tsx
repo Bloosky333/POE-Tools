@@ -1,5 +1,4 @@
 import { describeCondition, recipeCost, type Recipe, type RecipeCost } from '@poe-tools/shared';
-import { formatDiv } from '../../lib/format.ts';
 import {
   Amount,
   Badge,
@@ -12,6 +11,7 @@ import {
   StatTile,
   type Column,
 } from '../../ui/index.ts';
+import { formatAmount } from '../../lib/format.ts';
 import { useCatalog } from './catalog.ts';
 import { ActionView, ItemName, StepKindBadge, gotoLabel, stepTitle } from './parts.tsx';
 
@@ -59,7 +59,7 @@ export function RecipeView({
           detail={
             cost.base
               ? cost.base.runs > 1.0001
-                ? `${cost.base.runs.toFixed(2)} bases × ${formatDiv(cost.base.price)} div`
+                ? `${cost.base.runs.toFixed(2)} bases × ${formatAmount(cost.base.price, unit.id)} ${unit.short}`
                 : 'One base'
               : 'No base set'
           }

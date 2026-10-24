@@ -1,4 +1,4 @@
-import { getLeague, recipeCost, type Recipe } from '@poe-tools/shared';
+import { getLeague, recipeCost, type Game, type Recipe } from '@poe-tools/shared';
 import { useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { fetchCraftingData, fetchCurrent, useAsync } from '../../lib/data.ts';
@@ -37,7 +37,7 @@ export default function CraftingRecipesPage() {
     if (!league) throw new Error('No league selected');
     const [current, crafting] = await Promise.all([
       fetchCurrent(settings.game, league.id),
-      fetchCraftingData(),
+      fetchCraftingData(settings.game),
     ]);
     return { current, crafting };
   });
@@ -45,6 +45,7 @@ export default function CraftingRecipesPage() {
     () =>
       data.status === 'ready'
         ? buildCatalog(
+            settings.game,
             data.data.current.items,
             data.data.crafting.mods.mods,
             data.data.crafting.bases.bases,
@@ -54,9 +55,6 @@ export default function CraftingRecipesPage() {
     [data, settings.game],
   );
 
-  if (settings.game !== 'poe2') {
-    return <Notice>Crafting Recipes is available for Path of Exile 2 only.</Notice>;
-  }
   return (
     <section className="space-y-5">
       {data.status === 'loading' && <Skeleton rows={4} label="Loading prices and mods" />}
@@ -71,20 +69,21 @@ export default function CraftingRecipesPage() {
       )}
       {catalog && (
         <CatalogContext value={catalog}>
-          <Recipes />
+          {/* Keyed by game: each game has its own saved recipes. */}
+          <Recipes key={catalog.game} game={catalog.game} />
         </CatalogContext>
       )}
     </section>
   );
 }
 
-function Recipes() {
+function Recipes({ game }: { game: Game }) {
   const [search, setSearch] = useSearchParams();
-  const [recipes, setRecipes] = useState(loadRecipes);
+  const [recipes, setRecipes] = useState(() => loadRecipes(game));
   const [message, setMessage] = useState<string | null>(null);
   const save = (next: Recipe[]) => {
     setRecipes(next);
-    storeRecipes(next);
+    storeRecipes(game, next);
   };
   const go = (id: string | null, opts: { edit?: boolean; base?: number } = {}) => {
     const out = new URLSearchParams();
@@ -102,7 +101,7 @@ function Recipes() {
     0,
     Math.min(Number(search.get('base')) || 0, (recipe?.bases.length ?? 1) - 1),
   );
-  const [draftNew] = useState(newRecipe);
+  const [draftNew] = useState(() => newRecipe(game));
 
   if (id && !isNew && !recipe) {
     return (
@@ -195,9 +194,18 @@ function Recipes() {
       onNew={() => go('new')}
       onImport={(text) => {
         try {
-          const { recipes: merged, changed } = mergeImport(recipes, parseImport(text));
+          const {
+            recipes: merged,
+            changed,
+            otherGame,
+          } = mergeImport(game, recipes, parseImport(text));
           save(merged);
-          setMessage(`${changed} recipe${changed === 1 ? '' : 's'} imported.`);
+          setMessage(
+            `${changed} recipe${changed === 1 ? '' : 's'} imported.` +
+              (otherGame
+                ? ` ${otherGame} for the other game left out (switch game to import ${otherGame === 1 ? 'it' : 'them'}).`
+                : ''),
+          );
         } catch (error) {
           setMessage(`Import failed: ${error instanceof Error ? error.message : String(error)}.`);
         }

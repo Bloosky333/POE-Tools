@@ -4,7 +4,7 @@ import { exportFile, mergeImport, newRecipe, parseImport } from './storage.ts';
 import { cleanCondition, cleanRecipe } from './RecipeEditor.tsx';
 
 const recipe = (id: string, updatedAt: string, name = id): Recipe => ({
-  ...newRecipe(new Date(updatedAt)),
+  ...newRecipe('poe2', new Date(updatedAt)),
   id,
   name,
   steps: [{ id: 's', kind: 'apply', action: [{ itemId: 'exalted', count: 1 }], times: 1 }],
@@ -25,8 +25,20 @@ describe('import / export', () => {
   it('keeps the newer copy of a recipe', () => {
     const old = recipe('a', '2026-10-01T00:00:00.000Z', 'old');
     const newer = recipe('a', '2026-10-02T00:00:00.000Z', 'newer');
-    expect(mergeImport([old], [newer])).toEqual({ recipes: [newer], changed: 1 });
-    expect(mergeImport([newer], [old, recipe('b', '2026-10-01T00:00:00.000Z')]).changed).toBe(1);
+    expect(mergeImport('poe2', [old], [newer])).toEqual({
+      recipes: [newer],
+      changed: 1,
+      otherGame: 0,
+    });
+    expect(
+      mergeImport('poe2', [newer], [old, recipe('b', '2026-10-01T00:00:00.000Z')]).changed,
+    ).toBe(1);
+  });
+
+  it('leaves out recipes of the other game', () => {
+    const poe1 = { ...recipe('c', '2026-10-01T00:00:00.000Z'), game: 'poe1' as const };
+    expect(mergeImport('poe2', [], [poe1])).toEqual({ recipes: [], changed: 0, otherGame: 1 });
+    expect(mergeImport('poe1', [], [poe1]).recipes).toEqual([poe1]);
   });
 });
 
