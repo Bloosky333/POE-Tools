@@ -1,4 +1,4 @@
-# Tool #2 — Currency Flipping (v0.2 — draft, under review)
+# Tool #2 — Currency Flipping (v0.3 — draft, under review)
 
 Game: **PoE 2**. Status: draft — decisions so far are logged in
 [`open-questions.md`](./open-questions.md) (F-series); open points are listed in §9.
@@ -9,7 +9,8 @@ Show which trades on the in-game **currency exchange** make a margin right now, 
 exact ratios to type in-game. Two kinds of flip:
 
 - **Spread flip** — one market (e.g. exalted ↔ Omen of X): buy the item at the low end of
-  the recent ratio range, sell it at the high end.
+  the recent ratio range, sell it at the high end. The feed cannot say how much traded at
+  each end, so spread flips are a heuristic ranked on recurrence (decided, F15).
 - **Cross-pair flip** — buy an item with one hub currency, sell it for another, convert
   back: e.g. pay exalted for X, sell X for chaos, sell chaos for exalted.
 
@@ -23,7 +24,7 @@ Out of scope for v1: budget allocation, flip log / tracking, item-to-item cycles
 - The global "divine only" rule (Q10) is **lifted for this tool**: orders are shown as the
   in-game ratios in their own currencies (e.g. "pay 3 ex : get 1 X", "sell 1 X : get 25 c").
 - **Profit is a percentage** of the capital put in (it does not depend on quantity).
-- Divine is used only to make volumes (and later gold costs) comparable (§5).
+- Divine is used only to make values comparable (volume filter, later gold costs) (§5).
 
 ## 3. Data source — GGG currency exchange feed
 
@@ -33,13 +34,15 @@ no OAuth (used the same way by poe2scout). **Verified by the probe — see
 ranges). Summary:
 
 - One response = **one complete past hour**, every market of every league
-  (~2–3k markets; ~2k for Forbidden Rites). The current hour is never available, so data is
+  (~2,300 markets; ~1,460 for Forbidden Rites, ~1,150 with trades). The current hour is never available, so data is
   **1–2 h old** when shown (digest published ~5 min after the hour; our job runs at `:17`).
 - Per market: `league`, `market_id` (`baseItemId|baseItemId`), `market_pair`,
   `volume_traded`, `lowest_stock`, `highest_stock`, `lowest_ratio`, `highest_ratio` —
   dictionaries keyed by base item id (`Metadata/Items/Currency/...`), integer values.
 - Ratios are integer pairs, i.e. what players type in-game. `lowest_*` / `highest_*` are
   the **range within the hour**, not a live order book.
+- `volume_traded[A] / volume_traded[B]` = **volume-weighted average ratio (VWAP)** of the
+  hour; matches poe.ninja on the hub rates.
 - Markets can show stock with zero trades. Private leagues (`... (PL12345)`) and Hardcore
   are excluded.
 - History is available by epoch (back to Dec 2024; GGG may prune old history).
@@ -47,7 +50,8 @@ ranges). Summary:
 Called **only from the data job**, with the project `USER_AGENT`, one request per run
 (plus a throttled one-time backfill of up to 24 hours when the rolling window is missing).
 
-poe.ninja stays the source for divine prices (volume in divine, later gold per div).
+Divine values are computed from the feed itself (hub side of each market × hub VWAP of the
+same hour); poe.ninja provides item names, icons and categories.
 
 ### 3.1 Item identity
 
@@ -68,7 +72,8 @@ PoE 2 `base_items` export, refreshed per league). Unmapped ids are logged and sk
 ## 5. Engine (`packages/shared`, unit-tested)
 
 Notation: for a market hub `H` ↔ item `X`, a ratio is converted to `p` = units of `H` per
-1 `X`. Each hour gives `p_low`, `p_high` (from the ratio range).
+1 `X`. Each hour gives `p_low`, `p_high` (from the ratio range) and `p_avg` (VWAP:
+`volume_traded[H] / volume_traded[X]`).
 Hub conversion rates come from the hub ↔ hub markets of the same hour (same source, same
 hour → no cross-source drift).
 
@@ -79,11 +84,13 @@ hour → no cross-source drift).
 
 ### 5.2 Cross-pair flip (hub A → X → hub B → A)
 
-`margin = p_B(X) · rate(B→A) / p_A(X) − 1`, **optimistic** on every leg (decided): buy X at
-`p_low` in the A market, sell X at `p_high` in the B market, convert B → A at the most
-favourable end of the B ↔ A range. It is an upper bound, which the recurrence filter
-(§5.3) and the per-leg ranges in the detail sheet put into context. All 6 ordered hub pairs
-are evaluated per item; the best direction is kept.
+`margin = p_avg_B(X) · rate_avg(B→A) / p_avg_A(X) − 1` — **average price paid (VWAP) on
+every leg** (decided, F12 revised after the probe: optimistic ends gave > 3 % on ~70 % of
+all directions, so the column carried no signal). All 6 ordered hub pairs are evaluated per
+item; the best direction is kept.
+
+The **best case** (buy X at `p_low` in the A market, sell at `p_high` in the B market,
+convert at the favourable end of B ↔ A) is shown in the detail sheet only.
 
 ### 5.3 Recurrence (confidence)
 
@@ -98,8 +105,11 @@ first days of the rolling window). Shown as a 0–100 `ScoreMeter`.
 - Volume is in **units of the flipped item traded over the last 24 h** (a 5000-div item
   traded once is not flippable, whatever its margin).
 - Capacity of a cross-pair flip = the minimum over its legs (in units of X).
-- The min-volume selector filters on units; the divine value of that volume is shown as
-  context.
+- Two filters, both applied to every leg (decided, F9 + F16):
+  - **min units** of the item traded over 24 h (selector);
+  - **min divine value** traded over 24 h, default **120 div** (≈ 5 div/hour), tunable —
+    removes cheap items whose large unit counts are worth almost nothing, and markets
+    distorted by indivisible units (e.g. 1 div paid for 155 Greater Transmutation Orbs).
 
 ### 5.5 Gold cost — deferred (not in v1)
 
@@ -122,7 +132,7 @@ v1 model (to be confirmed, §9):
 ### 5.6 Ranking
 
 Margin and volume are **separate columns** (no combined score). Default sort: **margin %**
-among flips passing the filters (min volume, min recurrence); volume and recurrence are
+among flips passing the filters (min units, min divine value, min recurrence); volume and recurrence are
 sortable too.
 
 ## 6. UI
@@ -130,15 +140,16 @@ sortable too.
 Header: "Forbidden Rites · exchange data for 14:00–15:00 UTC (1 h 40 min old)".
 
 Controls: flip type (`Segmented`: all / spread / cross-pair), min volume (units), min
-margin, category (`Chips`), search. All in the URL.
+value (div), min margin, category (`Chips`), search. All in the URL.
 
 Table:
 
 | Item | Type | Buy (pay → get) | Sell (pay → get) | Convert | Margin % | Volume 24 h | Recurrence |
 
 - Ratios shown in in-game form, with currency icons.
-- Row click → `Sheet`: per-hour margin over the last 24 h (`Sparkline`), the ratio range
-  of each leg, stock range, step-by-step order list to place in-game.
+- Row click → `Sheet`: per-hour margin over the last 24 h (`Sparkline`), best-case margin,
+  the ratio range and average of each leg, stock range, step-by-step order list to place
+  in-game.
 
 Stale data (> 3 h) → `Notice` warning, same as other tools.
 
@@ -153,8 +164,8 @@ Stale data (> 3 h) → `Notice` warning, same as other tools.
 ## 8. Milestones
 
 1. **M2a — probe**: add the GGG feed to the `poe.ninja probe` workflow (`source: exchange`,
-   `pnpm probe:exchange`); capture fixtures; confirm field meanings (ratio orientation, range semantics,
-   base ids), and write them up in `05-ggg-exchange-api.md`.
+   `pnpm probe:exchange`); capture fixtures; confirm field meanings — **done**
+   (`05-ggg-exchange-api.md`).
 2. **M2b — data job**: fetch + rolling window + `flips.json`; item mapping.
 3. **M2c — UI**: flips table + detail sheet; registry status `beta`.
 
@@ -167,5 +178,6 @@ Stale data (> 3 h) → `Notice` warning, same as other tools.
 - **Gold cost table source** (wiki table, game data export).
 - **Gold low/high**: relative to the median of listed flips (proposed) vs fixed values.
 - **Base id mapping source**.
-- **Revisit after the probe** (`05-ggg-exchange-api.md`): optimistic vs VWAP margins (F12),
-  units-only volume filter (F9), what a spread flip can claim from an hourly range.
+- **In-game check (pending)**: Gemcutter's Prism ≈ 0.037 div in the chaos/divine markets vs
+  ≈ 15.6 exalted (≈ 0.022 div) in the exalted market over three hours — confirm the gap is
+  real before trusting large cross-pair margins.
