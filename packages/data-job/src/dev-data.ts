@@ -3,11 +3,12 @@
  * the `data` branch and makes `current.json` from the probe fixtures.
  *   pnpm --filter @poe-tools/data-job dev-data --data-dir <data branch checkout> --out <dir>
  */
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { POE2_EXCHANGE_TYPES, getTrackedLeagues, type CurrentItem } from '@poe-tools/shared';
 import { overviewToItems } from './convert.ts';
+import { ICONS_DIR, iconFileName } from './icons.ts';
 import { exchangeOverviewSchema } from './poe-ninja/schemas.ts';
 import { createSiteWriter } from './site.ts';
 import { createStore } from './store.ts';
@@ -47,13 +48,19 @@ for (const league of leagues) {
     for (const item of overviewToItems(overview, type))
       if (!items.has(item.id)) items.set(item.id, item);
   }
+  // No network: keep icons already in the data branch, others stay empty.
+  const icons = new Set(await readdir(join(dataDir, ICONS_DIR)).catch(() => []));
   await site.writeCurrent({
     version: 1,
     leagueId: league.id,
     fetchedAt: new Date().toISOString(),
     rates,
-    items: [...items.values()],
+    items: [...items.values()].map((item) => {
+      const file = iconFileName(item.icon);
+      return { ...item, icon: file && icons.has(file) ? `${ICONS_DIR}/${file}` : '' };
+    }),
   });
 }
+await site.copyIcons(dataDir);
 await site.writeLeagues(leagues, new Date());
 console.log(`Site data written to ${outDir}`);

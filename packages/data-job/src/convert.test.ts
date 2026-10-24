@@ -30,7 +30,7 @@ describe('overviewToItems', () => {
       type: 'Currency',
       price: 0.111,
     });
-    expect(chaosItem?.icon).toMatch(/^https:\/\/poe\.ninja\/gen\/image\//);
+    expect(chaosItem?.icon).toMatch(/^\/gen\/image\/.+\.png$/);
     expect(items.find((item) => item.id === 'divine')?.price).toBe(1);
   });
 

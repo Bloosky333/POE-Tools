@@ -19,3 +19,11 @@ describe('format', () => {
     expect(formatAge('2026-10-24T05:00:00Z', Date.parse('2026-10-24T10:00:00Z'))).toBe('5 h ago');
   });
 });
+
+describe('iconUrl', () => {
+  it('resolves self-hosted icons and drops remote URLs', async () => {
+    const { iconUrl } = await import('./data.ts');
+    expect(iconUrl('icons/abc-Orb.png')).toBe(`${import.meta.env.BASE_URL}data/icons/abc-Orb.png`);
+    expect(iconUrl('https://poe.ninja/gen/image/x.png')).toBe('');
+  });
+});

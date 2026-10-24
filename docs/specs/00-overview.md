@@ -106,6 +106,9 @@ GitHub Actions (cron)                           Static hosting
   - `poe2/<league>/history/<ExchangeType>.csv` — `date,item,price_div,volume_div,source`
   - `poe2/<league>/fx.csv` — `date,exalted_per_div,chaos_per_div`
   - `poe2/<league>/meta.json` — backfill state, last closed date, items with history.
+  - `icons/<hash>-<Name>.png` — item icons, downloaded once from GGG's CDN
+    (`web.poecdn.com`, fallback poe.ninja) and served by the site, so browsers never call
+    poe.ninja.
 - Site data (`/data/`, schemas in `packages/shared/src/site-data.ts`):
   - `poe2/leagues.json`
   - `poe2/<league>/current.json` — latest prices + rates + `fetchedAt`.

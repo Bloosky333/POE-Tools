@@ -29,6 +29,7 @@ decisions in `docs/specs/open-questions.md`.
 - UI: build pages from the kit in `apps/web/src/ui/` and the semantic color tokens; read
   `docs/ui-guidelines.md` before adding a tool. Raw Tailwind palette colors fail a test.
 - poe.ninja: call only from the data job, throttled, with the `USER_AGENT` from
-  `packages/data-job/src/poe-ninja/client.ts`. Never from the browser.
+  `packages/data-job/src/poe-ninja/client.ts`. Never from the browser — item icons are
+  self-hosted (`packages/data-job/src/icons.ts`), never hotlinked.
 - Prices are expressed in divine.
 - Pin exact dependency versions.

@@ -60,6 +60,8 @@ describe('runJob', () => {
       site: createSiteWriter(join(root, 'site')),
       now,
       log,
+      iconFetch: async () =>
+        new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0])),
     });
   }
 
@@ -93,6 +95,11 @@ describe('runJob', () => {
       JSON.parse(await readFile(join(site, 'forbidden-rites', 'current.json'), 'utf8')),
     );
     expect(current.items.length).toBeGreaterThan(500);
+    // A few items have no image upstream; every other one points to a self-hosted icon.
+    const withIcon = current.items.filter((i) => i.icon);
+    expect(withIcon.length).toBeGreaterThan(current.items.length - 10);
+    expect(withIcon.every((i) => i.icon.startsWith('icons/'))).toBe(true);
+    expect((await readdir(join(root, 'site', 'icons'))).length).toBeGreaterThan(500);
     expect(current.rates.exalted).toBeGreaterThan(0);
     const roaHistory = historyFileSchema.parse(
       JSON.parse(await readFile(join(site, 'runes-of-aldur', 'history', 'Currency.json'), 'utf8')),
