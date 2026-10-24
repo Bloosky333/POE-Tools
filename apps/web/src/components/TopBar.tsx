@@ -1,6 +1,7 @@
 import { ENABLED_GAMES, GAMES, GAME_LABELS, LEAGUES, type Game } from '@poe-tools/shared';
 import { Link } from 'react-router';
 import type { Theme } from '../lib/settings.ts';
+import { DataFreshness } from './DataFreshness.tsx';
 import { useSettings } from '../lib/useSettings.ts';
 
 const THEMES: Theme[] = ['system', 'light', 'dark'];
@@ -26,6 +27,7 @@ export function TopBar({ onToggleNav }: { onToggleNav: () => void }) {
         POE Tools
       </Link>
       <div className="ml-auto flex flex-wrap items-center gap-2">
+        <DataFreshness />
         <label className="sr-only" htmlFor="game">
           Game
         </label>

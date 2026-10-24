@@ -1,13 +1,10 @@
 # M0: capture real poe.ninja responses (unreachable from the dev sandbox) and commit them
-# as fixtures to the branch that triggered the run. Small and on demand only.
+# as fixtures to the branch it runs on. Small and manual only (Actions → poe.ninja probe →
+# Run workflow).
 name: poe.ninja probe
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - packages/data-job/src/probe.ts
-      - .github/workflows/probe.yml
 
 concurrency:
   group: probe-${{ github.ref }}

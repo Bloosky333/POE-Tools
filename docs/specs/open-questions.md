@@ -27,6 +27,15 @@
 | Q24    | Runes of Aldur as current league | **No** — reference only.                                                                                                                                       |
 | Q19    | Suggestions                      | Must-have: BUY NOW / WAIT / AVOID / NEUTRAL, HOLD / SELL for positions, with confidence.                                                                       |
 
+## Implementation decisions (M1c)
+
+| Topic            | Decision                                                                                                                                                                                                                   |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| History price    | Volume-weighted average paid over all currency pairs (see `03-poe-ninja-api.md`).                                                                                                                                          |
+| Confidence       | `100 × phase × (0.4 similarity + 0.35 liquidity + 0.25 completeness)`; similarity = correlation of daily log-returns over the last 14 days (0.5 when < 5 days); liquidity saturates at 50 div/day; phase 0.5 on days 0–3.  |
+| Default filters  | Min volume 5 div/day (also required for BUY NOW), min price 0.05 div, hold 14 days.                                                                                                                                        |
+| Known limitation | Market-wide moves of the reference league (e.g. Runes of Aldur day ~55: divine +20% vs chaos, most items −10% in divine) drive WAIT/BUY for many items at once. Possible refinement: compare items against a market index. |
+
 ## Still open
 
 None — specs agreed. New questions will be added here as implementation progresses.
