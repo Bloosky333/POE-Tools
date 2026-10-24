@@ -36,8 +36,8 @@ the last complete hour was available ~1 h 10 min after its start.
 
 ## Field semantics (verified)
 
-- **Ratios** are integer quantities of each side of one trade, keyed by base id: `{chaos: 9,
-divine: 1}` = 9 chaos ↔ 1 divine. "Lowest"/"highest" order the value
+- **Ratios** are integer quantities of each side of one trade, keyed by base id:
+  `{chaos: 9, divine: 1}` = 9 chaos ↔ 1 divine. "Lowest"/"highest" order the value
   `q(market_pair[0]) / q(market_pair[1])`. Ratios are reduced fractions (e.g. `5 : 378`).
 - **`volume_traded`** = total quantity of each side exchanged in the hour, so
   `volume_traded[A] / volume_traded[B]` is the **volume-weighted average ratio (VWAP)**. It
