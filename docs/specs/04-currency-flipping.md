@@ -172,7 +172,11 @@ Stale data (> 3 h) → `Notice` warning, same as other tools.
    (`05-ggg-exchange-api.md`).
 2. **M2b — data job** — **done**: `packages/data-job/src/exchange/` (feed, mapping, window,
    update), engine in `packages/shared/src/flipping/`, `flips.json` published hourly.
-3. **M2c — UI**: flips table + detail sheet; registry status `beta`.
+3. **M2c — UI** — **done** (`apps/web/src/tools/currency-flipping/`), status `beta` with a
+   "margins not verified in-game" notice until the in-game check (§9) is done. Ratios are
+   shown as the smallest integer pair within 1000 (`toRatio`); spread rows show the hour's
+   low/high ends, cross-pair rows the averages. Filter defaults: 50 items and 120 div per
+   leg over 24 h, 3 % margin, 25 % recurrence.
 
 ## 9. Open points
 

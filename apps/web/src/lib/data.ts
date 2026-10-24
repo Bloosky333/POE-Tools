@@ -2,8 +2,10 @@ import {
   POE2_EXCHANGE_TYPES,
   currentFileSchema,
   dataPaths,
+  flipsFileSchema,
   historyFileSchema,
   type CurrentFile,
+  type FlipsFile,
   type HistoryPoint,
 } from '@poe-tools/shared';
 import { useEffect, useState } from 'react';
@@ -49,6 +51,10 @@ export async function fetchLeagueHistory(game: string, leagueId: string): Promis
 
 export function fetchCurrent(game: string, leagueId: string): Promise<CurrentFile> {
   return fetchData(dataPaths.current(game, leagueId), currentFileSchema);
+}
+
+export function fetchFlips(game: string, leagueId: string): Promise<FlipsFile> {
+  return fetchData(dataPaths.flips(game, leagueId), flipsFileSchema);
 }
 
 export type AsyncState<T> =
