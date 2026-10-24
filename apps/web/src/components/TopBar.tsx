@@ -4,6 +4,7 @@ import type { Theme } from '../lib/settings.ts';
 import { useNow } from '../lib/useNow.ts';
 import { useSettings } from '../lib/useSettings.ts';
 import { DataFreshness } from './DataFreshness.tsx';
+import { controlClass as selectClass } from '../ui/form.tsx';
 import { LogoMark, MenuIcon } from './icons.tsx';
 
 const GAME_SHORT: Record<Game, string> = { poe2: 'PoE 2', poe1: 'PoE 1' };
@@ -12,9 +13,6 @@ const THEMES: { value: Theme; label: string }[] = [
   { value: 'light', label: 'Light' },
   { value: 'system', label: 'System' },
 ];
-
-export const selectClass =
-  'h-8 rounded-md border border-line bg-surface-2 px-2 text-sm text-fg outline-none hover:border-subtle focus-visible:border-accent';
 
 export function TopBar({ onToggleNav }: { onToggleNav: () => void }) {
   const { settings, update } = useSettings();

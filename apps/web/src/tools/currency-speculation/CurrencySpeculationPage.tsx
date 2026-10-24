@@ -1,8 +1,21 @@
 import { EXCHANGE_TYPE_LABELS, POE2_EXCHANGE_TYPES, type Suggestion } from '@poe-tools/shared';
-import { useMemo, type ReactNode } from 'react';
-import { Div } from '../../components/Div.tsx';
-import { SearchIcon } from '../../components/icons.tsx';
+import { useMemo } from 'react';
 import { formatMultiplier } from '../../lib/format.ts';
+import {
+  Card,
+  Chips,
+  Div,
+  FilterBar,
+  InlineField,
+  Input,
+  Notice,
+  PageHeader,
+  SearchInput,
+  Segmented,
+  Select,
+  Skeleton,
+  StatTile,
+} from '../../ui/index.ts';
 import { ACTION_LABELS } from './ActionBadge.tsx';
 import { ItemDetail } from './ItemDetail.tsx';
 import { MODES, useViewParams, type SortKey, type ViewParams } from './params.ts';
@@ -28,25 +41,33 @@ export default function CurrencySpeculationPage() {
 
   return (
     <section className="space-y-5">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Currency Speculation</h1>
-          <p className="mt-1 text-sm text-muted">
+      <PageHeader
+        title="Currency Speculation"
+        description={
+          <>
             What to buy now and sell later, from how prices moved in{' '}
             <span className="text-fg">{reference.name}</span> at the same point of the league.
-          </p>
-        </div>
-        <div className="flex max-w-full min-w-0 items-center gap-2">
-          <span className="shrink-0 text-xs text-muted">Sell after</span>
-          <ModeToggle value={params.mode} onChange={(value) => update({ mode: value })} />
-        </div>
-      </header>
+          </>
+        }
+        actions={
+          <>
+            <span className="shrink-0 text-xs text-muted">Sell after</span>
+            <Segmented
+              label="Sell strategy"
+              options={MODES.map((m) => ({ value: m.value, label: m.short }))}
+              value={params.mode}
+              onChange={(mode) => update({ mode })}
+            />
+          </>
+        }
+      />
 
-      {data.status === 'loading' && <SkeletonRows />}
+      {data.status === 'loading' && <Skeleton label="Loading price data" />}
       {data.status === 'error' && (
-        <p className="rounded-lg border border-warn/40 bg-warn-soft p-4 text-sm text-warn">
-          ⚠ Price data couldn't be loaded ({data.error.message}). The data job may not have run yet.
-        </p>
+        <Notice>
+          Price data couldn&apos;t be loaded ({data.error.message}). The data job may not have run
+          yet.
+        </Notice>
       )}
       {data.status === 'ready' && (
         <>
@@ -57,14 +78,14 @@ export default function CurrencySpeculationPage() {
             divineIcon={divineIcon}
           />
 
-          <div className="space-y-3 rounded-lg border border-line bg-surface p-3">
+          <Card className="space-y-3">
             <CategoryChips
               suggestions={eligible}
               value={params.type}
               onChange={(type) => update({ type })}
             />
             <Filters params={params} update={update} />
-          </div>
+          </Card>
 
           <SuggestionsTable
             rows={rows}
@@ -101,31 +122,6 @@ export default function CurrencySpeculationPage() {
   );
 }
 
-function ModeToggle({ value, onChange }: { value: string; onChange: (value: string) => void }) {
-  return (
-    <div
-      role="radiogroup"
-      aria-label="Sell strategy"
-      className="flex max-w-full overflow-x-auto rounded-lg border border-line bg-surface p-0.5"
-    >
-      {MODES.map((m) => (
-        <button
-          key={m.value}
-          type="button"
-          role="radio"
-          aria-checked={value === m.value}
-          onClick={() => onChange(m.value)}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium whitespace-nowrap ${
-            value === m.value ? 'bg-accent text-on-accent' : 'text-muted hover:text-fg'
-          }`}
-        >
-          {m.short}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function StatTiles({
   suggestions,
   today,
@@ -144,14 +140,14 @@ function StatTiles({
     .sort((a, b) => b.score - a.score)[0];
   return (
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-      <Tile label={leagueName} value={`Day ${today}`} />
-      <Tile label="Buy now" value={count('buy')} tone="text-gain" />
-      <Tile label="Wait for a dip" value={count('wait')} tone="text-warn" />
-      <Tile label="Avoid" value={count('avoid')} tone="text-loss" />
-      <Tile
+      <StatTile label={leagueName} value={`Day ${today}`} />
+      <StatTile label="Buy now" value={count('buy')} tone="gain" />
+      <StatTile label="Wait for a dip" value={count('wait')} tone="warn" />
+      <StatTile label="Avoid" value={count('avoid')} tone="loss" />
+      <StatTile
         label="Top opportunity"
         value={best ? formatMultiplier(best.reference?.multiplierFromBuy) : '–'}
-        tone="text-accent"
+        tone="accent"
         detail={
           best ? (
             <span className="flex min-w-0 items-center gap-1">
@@ -162,26 +158,6 @@ function StatTiles({
           ) : undefined
         }
       />
-    </div>
-  );
-}
-
-function Tile({
-  label,
-  value,
-  tone = '',
-  detail,
-}: {
-  label: string;
-  value: ReactNode;
-  tone?: string;
-  detail?: ReactNode;
-}) {
-  return (
-    <div className="min-w-0 rounded-lg border border-line bg-surface px-4 py-3">
-      <div className="truncate text-xs text-muted">{label}</div>
-      <div className={`mt-1 text-2xl font-semibold ${tone}`}>{value}</div>
-      {detail && <div className="mt-0.5 text-xs text-muted">{detail}</div>}
     </div>
   );
 }
@@ -197,34 +173,21 @@ function CategoryChips({
 }) {
   const counts = new Map<string, number>();
   for (const s of suggestions) counts.set(s.item.type, (counts.get(s.item.type) ?? 0) + 1);
-  const chip = (key: ViewParams['type'], label: string, count: number) => (
-    <button
-      key={key}
-      type="button"
-      aria-pressed={value === key}
-      onClick={() => onChange(key)}
-      className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
-        value === key
-          ? 'border-accent bg-accent-soft text-fg'
-          : 'border-line text-muted hover:border-subtle hover:text-fg'
-      }`}
-    >
-      {label}
-      <span className="text-subtle">{count}</span>
-    </button>
-  );
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {chip('all', 'All', suggestions.length)}
-      {POE2_EXCHANGE_TYPES.filter((t) => counts.get(t)).map((t) =>
-        chip(t, EXCHANGE_TYPE_LABELS[t], counts.get(t) ?? 0),
-      )}
-    </div>
+    <Chips<ViewParams['type']>
+      value={value}
+      onChange={onChange}
+      options={[
+        { value: 'all', label: 'All', count: suggestions.length },
+        ...POE2_EXCHANGE_TYPES.filter((t) => counts.get(t)).map((t) => ({
+          value: t,
+          label: EXCHANGE_TYPE_LABELS[t],
+          count: counts.get(t) ?? 0,
+        })),
+      ]}
+    />
   );
 }
-
-const inputClass =
-  'h-8 rounded-md border border-line bg-surface-2 px-2 text-sm text-fg outline-none hover:border-subtle focus-visible:border-accent';
 
 function Filters({
   params,
@@ -234,25 +197,10 @@ function Filters({
   update: (p: Partial<ViewParams>) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-      <label className="relative w-full sm:w-auto">
-        <span className="sr-only">Search</span>
-        <SearchIcon
-          className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-subtle"
-          width={15}
-          height={15}
-        />
-        <input
-          type="search"
-          placeholder="Search items"
-          className={`${inputClass} w-full pl-7 sm:w-56`}
-          value={params.q}
-          onChange={(e) => update({ q: e.target.value })}
-        />
-      </label>
-      <Inline label="Suggestion">
-        <select
-          className={inputClass}
+    <FilterBar>
+      <SearchInput placeholder="Search items" value={params.q} onChange={(q) => update({ q })} />
+      <InlineField label="Suggestion">
+        <Select
           value={params.action}
           onChange={(e) => update({ action: e.target.value as ViewParams['action'] })}
         >
@@ -262,50 +210,29 @@ function Filters({
               {ACTION_LABELS[a]}
             </option>
           ))}
-        </select>
-      </Inline>
-      <Inline label="Min volume">
-        <input
+        </Select>
+      </InlineField>
+      <InlineField label="Min volume" unit="div/day">
+        <Input
           type="number"
           min={0}
           step={1}
-          className={`${inputClass} w-20`}
+          className="w-20"
           value={params.minVolume}
           onChange={(e) => update({ minVolume: Number(e.target.value) || 0 })}
         />
-        <span className="text-xs text-subtle">div/day</span>
-      </Inline>
-      <Inline label="Min price">
-        <input
+      </InlineField>
+      <InlineField label="Min price" unit="div">
+        <Input
           type="number"
           min={0}
           step={0.01}
-          className={`${inputClass} w-20`}
+          className="w-20"
           value={params.minPrice}
           onChange={(e) => update({ minPrice: Number(e.target.value) || 0 })}
         />
-        <span className="text-xs text-subtle">div</span>
-      </Inline>
-    </div>
-  );
-}
-
-function Inline({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="flex items-center gap-2">
-      <span className="text-xs text-muted">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function SkeletonRows() {
-  return (
-    <div className="space-y-2" aria-label="Loading price data">
-      {Array.from({ length: 8 }, (_, i) => (
-        <div key={i} className="h-12 animate-pulse rounded-lg bg-surface" />
-      ))}
-    </div>
+      </InlineField>
+    </FilterBar>
   );
 }
 

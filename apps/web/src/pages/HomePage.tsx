@@ -1,10 +1,10 @@
 import { Link } from 'react-router';
+import { formatMultiplier } from '../lib/format.ts';
 import { ActionBadge } from '../tools/currency-speculation/ActionBadge.tsx';
 import { useSuggestions } from '../tools/currency-speculation/useSuggestions.ts';
-import { Div } from '../components/Div.tsx';
-import { formatMultiplier } from '../lib/format.ts';
 import { TOOLS } from '../tools/registry.ts';
 import type { ToolStatus } from '../tools/types.ts';
+import { Div, ItemCell, PageHeader, Panel, Pill } from '../ui/index.ts';
 
 const STATUS_LABELS: Record<ToolStatus, string> = {
   stable: 'Stable',
@@ -17,10 +17,7 @@ const MODE = { kind: 'horizon', days: 14 } as const;
 export function HomePage() {
   return (
     <section className="space-y-8">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Tools</h1>
-        <p className="mt-1 text-sm text-muted">Decision tools for the Path of Exile economy.</p>
-      </header>
+      <PageHeader title="Tools" description="Decision tools for the Path of Exile economy." />
 
       <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {TOOLS.map((tool) => {
@@ -34,11 +31,7 @@ export function HomePage() {
                 >
                   <Icon width={20} height={20} />
                 </span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${available ? 'bg-gain-soft text-gain' : 'bg-surface-2 text-subtle'}`}
-                >
-                  {STATUS_LABELS[tool.status]}
-                </span>
+                <Pill tone={available ? 'gain' : 'neutral'}>{STATUS_LABELS[tool.status]}</Pill>
               </div>
               <h2 className="mt-3 font-medium">{tool.name}</h2>
               <p className="mt-1 text-sm text-muted">{tool.description}</p>
@@ -77,16 +70,15 @@ function TopOpportunities() {
   if (!top.length) return null;
 
   return (
-    <section className="rounded-lg border border-line bg-surface">
-      <header className="flex items-center justify-between border-b border-line px-4 py-3">
-        <div>
-          <h2 className="font-medium">Top opportunities</h2>
-          <p className="text-xs text-muted">Hold 14 days · based on {reference?.name}</p>
-        </div>
+    <Panel
+      title="Top opportunities"
+      subtitle={`Hold 14 days · based on ${reference?.name ?? ''}`}
+      action={
         <Link to="tools/currency-speculation" className="text-sm text-accent hover:underline">
           See all →
         </Link>
-      </header>
+      }
+    >
       <ul className="divide-y divide-line">
         {top.map((s) => (
           <li key={s.item.id}>
@@ -94,10 +86,9 @@ function TopOpportunities() {
               to={`tools/currency-speculation?item=${encodeURIComponent(s.item.id)}`}
               className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-2"
             >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-2">
-                {s.item.icon && <img src={s.item.icon} alt="" className="h-7 w-7" />}
+              <div className="min-w-0 flex-1">
+                <ItemCell icon={s.item.icon} name={s.item.name} size="sm" />
               </div>
-              <span className="min-w-0 flex-1 truncate text-sm font-medium">{s.item.name}</span>
               <ActionBadge
                 action={s.action}
                 detail={
@@ -112,6 +103,6 @@ function TopOpportunities() {
           </li>
         ))}
       </ul>
-    </section>
+    </Panel>
   );
 }
