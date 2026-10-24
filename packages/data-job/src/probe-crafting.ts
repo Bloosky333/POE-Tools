@@ -1,26 +1,24 @@
 /**
- * Regenerates `packages/shared/data/crafting-{mods,bases}-poe2.json` for the
+ * Regenerates `packages/shared/data/crafting-{mods,bases}-<game>.json` for the
  * Crafting Recipes tool (spec 08 §4): the item prefixes / suffixes and equipment bases of
- * PoE 2, trimmed from the RePoE export. Run via the probe workflow (`source: crafting`)
- * after a patch.
+ * the game (`GAME` env, default poe2), trimmed from the RePoE export. Run via the probe
+ * workflow (`source: crafting`, `game`) after a patch.
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import type { CraftingBasesFile, CraftingModsFile } from '@poe-tools/shared';
+import { GAMES, type CraftingBasesFile, type CraftingModsFile, type Game } from '@poe-tools/shared';
 import { z } from 'zod';
 import { createNinjaClient } from './poe-ninja/client.ts';
 
-const REPOE = 'https://repoe-fork.github.io/poe2';
-export const CRAFTING_MODS_FILE = join(
-  import.meta.dirname,
-  '../../shared/data/crafting-mods-poe2.json',
-);
-export const CRAFTING_BASES_FILE = join(
-  import.meta.dirname,
-  '../../shared/data/crafting-bases-poe2.json',
-);
+const game: Game = GAMES.find((g) => g === process.env.GAME) ?? 'poe2';
+const REPOE: Record<Game, string> = {
+  poe2: 'https://repoe-fork.github.io/poe2',
+  poe1: 'https://repoe-fork.github.io',
+};
+export const craftingDataFile = (kind: 'mods' | 'bases', g: Game) =>
+  join(import.meta.dirname, `../../shared/data/crafting-${kind}-${g}.json`);
 
-/** Item classes that take random prefixes / suffixes. */
+/** Item classes that take random prefixes / suffixes (RePoE `item_class`, both games). */
 const CRAFTABLE_CLASSES = new Set([
   'Amulet',
   'Ring',
@@ -54,6 +52,14 @@ const CRAFTABLE_CLASSES = new Set([
   'Charm',
   'Life Flask',
   'Mana Flask',
+  // PoE 1 only
+  'Rune Dagger',
+  'Thrusting One Hand Sword',
+  'AbyssJewel',
+  'LifeFlask',
+  'ManaFlask',
+  'HybridFlask',
+  'UtilityFlask',
 ]);
 
 const modsSchema = z.record(
@@ -102,9 +108,12 @@ async function getJson(client: ReturnType<typeof createNinjaClient>, url: string
 async function main() {
   const client = createNinjaClient();
   const generatedAt = new Date().toISOString();
+  const source = REPOE[game];
+  console.log(`game ${game}, source ${source}`);
 
-  const rawBases = baseItemsSchema.parse(await getJson(client, `${REPOE}/base_items.json`));
+  const rawBases = baseItemsSchema.parse(await getJson(client, `${source}/base_items.json`));
   const baseEntries = Object.entries(rawBases);
+  console.log('base item classes', count(baseEntries.map(([, b]) => b.item_class)));
   console.log('base domains', count(baseEntries.map(([, b]) => b.domain)));
   console.log('base release states', count(baseEntries.map(([, b]) => b.release_state)));
   console.log(
@@ -125,7 +134,7 @@ async function main() {
   }
   bases.sort((a, b) => a.itemClass.localeCompare(b.itemClass) || a.level - b.level);
 
-  const rawMods = modsSchema.parse(await getJson(client, `${REPOE}/mods.json`));
+  const rawMods = modsSchema.parse(await getJson(client, `${source}/mods.json`));
   const modEntries = Object.entries(rawMods);
   console.log('mod domains', count(modEntries.map(([, m]) => m.domain)));
   console.log('mod generation types', count(modEntries.map(([, m]) => m.generation_type)));
@@ -134,6 +143,15 @@ async function main() {
     JSON.stringify(
       modEntries.find(([, m]) => m.generation_type === 'prefix' && m.domain === 'item'),
     ),
+  );
+  console.log(
+    'item affixes without text',
+    modEntries.filter(
+      ([, m]) =>
+        m.domain === 'item' &&
+        (m.generation_type === 'prefix' || m.generation_type === 'suffix') &&
+        !m.text,
+    ).length,
   );
   const mods: CraftingModsFile['mods'] = [];
   for (const [id, m] of modEntries) {
@@ -155,11 +173,13 @@ async function main() {
   }
   mods.sort((a, b) => a.family.localeCompare(b.family) || a.level - b.level);
 
-  const modsFile: CraftingModsFile = { version: 1, generatedAt, source: REPOE, mods };
-  const basesFile: CraftingBasesFile = { version: 1, generatedAt, source: REPOE, bases };
-  await mkdir(dirname(CRAFTING_MODS_FILE), { recursive: true });
-  await writeFile(CRAFTING_MODS_FILE, JSON.stringify(modsFile) + '\n');
-  await writeFile(CRAFTING_BASES_FILE, JSON.stringify(basesFile) + '\n');
+  if (!mods.length || !bases.length) throw new Error('RePoE: no mod or no base kept');
+
+  const modsFile: CraftingModsFile = { version: 1, generatedAt, source, mods };
+  const basesFile: CraftingBasesFile = { version: 1, generatedAt, source, bases };
+  await mkdir(dirname(craftingDataFile('mods', game)), { recursive: true });
+  await writeFile(craftingDataFile('mods', game), JSON.stringify(modsFile) + '\n');
+  await writeFile(craftingDataFile('bases', game), JSON.stringify(basesFile) + '\n');
   console.log(`${mods.length} mods, ${bases.length} bases written`);
 }
 

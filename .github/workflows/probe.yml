@@ -12,7 +12,7 @@ on:
         options: [exchange, ninja, base-items, poe1, crafting]
         default: exchange
       game:
-        description: Game (base-items only)
+        description: Game (base-items, crafting)
         type: choice
         options: [poe2, poe1]
         default: poe2
@@ -46,6 +46,8 @@ jobs:
         run: pnpm probe:poe1
       - if: inputs.source == 'crafting'
         run: pnpm probe:crafting
+        env:
+          GAME: ${{ inputs.game }}
       - name: Commit fixtures
         run: |
           git config user.name "github-actions[bot]"
