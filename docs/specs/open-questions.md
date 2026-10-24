@@ -37,6 +37,22 @@
 | Price level      | Expected multiplier `M_eff = M × max(1, π)^−β` (spec 01 §4.2b), premium `π` = item price vs reference price × market factor (median N/R of liquid items). Only premiums damp (β = 1); AVOID stays on the raw curve. Backtest FR vs RoA days 7–35, 14-day hold (`pnpm --filter @poe-tools/data-job backtest`): BUY NOW calls rose 81 % (median ×1.25) vs 78 % (×1.21) without. Premium alone does not predict losses (×1.09, like NEUTRAL). Re-tune per league. |
 | Known limitation | Market-wide moves of the reference league (e.g. Runes of Aldur day ~55: divine +20% vs chaos, most items −10% in divine) drive WAIT/BUY for many items at once. Possible refinement: compare items against a market index.                                                                                                                                                                                                                                     |
 
+## Sell Now (tool #2, spec 04)
+
+| Topic       | Decision                                                                                                                                                 |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scope       | Whole market in v1; the player's own stash later.                                                                                                        |
+| Trigger     | Flag when either signal fires (Peak or Falling), with the reason shown.                                                                                  |
+| Peak        | Last league peaks around today (or within 7 days → SELL SOON) and then falls ≥ 15 % over 14 days.                                                        |
+| Falling     | First agreed as 1 / 3 / 7-day drops; backtest showed short drops rebound → **7-day drop ≥ 15 % confirmed by a non-rising reference** (decided after it). |
+| Rise guard  | First agreed ("still rising ≥ 10 % in 3 days → SELL SOON"); backtest showed no gain → **dropped**, trend shown in the row instead.                       |
+| Ranking     | Expected loss × confidence.                                                                                                                              |
+| Integration | Separate tool, engine next to speculation in `packages/shared`, reusing its helpers.                                                                     |
+| Alerts      | None in v1.                                                                                                                                              |
+| Tuning      | Defaults validated by `backtest-sell` (spec 04 §5); re-run per league.                                                                                   |
+
 ## Still open
 
-None — specs agreed. New questions will be added here as implementation progresses.
+- **Stash import for Sell Now**: reading the player's stash needs GGG OAuth (account
+  scopes), which a static site without a backend cannot hold safely. Options: manual entry,
+  pasted stash export, or a backend later.

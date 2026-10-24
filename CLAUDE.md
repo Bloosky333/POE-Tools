@@ -24,7 +24,8 @@ decisions in `docs/specs/open-questions.md`.
 <abs>/apps/web/public/data` — local site data without network (history from the `data`
   branch, current prices from the probe fixtures).
 - `pnpm --filter @poe-tools/data-job backtest --data-dir <data branch checkout>` — replays the
-  speculation engine over stored history to tune its settings (e.g. `premiumDamping`).
+  speculation engine over stored history to tune its settings (e.g. `premiumDamping`);
+  `backtest-sell` does the same for the Sell Now thresholds.
 
 ## Rules
 

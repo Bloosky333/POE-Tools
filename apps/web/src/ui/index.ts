@@ -11,6 +11,7 @@ export * from './form.tsx';
 export * from './ItemCell.tsx';
 export * from './Meter.tsx';
 export * from './Page.tsx';
+export * from './PriceChart.tsx';
 export * from './Segmented.tsx';
 export * from './Sheet.tsx';
 export * from './Sparkline.tsx';

@@ -1,6 +1,6 @@
 # Tool backlog (after M1)
 
-Order is indicative. Each will get its own spec file before implementation.
+Done after M1: **Sell Now** (`04-sell-now.md`). Order is indicative. Each will get its own spec file before implementation.
 
 1. **Currency flipping suggester** — find items on the in-game currency exchange where
    buying at one ratio and selling at another yields a margin; rank by margin × volume.

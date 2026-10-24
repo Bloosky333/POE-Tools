@@ -6,6 +6,7 @@
     "job": "tsx src/main.ts",
     "dev-data": "tsx src/dev-data.ts",
     "backtest": "tsx src/backtest.ts",
+    "backtest-sell": "tsx src/backtest-sell.ts",
     "probe": "tsx src/probe.ts",
     "typecheck": "tsc --noEmit"
   },
