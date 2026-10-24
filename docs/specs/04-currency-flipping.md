@@ -151,8 +151,8 @@ Stale data (> 3 h) → `Notice` warning, same as other tools.
 
 ## 8. Milestones
 
-1. **M2a — probe**: add the GGG feed to the `poe.ninja probe` workflow (renamed "data
-   probe"); capture fixtures; confirm field meanings (ratio orientation, range semantics,
+1. **M2a — probe**: add the GGG feed to the `poe.ninja probe` workflow (`source: exchange`,
+   `pnpm probe:exchange`); capture fixtures; confirm field meanings (ratio orientation, range semantics,
    base ids), and write them up in `05-ggg-exchange-api.md`.
 2. **M2b — data job**: fetch + rolling window + `flips.json`; item mapping.
 3. **M2c — UI**: flips table + detail sheet; registry status `beta`.

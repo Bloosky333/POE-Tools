@@ -16,6 +16,7 @@
     "format:check": "prettier --check .",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test",
     "probe": "pnpm --filter @poe-tools/data-job probe",
+    "probe:exchange": "pnpm --filter @poe-tools/data-job probe:exchange",
     "job": "pnpm --filter @poe-tools/data-job job"
   },
   "devDependencies": {

@@ -1,10 +1,16 @@
-# M0: capture real poe.ninja responses (unreachable from the dev sandbox) and commit them
-# as fixtures to the branch it runs on. Small and manual only (Actions → poe.ninja probe →
-# Run workflow).
+# Capture real poe.ninja / GGG currency-exchange responses (unreachable from the dev
+# sandbox) and commit them as fixtures to the branch it runs on. Small and manual only
+# (Actions → poe.ninja probe → Run workflow).
 name: poe.ninja probe
 
 on:
   workflow_dispatch:
+    inputs:
+      source:
+        description: What to probe
+        type: choice
+        options: [exchange, ninja]
+        default: exchange
 
 concurrency:
   group: probe-${{ github.ref }}
@@ -23,16 +29,20 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm probe
+      - if: inputs.source == 'ninja'
+        run: pnpm probe
+      - if: inputs.source == 'exchange'
+        run: pnpm probe:exchange
       - name: Commit fixtures
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add fixtures/poe-ninja/probe
+          mkdir -p fixtures/poe-ninja/probe fixtures/ggg-exchange/probe
+          git add fixtures/poe-ninja/probe fixtures/ggg-exchange/probe
           if git diff --cached --quiet; then
             echo "No changes"
             exit 0
           fi
-          git commit -m "Update poe.ninja probe fixtures"
+          git commit -m "Update ${{ inputs.source }} probe fixtures"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
