@@ -1,7 +1,8 @@
 /**
  * Replays the suggestion engine over the stored current-league history, as if run on each
- * past day, and compares BUY NOW calls with what actually happened `--horizon` days later.
- * Used to tune engine settings (e.g. `premiumDamping`) per league. No network.
+ * past day, and compares its calls with what actually happened `--horizon` days later:
+ * BUY NOW per `premiumDamping`, then every action under each AVOID rule (spec 01 §4.3).
+ * Used to tune engine settings per league. No network.
  *   pnpm --filter @poe-tools/data-job backtest --data-dir <data branch checkout> [--horizon 14]
  *     [--game poe1] [--league <id>]
  */
@@ -17,11 +18,14 @@ import {
   hasStarted,
   getReferenceLeague,
   marketFactor,
+  median,
   suggest,
+  type Action,
   type CurrentItem,
   type HistoryFile,
   type Game,
   type League,
+  type Suggestion,
 } from '@poe-tools/shared';
 import { toSeries } from './site.ts';
 import { createStore } from './store.ts';
@@ -75,6 +79,30 @@ const lastDay = Math.max(...Object.values(current.items).flatMap((p) => p.map((x
 
 const betas = [0, 0.5, 1, 1.5];
 const results = new Map(betas.map((b) => [b, [] as number[]]));
+
+const settings = engineSettingsFor(game);
+/** AVOID bands compared (`avoidDrop`), and the rule used before 2026-10 for reference. */
+const BANDS = [0, 0.05, 0.1];
+const BEFORE = 'before: dip entry loses';
+const ruleName = (band: number) => `holding loses > ${band * 100}%`;
+/** The pre-2026-10 action: AVOID only when even the dip entry lost. */
+function actionBefore(s: Suggestion, d: number): Action {
+  const r = s.reference;
+  if (!r) return 'neutral';
+  const dip = r.buyDay !== d;
+  if (r.multiplierFromBuy < 1 || (!dip && r.multiplier < 1)) return 'avoid';
+  if (r.expectedMultiplier < settings.buyMultiplier) return 'neutral';
+  return dip ? 'wait' : s.action;
+}
+/** Per rule: calls that were NEUTRAL under the old rule and are AVOID under it. */
+const moved = new Map<string, { actual: number; vsMarket: number }[]>();
+/** Per rule and action: each call's actual change and its change relative to the market. */
+const calls = new Map(
+  [BEFORE, ...BANDS.map(ruleName)].map((name) => [
+    name,
+    new Map<Action, { actual: number; vsMarket: number }[]>(),
+  ]),
+);
 for (let d = fromDay; d + horizon <= lastDay; d++) {
   // The item list as the engine would have seen it on day d.
   const items: CurrentItem[] = [];
@@ -93,6 +121,13 @@ for (let d = fromDay; d + horizon <= lastDay; d++) {
     });
   }
   const factor = marketFactor(items, referenceHistory, d, engineSettingsFor(game));
+  const liquidLater = items.flatMap((item) => {
+    if (item.id === economy.unit || item.price < economy.minPrice) return [];
+    if (item.volume < economy.minVolume) return [];
+    const later = new Series(current.items[item.id] ?? []).priceAt(d + horizon);
+    return later ? [later / item.price] : [];
+  });
+  const market = median(liquidLater, 10);
   for (const item of items) {
     if (item.id === economy.unit || item.price < economy.minPrice) continue;
     const later = new Series(current.items[item.id] ?? []).priceAt(d + horizon);
@@ -108,6 +143,29 @@ for (let d = fromDay; d + horizon <= lastDay; d++) {
         settings: { ...engineSettingsFor(game), premiumDamping },
       });
       if (s.action === 'buy') results.get(premiumDamping)?.push(later / item.price);
+      if (premiumDamping !== settings.premiumDamping || !s.reference || market === null) continue;
+      if (item.volume < economy.minVolume) continue;
+      const outcome = { actual: later / item.price, vsMarket: later / item.price / market };
+      const before = actionBefore(s, d);
+      const record = (name: string, action: Action) => {
+        const byAction = calls.get(name);
+        byAction?.set(action, [...(byAction.get(action) ?? []), outcome]);
+        if (before === 'neutral' && action === 'avoid')
+          moved.set(name, [...(moved.get(name) ?? []), outcome]);
+      };
+      record(BEFORE, before);
+      for (const avoidDrop of BANDS) {
+        const variant = suggest({
+          item,
+          reference: referenceHistory[item.id],
+          current: current.items[item.id]?.filter((p) => p[0] <= d),
+          today: d,
+          mode: { kind: 'horizon', days: horizon },
+          marketFactor: factor,
+          settings: { ...settings, avoidDrop },
+        });
+        record(ruleName(avoidDrop), variant.action);
+      }
     }
   }
 }
@@ -122,5 +180,37 @@ for (const [beta, actual] of results) {
   const rose = actual.filter((a) => a >= 1).length / (actual.length || 1);
   console.log(
     `${String(beta).padStart(14)}  ${String(actual.length).padStart(5)}  ${median.toFixed(2).padStart(15)}  ${(rose * 100).toFixed(0).padStart(3)}%`,
+  );
+}
+
+console.log(
+  `\nActions of liquid items, held ${horizon} days (vs market = ÷ median of liquid items)`,
+);
+console.log('rule                   action    calls  median ×  vs market  under market');
+for (const [name, byAction] of calls) {
+  for (const action of ['buy', 'wait', 'neutral', 'avoid'] as const) {
+    const list = byAction.get(action) ?? [];
+    const actual = median(
+      list.map((c) => c.actual),
+      1,
+    );
+    const vs = median(
+      list.map((c) => c.vsMarket),
+      1,
+    );
+    const under = list.filter((c) => c.vsMarket < 1).length / (list.length || 1);
+    console.log(
+      `${name.padEnd(22)} ${action.padEnd(8)} ${String(list.length).padStart(6)}  ${(actual ?? NaN).toFixed(2).padStart(8)}  ${(vs ?? NaN).toFixed(2).padStart(9)}  ${(under * 100).toFixed(0).padStart(11)}%`,
+    );
+  }
+}
+for (const [name, list] of moved) {
+  const vs = median(
+    list.map((c) => c.vsMarket),
+    1,
+  );
+  const under = list.filter((c) => c.vsMarket < 1).length / (list.length || 1);
+  console.log(
+    `NEUTRAL → AVOID under "${name}": ${list.length} calls, median ${(vs ?? NaN).toFixed(2)} vs market, ${(under * 100).toFixed(0)}% under it`,
   );
 }

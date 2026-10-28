@@ -28,7 +28,7 @@ decisions in `docs/specs/open-questions.md`.
   branch, current prices from the probe fixtures).
 - `pnpm --filter @poe-tools/data-job backtest --data-dir <data branch checkout>` — replays the
   speculation engine over stored history to tune its settings (e.g. `premiumDamping`);
-  `backtest-sell` does the same for the Sell Now thresholds, `backtest-farm` for What to Farm.
+  it also compares the AVOID bands (`avoidDrop`); `backtest-sell` does the same for the Sell Now thresholds, `backtest-farm` for What to Farm.
 
 ## Rules
 

@@ -81,6 +81,29 @@ describe('suggest', () => {
     expect(s.action).toBe('avoid');
   });
 
+  it('says AVOID when holding loses and the dip entry is no real opportunity', () => {
+    // 100 at day 10, dips to 80 at day 15, ends at 95 on day 24: ×0.95 now, ×1.19 at the dip.
+    const dipThenPartial = series(60, (day) =>
+      day <= 10 ? 100 : day <= 15 ? 100 - (day - 10) * 4 : Math.min(95, 80 + (day - 15) * (15 / 9)),
+    );
+    const run = (avoidDrop: number) =>
+      suggest({
+        item: item(),
+        reference: dipThenPartial,
+        current: dipThenPartial,
+        today: 10,
+        mode: horizon(14),
+        settings: { ...POE2, avoidDrop },
+      });
+    const s = run(0.04);
+    expect(s.reference?.multiplier).toBeCloseTo(0.95);
+    expect(s.reference?.multiplierFromBuy).toBeCloseTo(95 / 80);
+    expect(s.action).toBe('avoid');
+    expect(s.reasons.join(' ')).toMatch(/Even bought at its day-15 dip: only ×1\.19/);
+    // A 5 % loss is within the default band: no call.
+    expect(run(POE2.avoidDrop).action).toBe('neutral');
+  });
+
   it('says WAIT when a dip comes before the rise', () => {
     // 2 at day 10, dips to 1 at day 15, rises to 4 at day 30.
     const dip = series(60, (day) =>
