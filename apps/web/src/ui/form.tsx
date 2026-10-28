@@ -53,7 +53,7 @@ export function InlineField({
   children,
 }: {
   label: string;
-  unit?: string;
+  unit?: string | undefined;
   children: ReactNode;
 }) {
   return (
@@ -124,5 +124,35 @@ export function Field({
       {children}
       {hint && <span className="text-xs text-subtle">{hint}</span>}
     </label>
+  );
+}
+
+/** Numeric filter (≥ `min`) with its label and unit, for filter bars. */
+export function NumberField({
+  label,
+  unit,
+  value,
+  step,
+  min = 0,
+  onChange,
+}: {
+  label: string;
+  unit?: string;
+  value: number;
+  step: number;
+  min?: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <InlineField label={label} unit={unit}>
+      <Input
+        type="number"
+        min={min}
+        step={step}
+        className="w-20"
+        value={value}
+        onChange={(e) => onChange(Math.max(min, Number(e.target.value) || 0))}
+      />
+    </InlineField>
   );
 }

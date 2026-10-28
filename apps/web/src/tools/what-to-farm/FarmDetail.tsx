@@ -12,8 +12,8 @@ import {
   StatCard,
   type Column,
   type Tone,
+  Change,
 } from '../../ui/index.ts';
-import { RatioChange } from './Change.tsx';
 import { mechanicLabel } from './FarmTable.tsx';
 import { VerdictBadge } from './VerdictBadge.tsx';
 
@@ -61,13 +61,13 @@ export function FarmDetail(props: Props) {
       id: 'trend',
       label: '7d vs mkt',
       align: 'right',
-      render: (f) => <RatioChange value={f.trend} />,
+      render: (f) => <Change value={f.trend} ratio />,
     },
     {
       id: 'outlook',
       label: 'Last league',
       align: 'right',
-      render: (f) => <RatioChange value={f.outlook} />,
+      render: (f) => <Change value={f.outlook} ratio />,
     },
     {
       id: 'links',

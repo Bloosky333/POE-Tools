@@ -1,7 +1,6 @@
 import type { FarmSignal } from '@poe-tools/shared';
-import { Amount, DataTable, ScoreMeter, Sparkline, type Column } from '../../ui/index.ts';
+import { Amount, DataTable, ScoreMeter, Sparkline, type Column, Change } from '../../ui/index.ts';
 import type { UnitInfo } from '../../lib/unit.ts';
-import { RatioChange } from './Change.tsx';
 import type { SortKey, ViewParams } from './params.ts';
 import { VerdictBadge } from './VerdictBadge.tsx';
 
@@ -90,7 +89,7 @@ export function FarmTable({ rows, params, today, unit, onSort, onSelect }: Props
       sortKey: 'trend',
       align: 'right',
       title: 'Change of its loot over 7 days, relative to the market',
-      render: (s) => <RatioChange value={s.trend} />,
+      render: (s) => <Change value={s.trend} ratio />,
     },
     {
       id: 'outlook',
@@ -103,7 +102,7 @@ export function FarmTable({ rows, params, today, unit, onSort, onSelect }: Props
           <span className="text-subtle">–</span>
         ) : (
           <span className="whitespace-nowrap">
-            <RatioChange value={s.outlook} />
+            <Change value={s.outlook} ratio />
             <span className="text-xs text-subtle"> by day {s.outlookDay}</span>
           </span>
         ),

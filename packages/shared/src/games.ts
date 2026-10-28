@@ -20,6 +20,12 @@ export const CURRENCY_SHORT: Record<CoreCurrency, string> = {
   chaos: 'c',
 };
 
+export const CURRENCY_NAMES: Record<CoreCurrency, string> = {
+  divine: 'Divine Orb',
+  exalted: 'Exalted Orb',
+  chaos: 'Chaos Orb',
+};
+
 /**
  * Economy of a game (spec 07 §6.1): the unit prices are expressed in, the currencies the
  * exchange revolves around and the thresholds that carry that unit.

@@ -32,7 +32,13 @@ export function Notice({ children }: { children: ReactNode }) {
 }
 
 /** Placeholder rows while data loads. */
-export function Skeleton({ rows = 8, label = 'Loading' }: { rows?: number; label?: string }) {
+export function Skeleton({
+  rows = 8,
+  label = 'Loading',
+}: {
+  rows?: number | undefined;
+  label?: string;
+}) {
   return (
     <div className="space-y-2" aria-label={label} aria-busy>
       {Array.from({ length: rows }, (_, i) => (
@@ -40,4 +46,28 @@ export function Skeleton({ rows = 8, label = 'Loading' }: { rows?: number; label
       ))}
     </div>
   );
+}
+
+/**
+ * Loading placeholder or error notice of a tool's data (`what`: "price data", …); renders
+ * nothing once the data is ready.
+ */
+export function LoadStatus({
+  state,
+  what,
+  rows,
+}: {
+  state: { status: 'loading' | 'ready' } | { status: 'error'; error: Error };
+  what: string;
+  rows?: number;
+}) {
+  if (state.status === 'loading') return <Skeleton rows={rows} label={`Loading ${what}`} />;
+  if (state.status === 'error')
+    return (
+      <Notice>
+        {what.charAt(0).toUpperCase() + what.slice(1)} couldn&apos;t be loaded (
+        {state.error.message}). The data job may not have run yet.
+      </Notice>
+    );
+  return null;
 }

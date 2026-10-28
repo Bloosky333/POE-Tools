@@ -1,6 +1,14 @@
 import { EXCHANGE_TYPE_LABELS, type HistoryPoint, type SellSignal } from '@poe-tools/shared';
 import { formatPercent } from '../../lib/format.ts';
-import { DataTable, Amount, ItemCell, ScoreMeter, Sparkline, type Column } from '../../ui/index.ts';
+import {
+  DataTable,
+  Amount,
+  ItemCell,
+  ScoreMeter,
+  Sparkline,
+  type Column,
+  Change,
+} from '../../ui/index.ts';
 import type { UnitInfo } from '../../lib/unit.ts';
 import type { SortKey, ViewParams } from './params.ts';
 import { VerdictBadge } from './VerdictBadge.tsx';
@@ -13,16 +21,6 @@ interface Props {
   unit: UnitInfo;
   onSort: (key: SortKey) => void;
   onSelect: (itemId: string) => void;
-}
-
-/** A fractional change as a signed, colored percentage. */
-function Change({ value }: { value: number | null }) {
-  const tone = value === null ? 'text-subtle' : value >= 0 ? 'text-gain' : 'text-loss';
-  return (
-    <span className={`font-medium ${tone}`}>
-      {formatPercent(value === null ? null : value * 100)}
-    </span>
-  );
 }
 
 export function SellTable({ rows, params, currentHistory, today, unit, onSort, onSelect }: Props) {

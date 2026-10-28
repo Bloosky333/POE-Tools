@@ -1,11 +1,4 @@
-import {
-  EXCHANGE_TYPE_LABELS,
-  HUBS,
-  ALL_EXCHANGE_TYPES,
-  getLeague,
-  type CurrentItem,
-  type Hub,
-} from '@poe-tools/shared';
+import { HUBS, getLeague, type CurrentItem, type Hub } from '@poe-tools/shared';
 import { useMemo } from 'react';
 import { fetchCurrent, fetchFlips, useAsync } from '../../lib/data.ts';
 import { formatAge } from '../../lib/format.ts';
@@ -14,16 +7,15 @@ import { unitInfo } from '../../lib/unit.ts';
 import { useSettings } from '../../lib/useSettings.ts';
 import {
   Card,
-  Chips,
   FilterBar,
-  InlineField,
-  Input,
+  LoadStatus,
   Notice,
+  NumberField,
   PageHeader,
   SearchInput,
   Segmented,
-  Skeleton,
   StatTile,
+  TypeChips,
 } from '../../ui/index.ts';
 import { FlipDetail } from './FlipDetail.tsx';
 import { FlipsTable } from './FlipsTable.tsx';
@@ -104,13 +96,7 @@ export default function CurrencyFlippingPage() {
         data artefacts rather than real opportunities: check the live order book before trading.
       </Notice>
 
-      {data.status === 'loading' && <Skeleton label="Loading exchange data" />}
-      {data.status === 'error' && (
-        <Notice>
-          Exchange data couldn&apos;t be loaded ({data.error.message}). The data job may not have
-          run yet.
-        </Notice>
-      )}
+      <LoadStatus state={data} what="exchange data" />
       {data.status === 'ready' && (
         <>
           <StatTiles
@@ -121,8 +107,8 @@ export default function CurrencyFlippingPage() {
           />
 
           <Card className="space-y-3">
-            <CategoryChips
-              rows={eligible}
+            <TypeChips
+              types={eligible.flatMap(({ item }) => (item ? [item.type] : []))}
               value={params.type}
               onChange={(type) => update({ type })}
             />
@@ -209,60 +195,6 @@ function StatTiles({
         detail={bestSpread?.item?.name}
       />
     </div>
-  );
-}
-
-function CategoryChips({
-  rows,
-  value,
-  onChange,
-}: {
-  rows: readonly FlipRow[];
-  value: ViewParams['type'];
-  onChange: (value: ViewParams['type']) => void;
-}) {
-  const counts = new Map<string, number>();
-  for (const { item } of rows) if (item) counts.set(item.type, (counts.get(item.type) ?? 0) + 1);
-  return (
-    <Chips<ViewParams['type']>
-      value={value}
-      onChange={onChange}
-      options={[
-        { value: 'all', label: 'All', count: rows.length },
-        ...ALL_EXCHANGE_TYPES.filter((t) => counts.get(t)).map((t) => ({
-          value: t,
-          label: EXCHANGE_TYPE_LABELS[t],
-          count: counts.get(t) ?? 0,
-        })),
-      ]}
-    />
-  );
-}
-
-function NumberField({
-  label,
-  unit,
-  value,
-  step,
-  onChange,
-}: {
-  label: string;
-  unit: string;
-  value: number;
-  step: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <InlineField label={label} unit={unit}>
-      <Input
-        type="number"
-        min={0}
-        step={step}
-        className="w-20"
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value) || 0)}
-      />
-    </InlineField>
   );
 }
 

@@ -1,6 +1,4 @@
 import {
-  EXCHANGE_TYPE_LABELS,
-  ALL_EXCHANGE_TYPES,
   ECONOMY,
   marketChanges,
   sellSettingsFor,
@@ -9,20 +7,20 @@ import {
 } from '@poe-tools/shared';
 import { useMemo } from 'react';
 import { formatMultiplier } from '../../lib/format.ts';
+import { sortRows } from '../../lib/sort.ts';
 import {
   Card,
-  Chips,
   Amount,
   FilterBar,
   InlineField,
-  Input,
-  Notice,
+  LoadStatus,
+  NumberField,
   PageHeader,
   SearchInput,
   Segmented,
   Select,
-  Skeleton,
   StatTile,
+  TypeChips,
 } from '../../ui/index.ts';
 import type { UnitInfo } from '../../lib/unit.ts';
 import { ACTION_LABELS } from './ActionBadge.tsx';
@@ -83,20 +81,14 @@ export default function CurrencySpeculationPage() {
         }
       />
 
-      {data.status === 'loading' && <Skeleton label="Loading price data" />}
-      {data.status === 'error' && (
-        <Notice>
-          Price data couldn&apos;t be loaded ({data.error.message}). The data job may not have run
-          yet.
-        </Notice>
-      )}
+      <LoadStatus state={data} what="price data" />
       {data.status === 'ready' && (
         <>
           <StatTiles suggestions={eligible} today={today} leagueName={league.name} unit={unit} />
 
           <Card className="space-y-3">
-            <CategoryChips
-              suggestions={eligible}
+            <TypeChips
+              types={eligible.map((s) => s.item.type)}
               value={params.type}
               onChange={(type) => update({ type })}
             />
@@ -180,33 +172,6 @@ function StatTiles({
   );
 }
 
-function CategoryChips({
-  suggestions,
-  value,
-  onChange,
-}: {
-  suggestions: readonly Suggestion[];
-  value: ViewParams['type'];
-  onChange: (value: ViewParams['type']) => void;
-}) {
-  const counts = new Map<string, number>();
-  for (const s of suggestions) counts.set(s.item.type, (counts.get(s.item.type) ?? 0) + 1);
-  return (
-    <Chips<ViewParams['type']>
-      value={value}
-      onChange={onChange}
-      options={[
-        { value: 'all', label: 'All', count: suggestions.length },
-        ...ALL_EXCHANGE_TYPES.filter((t) => counts.get(t)).map((t) => ({
-          value: t,
-          label: EXCHANGE_TYPE_LABELS[t],
-          count: counts.get(t) ?? 0,
-        })),
-      ]}
-    />
-  );
-}
-
 function Filters({
   params,
   update,
@@ -232,26 +197,20 @@ function Filters({
           ))}
         </Select>
       </InlineField>
-      <InlineField label="Min volume" unit={`${unit}/day`}>
-        <Input
-          type="number"
-          min={0}
-          step={1}
-          className="w-20"
-          value={params.minVolume}
-          onChange={(e) => update({ minVolume: Number(e.target.value) || 0 })}
-        />
-      </InlineField>
-      <InlineField label="Min price" unit={unit}>
-        <Input
-          type="number"
-          min={0}
-          step={0.01}
-          className="w-20"
-          value={params.minPrice}
-          onChange={(e) => update({ minPrice: Number(e.target.value) || 0 })}
-        />
-      </InlineField>
+      <NumberField
+        label="Min volume"
+        unit={`${unit}/day`}
+        step={1}
+        value={params.minVolume}
+        onChange={(minVolume) => update({ minVolume })}
+      />
+      <NumberField
+        label="Min price"
+        unit={unit}
+        step={0.01}
+        value={params.minPrice}
+        onChange={(minPrice) => update({ minPrice })}
+      />
     </FilterBar>
   );
 }
@@ -289,10 +248,5 @@ export function filterAndSort(
         return s.score;
     }
   };
-  return rows.sort((a, b) => {
-    const va = value(a);
-    const vb = value(b);
-    const cmp = typeof va === 'string' ? va.localeCompare(String(vb)) : va - (vb as number);
-    return params.desc ? -cmp : cmp;
-  });
+  return sortRows(rows, value, params.desc);
 }

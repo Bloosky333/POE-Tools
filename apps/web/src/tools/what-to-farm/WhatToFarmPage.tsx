@@ -1,17 +1,18 @@
 import { FARM_START_DAY, type FarmSignal } from '@poe-tools/shared';
 import { useMemo } from 'react';
 import { formatPercent } from '../../lib/format.ts';
+import { sortRows } from '../../lib/sort.ts';
 import type { UnitInfo } from '../../lib/unit.ts';
 import {
   Amount,
   Card,
   FilterBar,
   InlineField,
-  Input,
+  LoadStatus,
   Notice,
+  NumberField,
   PageHeader,
   Select,
-  Skeleton,
   StatTile,
 } from '../../ui/index.ts';
 import { FarmDetail } from './FarmDetail.tsx';
@@ -51,13 +52,7 @@ export default function WhatToFarmPage() {
         </Notice>
       ) : (
         <>
-          {data.status === 'loading' && <Skeleton label="Loading price data" />}
-          {data.status === 'error' && (
-            <Notice>
-              Price data couldn&apos;t be loaded ({data.error.message}). The data job may not have
-              run yet.
-            </Notice>
-          )}
+          <LoadStatus state={data} what="price data" />
           {data.status === 'ready' && (
             <>
               <StatTiles signals={signals} today={today} leagueName={league.name} unit={unit} />
@@ -172,26 +167,20 @@ function Filters({
           </option>
         </Select>
       </InlineField>
-      <InlineField label="Min item volume" unit={`${unit}/day`}>
-        <Input
-          type="number"
-          min={0}
-          step={1}
-          className="w-20"
-          value={params.minVolume}
-          onChange={(e) => update({ minVolume: Number(e.target.value) || 0 })}
-        />
-      </InlineField>
-      <InlineField label="Min item price" unit={unit}>
-        <Input
-          type="number"
-          min={0}
-          step={0.01}
-          className="w-20"
-          value={params.minPrice}
-          onChange={(e) => update({ minPrice: Number(e.target.value) || 0 })}
-        />
-      </InlineField>
+      <NumberField
+        label="Min item volume"
+        unit={`${unit}/day`}
+        step={1}
+        value={params.minVolume}
+        onChange={(minVolume) => update({ minVolume })}
+      />
+      <NumberField
+        label="Min item price"
+        unit={unit}
+        step={0.01}
+        value={params.minPrice}
+        onChange={(minPrice) => update({ minPrice })}
+      />
     </FilterBar>
   );
 }
@@ -236,10 +225,5 @@ export function filterAndSort(signals: readonly FarmSignal[], params: ViewParams
       }
     }
   };
-  return rows.sort((a, b) => {
-    const va = value(a);
-    const vb = value(b);
-    const cmp = typeof va === 'string' ? va.localeCompare(String(vb)) : va - (vb as number);
-    return params.desc ? -cmp : cmp;
-  });
+  return sortRows(rows, value, params.desc);
 }

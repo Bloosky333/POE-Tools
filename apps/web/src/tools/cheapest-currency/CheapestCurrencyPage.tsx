@@ -1,4 +1,5 @@
 import {
+  CURRENCY_NAMES,
   CURRENCY_SHORT,
   ECONOMY,
   cheapest,
@@ -23,12 +24,11 @@ import {
   InlineField,
   Input,
   ItemCell,
-  Notice,
+  LoadStatus,
   PageHeader,
   Panel,
   Pill,
   SearchInput,
-  Skeleton,
   type Column,
 } from '../../ui/index.ts';
 import {
@@ -43,12 +43,6 @@ import {
 
 /** A daily quote older than this is flagged as stale. */
 const STALE_MS = 2 * 86_400_000;
-
-const CURRENCY_NAMES: Record<string, string> = {
-  divine: 'Divine Orb',
-  exalted: 'Exalted Orb',
-  chaos: 'Chaos Orb',
-};
 
 export default function CheapestCurrencyPage() {
   const [params, update] = useViewParams();
@@ -113,13 +107,7 @@ export default function CheapestCurrencyPage() {
           .join(', ')}, compared in whole units at today's rates.`}
       />
 
-      {data.status === 'loading' && <Skeleton rows={4} label="Loading exchange rates" />}
-      {data.status === 'error' && (
-        <Notice>
-          Exchange rates couldn&apos;t be loaded ({data.error.message}). The data job may not have
-          run yet.
-        </Notice>
-      )}
+      <LoadStatus state={data} what="exchange rates" rows={4} />
       {data.status === 'ready' && (
         <>
           <Card className="space-y-3">

@@ -4,6 +4,7 @@
  */
 export * from './Badge.tsx';
 export * from './Card.tsx';
+export * from './Change.tsx';
 export * from './Chips.tsx';
 export * from './DataTable.tsx';
 export * from './Amount.tsx';
