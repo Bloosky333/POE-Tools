@@ -16,9 +16,10 @@ import {
   Card,
   Field,
   Input,
+  NumericInput,
   Notice,
   Panel,
-  SearchInput,
+  SearchPicker,
   Select,
   TextArea,
 } from '../../ui/index.ts';
@@ -211,17 +212,16 @@ function BasesEditor({
                 </Select>
               </Field>
               <Field label={`Price (${unit.short})`}>
-                <Input
-                  type="number"
+                <NumericInput
                   min={0}
-                  step="any"
                   className="w-24"
                   value={b.price}
-                  onChange={(e) => update(i, { price: Math.max(0, Number(e.target.value) || 0) })}
+                  onChange={(price) => update(i, { price })}
                 />
               </Field>
               <Button
                 variant="danger"
+                aria-label={`Remove base ${base?.name ?? b.baseId}`}
                 onClick={() => onChange(draft.bases.filter((_, j) => j !== i))}
               >
                 Remove
@@ -229,30 +229,22 @@ function BasesEditor({
             </div>
           );
         })}
-        <div className="relative">
-          <SearchInput placeholder="Add a base (name or class)" value={q} onChange={setQ} />
-          {matches.length > 0 && (
-            <ul className="absolute z-30 mt-1 max-h-72 w-[min(28rem,90vw)] overflow-y-auto rounded-lg border border-line bg-surface p-1 shadow-xl">
-              {matches.map((base) => (
-                <li key={base.id}>
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-sm hover:bg-surface-2"
-                    onClick={() => {
-                      setQ('');
-                      onChange([...draft.bases, { baseId: base.id, price: 0 }]);
-                    }}
-                  >
-                    <span>{base.name}</span>
-                    <span className="text-xs text-subtle">
-                      {base.itemClass}, level {base.level}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+        <SearchPicker
+          placeholder="Add a base (name or class)"
+          query={q}
+          onQueryChange={setQ}
+          options={matches}
+          optionKey={(base) => base.id}
+          onPick={(base) => onChange([...draft.bases, { baseId: base.id, price: 0 }])}
+          renderOption={(base) => (
+            <>
+              <span>{base.name}</span>
+              <span className="text-xs text-subtle">
+                {base.itemClass}, level {base.level}
+              </span>
+            </>
           )}
-        </div>
+        />
       </div>
     </Panel>
   );
@@ -355,7 +347,7 @@ function StepEditor({
         >
           ↓
         </Button>
-        <Button variant="danger" onClick={onRemove}>
+        <Button variant="danger" onClick={onRemove} aria-label={`Remove step ${index + 1}`}>
           Remove
         </Button>
       </div>
@@ -411,6 +403,7 @@ function StepEditor({
                 {step.uses.length > 1 && (
                   <Button
                     variant="danger"
+                    aria-label={`Remove loop action ${i + 1}`}
                     onClick={() => onChange({ ...step, uses: step.uses.filter((_, j) => j !== i) })}
                   >
                     Remove
@@ -514,15 +507,7 @@ function NumberField({
 }) {
   return (
     <Field label={label}>
-      <Input
-        type="number"
-        min={min}
-        max={max}
-        step="any"
-        className="w-28"
-        value={value}
-        onChange={(e) => onChange(Math.max(min, Number(e.target.value) || 0))}
-      />
+      <NumericInput min={min} max={max} className="w-28" value={value} onChange={onChange} />
     </Field>
   );
 }

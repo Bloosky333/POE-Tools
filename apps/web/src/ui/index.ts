@@ -16,3 +16,4 @@ export * from './PriceChart.tsx';
 export * from './Segmented.tsx';
 export * from './Sheet.tsx';
 export * from './Sparkline.tsx';
+export * from './SearchPicker.tsx';

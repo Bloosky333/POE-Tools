@@ -1,6 +1,6 @@
 import { linkedItems, type CraftAction, type CurrentItem } from '@poe-tools/shared';
 import { useState } from 'react';
-import { Amount, Button, Chips, Input, SearchInput } from '../../ui/index.ts';
+import { Amount, Button, Chips, NumericInput, SearchInput } from '../../ui/index.ts';
 import { useCatalog } from './catalog.ts';
 import { ItemName } from './parts.tsx';
 
@@ -40,24 +40,17 @@ export function ActionEditor({
             className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface-2 py-0.5 pr-1 pl-2 text-sm"
           >
             <ItemName itemId={use.itemId} />
-            <Input
-              type="number"
+            <NumericInput
               min={1}
-              step={1}
+              integer
               aria-label="Count"
               className="h-6 w-14 px-1"
               value={use.count}
-              onChange={(e) =>
-                onChange(
-                  action.map((u, j) =>
-                    j === i ? { ...u, count: Math.max(1, Number(e.target.value) || 1) } : u,
-                  ),
-                )
-              }
+              onChange={(count) => onChange(action.map((u, j) => (j === i ? { ...u, count } : u)))}
             />
             <button
               type="button"
-              aria-label="Remove item"
+              aria-label={`Remove ${catalog.items.get(use.itemId)?.name ?? 'item'}`}
               className="rounded px-1 text-subtle hover:text-loss"
               onClick={() => onChange(action.filter((_, j) => j !== i))}
             >
