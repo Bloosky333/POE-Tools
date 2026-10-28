@@ -12,7 +12,8 @@ league start.
 
 ## 2. Leagues & time alignment
 
-- `d` = days elapsed since the current league started (UTC, fractional allowed).
+- `d` = today's league day: UTC calendar date − league start UTC date (same index as the
+  stored history, §3.2).
 - **Current league** (default): _Forbidden Rites_ (0.5.5 event league, economy reset),
   started **2026-09-04 20:00 UTC** → day ~49 on 2026-10-23.
 - **Reference league** (decided: **only the immediately previous league**, older
