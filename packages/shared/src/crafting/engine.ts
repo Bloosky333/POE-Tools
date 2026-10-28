@@ -78,7 +78,7 @@ export interface ItemTotal {
   itemId: string;
   /** Expected uses over the whole craft. */
   uses: number;
-  /** Divine per item, null when unpriced. */
+  /** Price per item in the game unit, null when unpriced. */
   price: number | null;
   /** Expected cost, null when unpriced. */
   cost: number | null;
@@ -108,7 +108,7 @@ export interface RecipeCost {
   unpriced: string[];
 }
 
-/** Live price lookup: divine per item, undefined when the item has no price. */
+/** Live price lookup: game unit per item, undefined when the item has no price. */
 export type PriceLookup = (itemId: string) => number | undefined;
 
 export function recipeCost(recipe: Recipe, baseIndex: number, livePrice: PriceLookup): RecipeCost {

@@ -7,6 +7,7 @@ import {
   similarity,
   type ConfidenceBreakdown,
 } from '../speculation/engine.ts';
+import { confidenceOf, formatPct as pct, launchPhase, median } from '../scoring.ts';
 import { Series } from '../speculation/series.ts';
 
 /*
@@ -119,8 +120,6 @@ export interface SellInput {
   settings?: SellSettings;
 }
 
-const MARKET_MIN_ITEMS = 10;
-
 /** Price changes of an item over each window, from its current price and history. */
 export function windowChanges(price: number, history: Series, d: number): WindowChanges {
   const at = (k: SellWindow) => {
@@ -154,14 +153,6 @@ export function marketChanges(
       if (value !== null) changes[k].push(value);
     }
   }
-  const median = (values: number[]) => {
-    if (values.length < MARKET_MIN_ITEMS) return null;
-    const sorted = [...values].sort((a, b) => a - b);
-    const mid = sorted.length >> 1;
-    return sorted.length % 2
-      ? (sorted[mid] ?? null)
-      : ((sorted[mid - 1] ?? 0) + (sorted[mid] ?? 0)) / 2;
-  };
   return { 1: median(changes[1]), 3: median(changes[3]), 7: median(changes[7]) };
 }
 
@@ -171,7 +162,7 @@ export function sellSignal(input: SellInput): SellSignal {
   const d = Math.floor(input.today);
   const ref = new Series(input.reference ?? []);
   const cur = new Series(input.current ?? []);
-  const phase = d <= 3 ? 0.5 : 1;
+  const phase = launchPhase(d);
 
   // Momentum, raw and relative to the market.
   const change = windowChanges(item.price, cur, d);
@@ -281,11 +272,7 @@ export function sellSignal(input: SellInput): SellSignal {
       : completeness(cur, d - 7, d - 1),
     phase,
   };
-  const confidence = Math.round(
-    100 *
-      breakdown.phase *
-      (0.4 * breakdown.similarity + 0.35 * breakdown.liquidity + 0.25 * breakdown.completeness),
-  );
+  const confidence = confidenceOf(breakdown);
 
   if (!hasRef) reasons.push('No reference data for this day');
   else if (reference?.clipped) reasons.push('Reference league data ends before the horizon');
@@ -308,10 +295,4 @@ export function sellSignal(input: SellInput): SellSignal {
     breakdown,
     score: expectedLoss * (confidence / 100),
   };
-}
-
-function pct(value: number | null): string {
-  if (value === null) return '–';
-  const p = Math.round(value * 100);
-  return `${p > 0 ? '+' : ''}${p}%`;
 }

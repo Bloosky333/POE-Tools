@@ -2,6 +2,7 @@ import { ECONOMY, type CoreCurrency, type Game } from '../games.ts';
 import type { CurrentItem, HistoryPoint } from '../site-data.ts';
 import { marketChanges } from '../sell-now/engine.ts';
 import { liquidityScore, similarity, type ConfidenceBreakdown } from '../speculation/engine.ts';
+import { confidenceOf, formatPct as pct, launchPhase, median } from '../scoring.ts';
 import { Series } from '../speculation/series.ts';
 import { farmRole } from './mechanics.ts';
 
@@ -114,7 +115,6 @@ export interface FarmInput {
 /** Days of index shown before today (both leagues) and after it (reference). */
 const INDEX_BACK = 30;
 const INDEX_AHEAD = 30;
-const MARKET_MIN_ITEMS = 10;
 
 interface Member {
   item: CurrentItem;
@@ -255,13 +255,9 @@ function signalOf(
       settings.liquiditySaturation,
     ),
     completeness: outlookResult.coverage,
-    phase: d <= 3 ? 0.5 : 1,
+    phase: launchPhase(d),
   };
-  const confidence = Math.round(
-    100 *
-      breakdown.phase *
-      (0.4 * breakdown.similarity + 0.35 * breakdown.liquidity + 0.25 * breakdown.completeness),
-  );
+  const confidence = confidenceOf(breakdown);
 
   // Verdict.
   const reasons: string[] = [];
@@ -406,15 +402,5 @@ function referenceMarket(
     if (!now || !later || now < scope.minPrice || (volume ?? 0) < scope.minVolume) continue;
     ratios.push(later / now);
   }
-  if (ratios.length < MARKET_MIN_ITEMS) return { change: null, lastDay };
-  const sorted = ratios.sort((a, b) => a - b);
-  const mid = sorted.length >> 1;
-  const change =
-    sorted.length % 2 ? (sorted[mid] ?? 1) : ((sorted[mid - 1] ?? 1) + (sorted[mid] ?? 1)) / 2;
-  return { change, lastDay };
-}
-
-function pct(value: number): string {
-  const p = Math.round(value * 100);
-  return `${p > 0 ? '+' : ''}${p}%`;
+  return { change: median(ratios), lastDay };
 }

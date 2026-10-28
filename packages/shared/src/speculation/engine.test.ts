@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { CurrentItem, HistoryPoint } from '../site-data.ts';
-import { DEFAULT_ENGINE_SETTINGS, marketFactor, suggest, type SellMode } from './engine.ts';
+import {
+  DEFAULT_ENGINE_SETTINGS,
+  engineSettingsFor,
+  marketFactor,
+  suggest,
+  type SellMode,
+} from './engine.ts';
 import { Series } from './series.ts';
 
 const item = (overrides: Partial<CurrentItem> = {}): CurrentItem => ({
@@ -117,7 +123,19 @@ describe('suggest', () => {
       mode: horizon(10),
     });
     expect(s.action).toBe('neutral');
-    expect(s.reasons.join(' ')).toMatch(/Low volume/);
+    expect(s.reasons.join(' ')).toMatch(/Low volume \(1\.00 div\/day\)/);
+  });
+
+  it('states PoE 1 volumes in chaos', () => {
+    const s = suggest({
+      item: item({ volume: 1 }),
+      reference: rising,
+      current: rising,
+      today: 10,
+      mode: horizon(10),
+      settings: engineSettingsFor('poe1'),
+    });
+    expect(s.reasons.join(' ')).toMatch(/Low volume \(1\.00 c\/day\)/);
   });
 
   it('lowers confidence when the current league moves against the reference', () => {
