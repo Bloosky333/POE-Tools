@@ -64,7 +64,16 @@ export async function updateFlips(options: FlipsUpdate): Promise<void> {
   const budget = hours.size === 0 ? WINDOW_HOURS : MAX_CATCH_UP;
   const unknown = new Set<string>();
   for (const epoch of missing.slice(0, budget)) {
-    const digest = await fetchDigest(client, epoch, game);
+    let digest;
+    try {
+      digest = await fetchDigest(client, epoch, game);
+    } catch (error) {
+      // Keep the hours fetched so far; this one is retried next run.
+      log.warn(
+        `${league.name}: exchange hour ${new Date(epoch * 1000).toISOString()} failed: ${error}`,
+      );
+      continue;
+    }
     if (!digest) {
       log.info(
         `${league.name}: exchange hour ${new Date(epoch * 1000).toISOString()} not available`,

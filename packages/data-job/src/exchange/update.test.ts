@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -118,6 +118,32 @@ describe('updateFlips', () => {
     await run(new Date('2026-10-24T06:20:00Z'));
     expect(calls).toHaveLength(4);
     expect(calls[0]).toBe(NEWEST + 3600);
+  });
+
+  it('rebuilds a truncated window and keeps the hours fetched before a failing one', async () => {
+    await mkdir(join(root, 'window/poe2/forbidden-rites'), { recursive: true });
+    await writeFile(join(root, 'window/poe2/forbidden-rites/exchange-window.json'), '{"vers');
+    const failing = NEWEST - 3600;
+    await updateFlips({
+      client: createNinjaClient({
+        fetchImpl: async (input, init) =>
+          String(input).endsWith(`/${failing}`)
+            ? new Response('', { status: 500 })
+            : fetchImpl(input, init),
+        sleep: async () => {},
+      }),
+      windows: createWindowStore(join(root, 'window')),
+      site: createSiteWriter(join(root, 'site')),
+      league,
+      items,
+      now: new Date('2026-10-24T05:20:00Z'),
+      log,
+    });
+    expect(warnings.some((w) => w.includes('failed'))).toBe(true);
+    const file = flipsFileSchema.parse(
+      JSON.parse(await readFile(join(root, 'site/poe2/forbidden-rites/flips.json'), 'utf8')),
+    );
+    expect(file.hours).toEqual([HOURS[0], NEWEST]);
   });
 });
 

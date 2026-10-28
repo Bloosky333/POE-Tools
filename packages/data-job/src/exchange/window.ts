@@ -37,7 +37,13 @@ export function createWindowStore(dir: string, game = 'poe2') {
       } catch {
         return [];
       }
-      const parsed = windowFileSchema.safeParse(JSON.parse(text));
+      let json: unknown;
+      try {
+        json = JSON.parse(text);
+      } catch {
+        return []; // Truncated file (run killed mid-write): rebuilt from the feed.
+      }
+      const parsed = windowFileSchema.safeParse(json);
       if (!parsed.success) return [];
       return parsed.data.hours.map((hour) => ({
         epoch: hour.epoch,
