@@ -37,8 +37,10 @@ export function PriceChart(props: Props) {
   const scaled: HistoryPoint[] = scale ? reference.map(([d, p, v]) => [d, p * scale, v]) : [];
   const all = [...reference, ...current, ...scaled];
   if (!all.length) return <p className="text-sm text-muted">No price history.</p>;
-  const maxDay = Math.max(...all.map((p) => p[0]), today);
-  const maxPrice = Math.max(...all.map((p) => p[1])) * 1.08;
+  // At least one day and a positive price range, so a day-0-only or all-zero series still
+  // gets finite coordinates.
+  const maxDay = Math.max(...all.map((p) => p[0]), today, 1);
+  const maxPrice = Math.max(...all.map((p) => p[1])) * 1.08 || 1;
 
   const x = (day: number) => M.left + (day / maxDay) * (W - M.left - M.right);
   const y = (price: number) => H - M.bottom - (price / maxPrice) * (H - M.top - M.bottom);
@@ -75,7 +77,7 @@ export function PriceChart(props: Props) {
       <div className="relative">
         <svg
           viewBox={`0 0 ${W} ${H}`}
-          className="w-full touch-none select-none"
+          className="w-full touch-pan-y select-none"
           role="img"
           aria-label={`Price in ${unit.id} by league day: ${props.referenceLabel} and ${props.currentLabel}`}
           onPointerMove={onMove}
@@ -138,6 +140,13 @@ export function PriceChart(props: Props) {
             )}
             <path d={path(current)} stroke="var(--series-2)" />
           </g>
+          {/* A one-point series draws no line: mark it (e.g. day 0 of the current league). */}
+          {reference.length === 1 && reference[0] && (
+            <Dot cx={x(reference[0][0])} cy={y(reference[0][1])} color="var(--series-1)" />
+          )}
+          {current.length === 1 && current[0] && (
+            <Dot cx={x(current[0][0])} cy={y(current[0][1])} color="var(--series-2)" />
+          )}
           <line
             x1={x(today)}
             x2={x(today)}

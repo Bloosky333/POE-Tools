@@ -11,6 +11,19 @@
       rel="stylesheet"
     />
     <title>POE Tools</title>
+    <script>
+      // Theme before first paint (same rule as applyTheme in src/lib/settings.ts).
+      try {
+        var theme = (JSON.parse(localStorage.getItem('poe-tools:settings')) || {}).theme;
+        var dark =
+          theme === 'system'
+            ? matchMedia('(prefers-color-scheme: dark)').matches
+            : theme !== 'light';
+        document.documentElement.classList.toggle('dark', dark);
+      } catch (e) {
+        document.documentElement.classList.add('dark');
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

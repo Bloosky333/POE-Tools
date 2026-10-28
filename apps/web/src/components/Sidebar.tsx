@@ -2,6 +2,7 @@ import { NavLink } from 'react-router';
 import { useSettings } from '../lib/useSettings.ts';
 import { TOOLS } from '../tools/registry.ts';
 import { CATEGORY_LABELS, type ToolCategory } from '../tools/types.ts';
+import { GameSwitch, ThemeSelect } from './TopBar.tsx';
 
 export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () => void }) {
   const { settings } = useSettings();
@@ -9,9 +10,15 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
 
   return (
     <nav
+      id="tools-nav"
       aria-label="Tools"
       className={`${open ? 'block' : 'hidden'} w-full shrink-0 border-line bg-surface px-3 py-5 md:sticky md:top-14 md:block md:h-[calc(100vh-3.5rem)] md:w-60 md:border-r`}
     >
+      {/* Phones: the top bar has no room for these. */}
+      <div className="mb-6 flex items-center gap-3 px-3 sm:hidden">
+        <GameSwitch className="flex" />
+        <ThemeSelect id="theme-mobile" className="ml-auto" />
+      </div>
       {categories.map((category) => {
         const tools = TOOLS.filter((tool) => tool.category === category);
         if (!tools.length) return null;

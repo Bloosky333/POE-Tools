@@ -11,7 +11,7 @@ export function Layout() {
 
   return (
     <div className="flex min-h-screen flex-col bg-bg text-fg">
-      <TopBar onToggleNav={() => setNavOpen((open) => !open)} />
+      <TopBar navOpen={navOpen} onToggleNav={() => setNavOpen((open) => !open)} />
       <div className="flex flex-1">
         <Sidebar open={navOpen} onNavigate={() => setNavOpen(false)} />
         <main className="min-w-0 flex-1 px-4 py-6 md:px-8">
