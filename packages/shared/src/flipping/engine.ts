@@ -126,14 +126,15 @@ function viewHour(
   return { value, legs, markets: traded };
 }
 
-/** Units of `to` received per 1 `from`: hour average and most favourable end of the range. */
-function conversion(view: HourView, from: Hub, to: Hub): { avg: number; best: number } {
+/**
+ * Units of `to` received per 1 `from`: hour average and most favourable end of the range;
+ * null when the `from` ↔ `to` market did not trade that hour (spec 04 §7: the flip is not
+ * doable then, so it is skipped rather than priced with an older or derived rate).
+ */
+function conversion(view: HourView, from: Hub, to: Hub): { avg: number; best: number } | null {
   const sides = marketSides(from, to);
   const market = view.markets.find((m) => m.item === sides.item && m.hub === sides.hub);
-  if (!market) {
-    const rate = (view.value[from] ?? 0) / (view.value[to] ?? 1);
-    return { avg: rate, best: rate };
-  }
+  if (!market) return null;
   const low = Math.min(market.low, market.high);
   const high = Math.max(market.low, market.high);
   // Selling the item side gives `p` hub units; selling the hub side gives 1 / p items.
@@ -161,7 +162,8 @@ function marginIn(view: HourView, c: Candidate, settings: FlipSettings): number 
     return ratio > settings.maxRangeRatio ? null : ratio - 1;
   }
   // Pay buyHub for the item, sell it for sellHub, convert sellHub back to buyHub.
-  return (sell.avg * conversion(view, c.sellHub, c.buyHub).avg) / buy.avg - 1;
+  const rate = conversion(view, c.sellHub, c.buyHub);
+  return rate ? (sell.avg * rate.avg) / buy.avg - 1 : null;
 }
 
 function candidatesOf(view: HourView): Candidate[] {
@@ -246,6 +248,7 @@ export function computeFlips(
     let bestMargin = margin;
     if (c.kind === 'cross') {
       const rate = conversion(newest, c.sellHub, c.buyHub);
+      if (!rate) continue; // Not reached: marginIn already required the market.
       convert = { from: c.sellHub, to: c.buyHub, avg: round(rate.avg), best: round(rate.best) };
       bestMargin = (sell.high * rate.best) / buy.low - 1;
     }
