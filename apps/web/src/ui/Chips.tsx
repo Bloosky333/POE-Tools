@@ -1,3 +1,5 @@
+import { ALL_EXCHANGE_TYPES, EXCHANGE_TYPE_LABELS, type ExchangeType } from '@poe-tools/shared';
+
 /** Multi-option filter as pills with counts (category pickers). */
 export function Chips<T extends string>({
   options,
@@ -27,5 +29,33 @@ export function Chips<T extends string>({
         </button>
       ))}
     </div>
+  );
+}
+
+/** "All" plus each exchange category present in `types` (one entry per row), with counts. */
+export function TypeChips({
+  types,
+  value,
+  onChange,
+}: {
+  types: readonly ExchangeType[];
+  value: ExchangeType | 'all';
+  onChange: (value: ExchangeType | 'all') => void;
+}) {
+  const counts = new Map<ExchangeType, number>();
+  for (const type of types) counts.set(type, (counts.get(type) ?? 0) + 1);
+  return (
+    <Chips<ExchangeType | 'all'>
+      value={value}
+      onChange={onChange}
+      options={[
+        { value: 'all', label: 'All', count: types.length },
+        ...ALL_EXCHANGE_TYPES.filter((t) => counts.get(t)).map((t) => ({
+          value: t,
+          label: EXCHANGE_TYPE_LABELS[t],
+          count: counts.get(t) ?? 0,
+        })),
+      ]}
+    />
   );
 }

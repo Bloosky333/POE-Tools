@@ -6,22 +6,25 @@ Every tool shares one look and feel: dense, data-first, poe.ninja-inspired, dark
 
 Build pages from the kit; add to it (not to a tool folder) when something is reusable.
 
-| Need                                          | Component                                                          |
-| --------------------------------------------- | ------------------------------------------------------------------ |
-| Page title, description, actions on the right | `PageHeader`                                                       |
-| Key figures row                               | `StatTile` (tone: `gain`/`warn`/`loss`/`accent`) in a `grid gap-3` |
-| Panel / section with header                   | `Panel`, plain bordered box `Card`                                 |
-| Category / type filter                        | `Chips` (with counts)                                              |
-| A few exclusive options (mode, period)        | `Segmented`                                                        |
-| Filters                                       | `FilterBar` + `SearchInput`, `InlineField` + `Select` / `Input`    |
-| Tabular data                                  | `DataTable` (columns with `render`, sorting by caller, row click)  |
-| Item with icon                                | `ItemCell` (`sm` / `md` / `lg`)                                    |
-| Price / volume                                | `Amount` (value + unit icon; PoE 1: chaos with divine alongside)   |
-| Status                                        | `Badge` (always icon or words + tone), `Pill` for labels           |
-| 0–100 score / ratio                           | `ScoreMeter`, `RatioBar`                                           |
-| Small trend                                   | `Sparkline`                                                        |
-| Item / row details                            | `Sheet` (side panel, Escape to close) with `StatCard`s             |
-| Loading / errors                              | `Skeleton`, `Notice`                                               |
+| Need                                          | Component                                                            |
+| --------------------------------------------- | -------------------------------------------------------------------- |
+| Page title, description, actions on the right | `PageHeader`                                                         |
+| Key figures row                               | `StatTile` (tone: `gain`/`warn`/`loss`/`accent`) in a `grid gap-3`   |
+| Panel / section with header                   | `Panel`, plain bordered box `Card`                                   |
+| Category / type filter                        | `TypeChips` (exchange categories), `Chips` (with counts)             |
+| A few exclusive options (mode, period)        | `Segmented`                                                          |
+| Filters                                       | `FilterBar` + `SearchInput`, `NumberField`, `InlineField` + `Select` |
+| Tabular data                                  | `DataTable` (columns with `render`, sorting by caller, row click)    |
+| Item with icon                                | `ItemCell` (`sm` / `md` / `lg`)                                      |
+| Price / volume                                | `Amount` (value + unit icon; PoE 1: chaos with divine alongside)     |
+| Status                                        | `Badge` / `StyledBadge` + `labelsOf` for verdict enums, `Pill`       |
+| Change in %                                   | `Change` (fraction, or `ratio` vs 1)                                 |
+| 0–100 score / ratio                           | `ScoreMeter`, `RatioBar`                                             |
+| Small trend                                   | `Sparkline`                                                          |
+| Search with a pick list                       | `SearchPicker` (combobox: arrows, Enter, Escape)                     |
+| Number input                                  | `NumericInput` (keeps what is typed; valid values only)              |
+| Item / row details                            | `Sheet` (side panel, Escape to close) with `StatCard`s               |
+| Loading / errors                              | `LoadStatus` for a tool's data, `Skeleton`, `Notice`                 |
 
 ## Colors
 
@@ -41,7 +44,8 @@ sign, icon or word. Charts use the `--series-*` variables (`.viz-root`).
 - Text sizes: page title `text-2xl font-semibold`, body `text-sm`, labels `text-xs text-muted`.
 - Everything must work at 390 px wide without horizontal page scroll (tables scroll inside
   their own container).
-- Filters and selections that matter live in the URL (bookmarkable).
+- Filters and selections that matter live in the URL (bookmarkable): declare them with
+  `useUrlParams` (`src/lib/urlParams.ts`); sort rows with `sortRows` (`src/lib/sort.ts`).
 
 ## Adding a tool
 

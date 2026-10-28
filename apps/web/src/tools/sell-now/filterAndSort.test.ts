@@ -1,4 +1,9 @@
-import { sellSignal, type CurrentItem, type HistoryPoint } from '@poe-tools/shared';
+import {
+  sellSettingsFor,
+  sellSignal,
+  type CurrentItem,
+  type HistoryPoint,
+} from '@poe-tools/shared';
 import { describe, expect, it } from 'vitest';
 import type { ViewParams } from './params.ts';
 import { filterAndSort } from './SellNowPage.tsx';
@@ -20,7 +25,13 @@ const make = (id: string, price: number, volume: number, reference: HistoryPoint
     volume,
     change7d: null,
   };
-  return sellSignal({ item, reference, current: reference, today: 20 });
+  return sellSignal({
+    item,
+    reference,
+    current: reference,
+    today: 20,
+    settings: sellSettingsFor('poe2'),
+  });
 };
 
 const params: ViewParams = {

@@ -113,11 +113,11 @@ describe('updateFlips', () => {
     const prism = file.flips.find((f) => f.item === 'gcp' && f.kind === 'cross');
     expect(prism?.buy.hub).toBe('exalted');
 
-    // Next hour: 04:00–05:00 is new, older missing hours are retried within the budget.
+    // Next hour: only 04:00–05:00 is new; the older hours missing from the feed are gaps,
+    // not requested again.
     calls.length = 0;
     await run(new Date('2026-10-24T06:20:00Z'));
-    expect(calls).toHaveLength(4);
-    expect(calls[0]).toBe(NEWEST + 3600);
+    expect(calls).toEqual([NEWEST + 3600]);
   });
 
   it('rebuilds a truncated window and keeps the hours fetched before a failing one', async () => {

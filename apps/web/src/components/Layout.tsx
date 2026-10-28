@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router';
+import { useSearchShortcut } from '../lib/useSearchShortcut.ts';
+import { BackupControls } from './BackupControls.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import { TopBar } from './TopBar.tsx';
 import { UpcomingLeague, useLeagueStarted } from './UpcomingLeague.tsx';
@@ -8,6 +10,7 @@ export function Layout() {
   const [navOpen, setNavOpen] = useState(false);
   const started = useLeagueStarted();
   const onTool = useLocation().pathname.startsWith('/tools/');
+  useSearchShortcut();
 
   return (
     <div className="flex min-h-screen flex-col bg-bg text-fg">
@@ -29,7 +32,8 @@ export function Layout() {
         . Not affiliated with Grinding Gear Games ·{' '}
         <a className="text-muted hover:text-accent" href="https://github.com/Bloosky333/POE-Tools">
           Source
-        </a>
+        </a>{' '}
+        · <BackupControls />
       </footer>
     </div>
   );

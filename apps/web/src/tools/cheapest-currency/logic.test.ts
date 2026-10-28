@@ -22,7 +22,12 @@ describe('cheapest currency logic', () => {
 
   it('searches by name, most traded first, without the unit', () => {
     expect(searchItems(items, 'orb', 'chaos').map((i) => i.id)).toEqual(['annul', 'alch']);
-    expect(searchItems(items, '', 'divine', 2).map((i) => i.id)).toEqual(['chaos', 'annul']);
+    expect(searchItems(items, '', 'divine', 'all', 2).map((i) => i.id)).toEqual(['chaos', 'annul']);
+  });
+
+  it('filters by category', () => {
+    const rune = { ...item('rune', 'Iron Rune', 50), type: 'Runes' as const };
+    expect(searchItems([...items, rune], '', 'divine', 'Runes').map((i) => i.id)).toEqual(['rune']);
   });
 
   it('keeps recent lookups unique and bounded, favourites toggled', () => {

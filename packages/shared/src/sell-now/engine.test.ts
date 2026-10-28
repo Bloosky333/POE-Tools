@@ -1,6 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import type { CurrentItem, HistoryPoint } from '../site-data.ts';
-import { marketChanges, sellSignal } from './engine.ts';
+import { ECONOMY } from '../games.ts';
+import {
+  marketChanges as marketChangesIn,
+  sellSettingsFor,
+  sellSignal as sellSignalWith,
+  type SellInput,
+} from './engine.ts';
+
+/** PoE 2 settings and market scope. */
+const sellSignal = (input: Omit<SellInput, 'settings'>) =>
+  sellSignalWith({ settings: sellSettingsFor('poe2'), ...input });
+const marketChanges = (
+  ...args: [SellInput['item'][], Parameters<typeof marketChangesIn>[1], number]
+) => marketChangesIn(...args, ECONOMY.poe2);
 
 const item = (overrides: Partial<CurrentItem> = {}): CurrentItem => ({
   id: 'x',

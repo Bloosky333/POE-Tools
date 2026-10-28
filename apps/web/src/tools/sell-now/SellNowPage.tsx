@@ -1,19 +1,19 @@
-import { EXCHANGE_TYPE_LABELS, ALL_EXCHANGE_TYPES, type SellSignal } from '@poe-tools/shared';
+import { CURRENCY_NAMES, type SellSignal } from '@poe-tools/shared';
 import { useMemo } from 'react';
 import { formatPercent } from '../../lib/format.ts';
+import { sortRows } from '../../lib/sort.ts';
 import {
   Card,
-  Chips,
   Amount,
   FilterBar,
   InlineField,
-  Input,
-  Notice,
+  LoadStatus,
+  NumberField,
   PageHeader,
   SearchInput,
   Select,
-  Skeleton,
   StatTile,
+  TypeChips,
 } from '../../ui/index.ts';
 import type { UnitInfo } from '../../lib/unit.ts';
 import { useViewParams, type SortKey, type ViewParams } from './params.ts';
@@ -48,13 +48,7 @@ export default function SellNowPage() {
         }
       />
 
-      {data.status === 'loading' && <Skeleton label="Loading price data" />}
-      {data.status === 'error' && (
-        <Notice>
-          Price data couldn&apos;t be loaded ({data.error.message}). The data job may not have run
-          yet.
-        </Notice>
-      )}
+      <LoadStatus state={data} what="price data" />
       {data.status === 'ready' && (
         <>
           <StatTiles
@@ -65,8 +59,8 @@ export default function SellNowPage() {
           />
 
           <Card className="space-y-3">
-            <CategoryChips
-              signals={eligible}
+            <TypeChips
+              types={eligible.map((s) => s.item.type)}
               value={params.type}
               onChange={(type) => update({ type })}
             />
@@ -93,7 +87,8 @@ export default function SellNowPage() {
           />
           <p className="text-xs text-subtle">
             {rows.length} of {signals.length} items · expected loss is last league&apos;s move; in a
-            market rising against {unit.id}, flagged items mostly lag the market rather than drop.
+            market rising against the {CURRENCY_NAMES[unit.id]}, flagged items mostly lag the market
+            rather than drop.
             {game === 'poe1' &&
               ' In PoE 1 the signal is weak: replayed on Allflame vs Mirage, flagged items did only slightly worse than the market afterwards — treat them as hints.'}
           </p>
@@ -157,33 +152,6 @@ function StatTiles({
   );
 }
 
-function CategoryChips({
-  signals,
-  value,
-  onChange,
-}: {
-  signals: readonly SellSignal[];
-  value: ViewParams['type'];
-  onChange: (value: ViewParams['type']) => void;
-}) {
-  const counts = new Map<string, number>();
-  for (const s of signals) counts.set(s.item.type, (counts.get(s.item.type) ?? 0) + 1);
-  return (
-    <Chips<ViewParams['type']>
-      value={value}
-      onChange={onChange}
-      options={[
-        { value: 'all', label: 'All', count: signals.length },
-        ...ALL_EXCHANGE_TYPES.filter((t) => counts.get(t)).map((t) => ({
-          value: t,
-          label: EXCHANGE_TYPE_LABELS[t],
-          count: counts.get(t) ?? 0,
-        })),
-      ]}
-    />
-  );
-}
-
 function Filters({
   params,
   update,
@@ -209,26 +177,20 @@ function Filters({
           <option value="all">All, with {VERDICT_LABELS.hold}</option>
         </Select>
       </InlineField>
-      <InlineField label="Min volume" unit={`${unit}/day`}>
-        <Input
-          type="number"
-          min={0}
-          step={1}
-          className="w-20"
-          value={params.minVolume}
-          onChange={(e) => update({ minVolume: Number(e.target.value) || 0 })}
-        />
-      </InlineField>
-      <InlineField label="Min price" unit={unit}>
-        <Input
-          type="number"
-          min={0}
-          step={0.01}
-          className="w-20"
-          value={params.minPrice}
-          onChange={(e) => update({ minPrice: Number(e.target.value) || 0 })}
-        />
-      </InlineField>
+      <NumberField
+        label="Min volume"
+        unit={`${unit}/day`}
+        step={1}
+        value={params.minVolume}
+        onChange={(minVolume) => update({ minVolume })}
+      />
+      <NumberField
+        label="Min price"
+        unit={unit}
+        step={0.01}
+        value={params.minPrice}
+        onChange={(minPrice) => update({ minPrice })}
+      />
     </FilterBar>
   );
 }
@@ -277,10 +239,5 @@ export function filterAndSort(signals: readonly SellSignal[], params: ViewParams
         return (2 - VERDICT_ORDER[s.verdict]) * 10 + s.score;
     }
   };
-  return rows.sort((a, b) => {
-    const va = value(a);
-    const vb = value(b);
-    const cmp = typeof va === 'string' ? va.localeCompare(String(vb)) : va - (vb as number);
-    return params.desc ? -cmp : cmp;
-  });
+  return sortRows(rows, value, params.desc);
 }

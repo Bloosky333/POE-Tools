@@ -4,6 +4,7 @@
  */
 export * from './Badge.tsx';
 export * from './Card.tsx';
+export * from './Change.tsx';
 export * from './Chips.tsx';
 export * from './DataTable.tsx';
 export * from './Amount.tsx';
@@ -15,3 +16,4 @@ export * from './PriceChart.tsx';
 export * from './Segmented.tsx';
 export * from './Sheet.tsx';
 export * from './Sparkline.tsx';
+export * from './SearchPicker.tsx';

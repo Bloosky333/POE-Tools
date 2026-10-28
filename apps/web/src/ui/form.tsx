@@ -1,9 +1,10 @@
-import type {
-  ButtonHTMLAttributes,
-  InputHTMLAttributes,
-  ReactNode,
-  SelectHTMLAttributes,
-  TextareaHTMLAttributes,
+import {
+  useState,
+  type ButtonHTMLAttributes,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
 } from 'react';
 import { SearchIcon } from '../components/icons.tsx';
 
@@ -38,6 +39,7 @@ export function SearchInput({
       <input
         type="search"
         placeholder={placeholder}
+        aria-keyshortcuts="/"
         className={`${controlClass} w-full pl-7 sm:w-56`}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -53,7 +55,7 @@ export function InlineField({
   children,
 }: {
   label: string;
-  unit?: string;
+  unit?: string | undefined;
   children: ReactNode;
 }) {
   return (
@@ -124,5 +126,78 @@ export function Field({
       {children}
       {hint && <span className="text-xs text-subtle">{hint}</span>}
     </label>
+  );
+}
+
+/**
+ * Number input that keeps what is typed while editing: a valid number (within
+ * `min`…`max`, whole with `integer`) is passed on at once, anything else (e.g. an emptied
+ * field) waits, and leaving the field shows the last valid value again.
+ */
+export function NumericInput({
+  value,
+  onChange,
+  min,
+  max,
+  integer = false,
+  className = '',
+  ...props
+}: Omit<InputHTMLAttributes<HTMLInputElement>, 'value' | 'onChange' | 'type' | 'min' | 'max'> & {
+  value: number;
+  onChange: (value: number) => void;
+  min?: number | undefined;
+  max?: number | undefined;
+  integer?: boolean;
+}) {
+  const [text, setText] = useState<string | null>(null);
+  return (
+    <input
+      {...props}
+      type="number"
+      min={min}
+      max={max}
+      step={props.step ?? (integer ? 1 : 'any')}
+      className={`${controlClass} ${className}`}
+      value={text ?? String(value)}
+      onChange={(e) => {
+        const raw = e.target.value;
+        setText(raw);
+        const n = Number(raw);
+        const valid =
+          raw.trim() !== '' &&
+          Number.isFinite(n) &&
+          (min === undefined || n >= min) &&
+          (max === undefined || n <= max) &&
+          (!integer || Number.isInteger(n));
+        if (valid) onChange(n);
+      }}
+      onBlur={(e) => {
+        setText(null);
+        props.onBlur?.(e);
+      }}
+    />
+  );
+}
+
+/** Numeric filter (≥ `min`) with its label and unit, for filter bars. */
+export function NumberField({
+  label,
+  unit,
+  value,
+  step,
+  min = 0,
+  onChange,
+}: {
+  label: string;
+  unit?: string;
+  value: number;
+  step: number;
+  min?: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <InlineField label={label} unit={unit}>
+      <NumericInput min={min} step={step} className="w-20" value={value} onChange={onChange} />
+    </InlineField>
   );
 }

@@ -1,4 +1,5 @@
 import {
+  CURRENCY_NAMES,
   CURRENCY_SHORT,
   ECONOMY,
   cheapest,
@@ -23,12 +24,12 @@ import {
   InlineField,
   Input,
   ItemCell,
-  Notice,
+  LoadStatus,
   PageHeader,
   Panel,
   Pill,
   SearchInput,
-  Skeleton,
+  TypeChips,
   type Column,
 } from '../../ui/index.ts';
 import {
@@ -43,12 +44,6 @@ import {
 
 /** A daily quote older than this is flagged as stale. */
 const STALE_MS = 2 * 86_400_000;
-
-const CURRENCY_NAMES: Record<string, string> = {
-  divine: 'Divine Orb',
-  exalted: 'Exalted Orb',
-  chaos: 'Chaos Orb',
-};
 
 export default function CheapestCurrencyPage() {
   const [params, update] = useViewParams();
@@ -81,9 +76,14 @@ export default function CheapestCurrencyPage() {
     [current],
   );
   const item = params.item ? items.get(params.item) : undefined;
-  const matches = useMemo(
-    () => (current ? searchItems(current.items, params.q, economy.unit) : []),
+  // Every match of the search (for the category counts), then the shown ones.
+  const allMatches = useMemo(
+    () => (current ? searchItems(current.items, params.q, economy.unit, 'all', Infinity) : []),
     [current, params.q, economy.unit],
+  );
+  const matches = useMemo(
+    () => searchItems(allMatches, '', economy.unit, params.type),
+    [allMatches, params.type, economy.unit],
   );
   const result: CheapestResult | null =
     item && data.status === 'ready'
@@ -113,13 +113,7 @@ export default function CheapestCurrencyPage() {
           .join(', ')}, compared in whole units at today's rates.`}
       />
 
-      {data.status === 'loading' && <Skeleton rows={4} label="Loading exchange rates" />}
-      {data.status === 'error' && (
-        <Notice>
-          Exchange rates couldn&apos;t be loaded ({data.error.message}). The data job may not have
-          run yet.
-        </Notice>
-      )}
+      <LoadStatus state={data} what="exchange rates" rows={4} />
       {data.status === 'ready' && (
         <>
           <Card className="space-y-3">
@@ -142,7 +136,16 @@ export default function CheapestCurrencyPage() {
                 />
               </InlineField>
             </FilterBar>
-            {(params.q || !item) && <ItemPicker items={matches} unit={unit} onSelect={select} />}
+            {(params.q || !item) && (
+              <>
+                <TypeChips
+                  types={allMatches.map((i) => i.type)}
+                  value={params.type}
+                  onChange={(type) => update({ type })}
+                />
+                <ItemPicker items={matches} unit={unit} onSelect={select} />
+              </>
+            )}
             <SavedItems saved={saved} items={items} onSelect={select} />
           </Card>
 
@@ -358,7 +361,11 @@ function Result(props: {
         <ItemCell
           icon={item.icon}
           name={`${quantity} × ${item.name}`}
-          subtitle={`Market price ${formatAmount(item.price, unit.id)} ${unit.short} each`}
+          subtitle={`Market price ${formatAmount(item.price, unit.id)} ${unit.short} each${
+            unit.secondary
+              ? ` (${formatAmount(item.price * unit.secondary.perUnit, unit.secondary.id)} ${unit.secondary.short})`
+              : ''
+          }`}
           size="lg"
         />
       }

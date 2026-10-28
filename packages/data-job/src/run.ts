@@ -1,5 +1,6 @@
 import {
   CORE_CURRENCIES,
+  CURRENCY_NAMES,
   DAY_MS,
   ECONOMY,
   EXCHANGE_TYPES,
@@ -58,12 +59,6 @@ export interface JobOptions {
   /** fetch used to download icons from GGG's CDN (tests inject a fake, unthrottled). */
   iconFetch?: typeof fetch;
 }
-
-const CURRENCY_NAMES: Record<string, string> = {
-  divine: 'Divine Orb',
-  exalted: 'Exalted Orb',
-  chaos: 'Chaos Orb',
-};
 
 interface LeagueSnapshot {
   overviews: ExchangeOverview[];

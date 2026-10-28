@@ -1,4 +1,4 @@
-import { suggest, type CurrentItem, type HistoryPoint } from '@poe-tools/shared';
+import { engineSettingsFor, suggest, type CurrentItem, type HistoryPoint } from '@poe-tools/shared';
 import { describe, expect, it } from 'vitest';
 import { filterAndSort } from './CurrencySpeculationPage.tsx';
 import type { ViewParams } from './params.ts';
@@ -22,6 +22,7 @@ const make = (id: string, price: number, volume: number) => {
     current: rising,
     today: 10,
     mode: { kind: 'horizon', days: 7 },
+    settings: engineSettingsFor('poe2'),
   });
 };
 

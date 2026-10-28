@@ -63,24 +63,25 @@
 
 ## Currency flipping (`04-currency-flipping.md`)
 
-| #   | Topic       | Decision                                                                                                                                                 |
-| --- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| F1  | Flip types  | Both: spread (one market) and cross-pair (hub A → item → hub B → A).                                                                                     |
-| F2  | Data source | GGG public currency-exchange feed (hourly digests), data job only; no OAuth app. poe.ninja kept for names / icons.                                       |
-| F3  | Freshness   | Daily data is useless; the hourly feed (1–2 h old when shown) is accepted as a trial.                                                                    |
-| F4  | Spread      | Hourly ratio range is a heuristic: count hours with trades only, rank only recurring spreads (last 24 h).                                                |
-| F5  | Cross-pair  | Loops through divine / exalted / chaos only; no item-to-item cycles.                                                                                     |
-| F6  | Markets     | Only markets against divine, exalted or chaos.                                                                                                           |
-| F7  | Units       | Divine-only rule lifted for this tool: ratios in their own currencies; profit in %.                                                                      |
-| F8  | Gold        | Wanted later: gold per 1 div of profit with a low / normal / high indicator. **Deferred** — not in v1 (fee unverified).                                  |
-| F9  | Volume      | Min-volume selector in units of the item traded (24 h), on every leg; plus a divine-value filter (F16).                                                  |
-| F10 | Scope       | Every item on the currency exchange; no budget, no flip log for now.                                                                                     |
-| F11 | Priority    | First backlog tool, before cheapest currency path.                                                                                                       |
-| F12 | Prices      | Margins use the volume-weighted average price of each leg (revised after the probe; optimistic ends had no signal). Best case shown in the detail sheet. |
-| F13 | Outliers    | Hours with high/low > 3 are excluded from recurrence.                                                                                                    |
-| F14 | Columns     | Margin % and volume in separate columns, no combined score; default sort by margin.                                                                      |
-| F15 | Spread      | Kept in v1 as a heuristic ranked on recurrence (the feed has no volume per ratio).                                                                       |
-| F16 | Value       | Min divine value traded per leg (24 h), default 120 div, tunable.                                                                                        |
+| #   | Topic          | Decision                                                                                                                                                 |
+| --- | -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| F1  | Flip types     | Both: spread (one market) and cross-pair (hub A → item → hub B → A).                                                                                     |
+| F2  | Data source    | GGG public currency-exchange feed (hourly digests), data job only; no OAuth app. poe.ninja kept for names / icons.                                       |
+| F3  | Freshness      | Daily data is useless; the hourly feed (1–2 h old when shown) is accepted as a trial.                                                                    |
+| F4  | Spread         | Hourly ratio range is a heuristic: count hours with trades only, rank only recurring spreads (last 24 h).                                                |
+| F5  | Cross-pair     | Loops through divine / exalted / chaos only; no item-to-item cycles.                                                                                     |
+| F6  | Markets        | Only markets against divine, exalted or chaos.                                                                                                           |
+| F7  | Units          | Divine-only rule lifted for this tool: ratios in their own currencies; profit in %.                                                                      |
+| F8  | Gold           | Wanted later: gold per 1 div of profit with a low / normal / high indicator. **Deferred** — not in v1 (fee unverified).                                  |
+| F9  | Volume         | Min-volume selector in units of the item traded (24 h), on every leg; plus a divine-value filter (F16).                                                  |
+| F10 | Scope          | Every item on the currency exchange; no budget, no flip log for now.                                                                                     |
+| F11 | Priority       | First backlog tool, before cheapest currency path.                                                                                                       |
+| F12 | Prices         | Margins use the volume-weighted average price of each leg (revised after the probe; optimistic ends had no signal). Best case shown in the detail sheet. |
+| F13 | Outliers       | Hours with high/low > 3 are excluded from recurrence.                                                                                                    |
+| F14 | Columns        | Margin % and volume in separate columns, no combined score; default sort by margin.                                                                      |
+| F15 | Spread         | Kept in v1 as a heuristic ranked on recurrence (the feed has no volume per ratio).                                                                       |
+| F16 | Value          | Min divine value traded per leg (24 h), default 120 div, tunable.                                                                                        |
+| F17 | Hub conversion | A cross-pair flip whose hub ↔ hub market did not trade that hour is not doable: skipped for that hour (no older or derived rate), as §7 says.            |
 
 ## Sell Now (spec `06-sell-now.md`)
 
@@ -137,20 +138,21 @@
 
 ## What to Farm (`09-what-to-farm.md`)
 
-| #   | Topic      | Decision                                                                                                                                                                                                   |
-| --- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| W1  | Yield      | **No drop rates / div per hour** (no source): rank loot quality only. Run log or yield table later.                                                                                                        |
-| W2  | Row        | One row per **mechanic**: category default + item-name overrides, hand-kept per game.                                                                                                                      |
-| W3  | Signal     | Current value + 7-day trend + last league's 14-day outlook → farm & sell / farm & hold / avoid.                                                                                                            |
-| W4  | Scope      | **Both games**, loot side only (no input costs).                                                                                                                                                           |
-| W5  | Non-mech   | General drops = greyed "Any content" baseline row; map inputs (Scarab, Astrolabe) excluded.                                                                                                                |
-| W6  | Index      | Volume-weighted (item weight capped at 40 %).                                                                                                                                                              |
-| W7  | Verdicts   | Outlook thresholds vs market (±15 %), Sell Now's Falling for AVOID; tuned by `backtest-farm`.                                                                                                              |
-| W8  | Mapping    | Idols ignored (not targetable); Verisium, Tattoo → Expedition; EnshroudingCrystal → Legion; Fate fragments → Ultimatum; Ducat = 3.29 league row; boss keys / fragments = Bosses.                           |
-| W9  | Thresholds | ±15 %, 40 % cap, 50 div/day accepted until `backtest-farm` says otherwise.                                                                                                                                 |
-| W10 | Start      | "Waiting for data" until day 7 of a league; PoE 1 3.30 waits too.                                                                                                                                          |
-| W11 | Placement  | Tool page only, no home-page widget.                                                                                                                                                                       |
-| W12 | Backtest   | 2026-10-24: weak signal (PoE 1 hold ×1.04 / avoid ×0.94 vs market at 14 d; PoE 2 inconclusive) → defaults kept, "falling" AVOID rule dropped (rebounds), weak signal noted on the page; re-run per league. |
+| #   | Topic          | Decision                                                                                                                                                                                                   |
+| --- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W1  | Yield          | **No drop rates / div per hour** (no source): rank loot quality only. Run log or yield table later.                                                                                                        |
+| W2  | Row            | One row per **mechanic**: category default + item-name overrides, hand-kept per game.                                                                                                                      |
+| W3  | Signal         | Current value + 7-day trend + last league's 14-day outlook → farm & sell / farm & hold / avoid.                                                                                                            |
+| W4  | Scope          | **Both games**, loot side only (no input costs).                                                                                                                                                           |
+| W5  | Non-mech       | General drops = greyed "Any content" baseline row; map inputs (Scarab, Astrolabe) excluded.                                                                                                                |
+| W6  | Index          | Volume-weighted (item weight capped at 40 %).                                                                                                                                                              |
+| W7  | Verdicts       | Outlook thresholds vs market (±15 %), Sell Now's Falling for AVOID; tuned by `backtest-farm`.                                                                                                              |
+| W8  | Mapping        | Idols ignored (not targetable); Verisium, Tattoo → Expedition; EnshroudingCrystal → Legion; Fate fragments → Ultimatum; Ducat = 3.29 league row; boss keys / fragments = Bosses.                           |
+| W9  | Thresholds     | ±15 %, 40 % cap, 50 div/day accepted until `backtest-farm` says otherwise.                                                                                                                                 |
+| W10 | Start          | "Waiting for data" until day 7 of a league; PoE 1 3.30 waits too.                                                                                                                                          |
+| W11 | Placement      | Tool page only, no home-page widget.                                                                                                                                                                       |
+| W12 | Backtest       | 2026-10-24: weak signal (PoE 1 hold ×1.04 / avoid ×0.94 vs market at 14 d; PoE 2 inconclusive) → defaults kept, "falling" AVOID rule dropped (rebounds), weak signal noted on the page; re-run per league. |
+| W13 | Spec alignment | Completeness = share of the mechanic's uncapped volume with reference history; trend / outlook are empty (with a reason) when the market's own move cannot be measured (< 10 items).                       |
 
 ## Code review (2026-10-28)
 
@@ -164,6 +166,9 @@
 | R6  | Web data refresh     | Site data is refetched every 15 min in an open tab (shown data kept while reloading).                                                                                                    |
 | R7  | Game switch          | Clears the page's URL filters (they are in the game's unit).                                                                                                                             |
 | R8  | Order ratio > 1:1000 | Shown unclamped (e.g. 2500 : 1) rather than clamped to a wrong order.                                                                                                                    |
+| R9  | Engine settings      | Engines take the game's settings explicitly (no PoE 2 defaults).                                                                                                                         |
+| R10 | Backup               | One app-wide JSON backup of everything in `localStorage` under `poe-tools:` (restore replaces the entries it carries; each tool validates its data on load).                             |
+| R11 | Feed gaps            | A feed hour still missing 2 h after the newest one is a gap: kept empty in the window, not requested again.                                                                              |
 
 ## Still open
 

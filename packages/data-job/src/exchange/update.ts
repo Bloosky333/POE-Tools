@@ -25,6 +25,9 @@ export const BASE_ITEMS_FILES: Record<Game, string> = {
 /** Feed requests per run once the window exists (catching up after skipped runs). */
 const MAX_CATCH_UP = 4;
 
+/** A feed hour still missing this long after the newest one is a gap, not a delay. */
+const GAP_AFTER_S = 2 * HOUR_S;
+
 export interface FlipsUpdate {
   client: NinjaClient;
   windows: WindowStore;
@@ -78,6 +81,9 @@ export async function updateFlips(options: FlipsUpdate): Promise<void> {
       log.info(
         `${league.name}: exchange hour ${new Date(epoch * 1000).toISOString()} not available`,
       );
+      // Still missing 2 h after the newest hour: a gap in the feed. Kept as an empty hour so
+      // it is not requested again every run (it uses up the catch-up budget).
+      if (epoch <= newest - GAP_AFTER_S) hours.set(epoch, { epoch, markets: [] });
       continue;
     }
     const result = digestToHour(digest, epoch, league.ninjaName, map, hubs);
@@ -99,7 +105,8 @@ export async function updateFlips(options: FlipsUpdate): Promise<void> {
 
   const window = [...hours.values()].sort((a, b) => a.epoch - b.epoch);
   await windows.write(league.id, window);
-  const file = computeFlips(league.id, window, now, flipSettingsFor(game));
+  const traded = window.filter((hour) => hour.markets.length > 0);
+  const file = computeFlips(league.id, traded, now, flipSettingsFor(game));
   await site.writeFlips(file);
-  log.info(`${league.name}: ${window.length} exchange hours, ${file.flips.length} flips`);
+  log.info(`${league.name}: ${traded.length} exchange hours, ${file.flips.length} flips`);
 }

@@ -34,6 +34,18 @@ describe('overviewToItems', () => {
     expect(items.find((item) => item.id === 'divine')?.price).toBe(1);
   });
 
+  it('drops ids that would break the history CSV', () => {
+    const [line] = overview.lines;
+    const [meta] = overview.items;
+    if (!line || !meta) throw new Error('missing fixture data');
+    const odd = {
+      ...overview,
+      lines: [{ ...line, id: 'a,b' }],
+      items: [{ ...meta, id: 'a,b' }],
+    };
+    expect(overviewToItems(odd, 'Currency')).toEqual([]);
+  });
+
   it('reads exchange rates per divine', () => {
     expect(fxFromOverview(overview, TODAY, ['exalted', 'chaos'])).toEqual({
       date: TODAY,

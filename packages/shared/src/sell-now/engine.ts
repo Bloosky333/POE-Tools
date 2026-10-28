@@ -57,8 +57,6 @@ export function sellSettingsFor(game: Game): SellSettings {
   };
 }
 
-export const DEFAULT_SELL_SETTINGS: SellSettings = sellSettingsFor('poe2');
-
 /** Which items make up "the market" (market move): liquid items other than the unit. */
 export interface MarketScope {
   unit: CoreCurrency;
@@ -117,7 +115,8 @@ export interface SellInput {
   today: number;
   /** Market change ratios (see `marketChanges`); absent = no market adjustment. */
   market?: WindowChanges | undefined;
-  settings?: SellSettings;
+  /** The game's settings (`sellSettingsFor`): thresholds carry its unit. */
+  settings: SellSettings;
 }
 
 /** Price changes of an item over each window, from its current price and history. */
@@ -138,7 +137,7 @@ export function marketChanges(
   items: readonly CurrentItem[],
   currentHistory: Readonly<Record<string, readonly HistoryPoint[]>>,
   today: number,
-  scope: MarketScope = ECONOMY.poe2,
+  scope: MarketScope,
 ): WindowChanges {
   const d = Math.floor(today);
   const changes: Record<SellWindow, number[]> = { 1: [], 3: [], 7: [] };
@@ -157,7 +156,7 @@ export function marketChanges(
 }
 
 export function sellSignal(input: SellInput): SellSignal {
-  const settings = input.settings ?? DEFAULT_SELL_SETTINGS;
+  const { settings } = input;
   const { item } = input;
   const d = Math.floor(input.today);
   const ref = new Series(input.reference ?? []);

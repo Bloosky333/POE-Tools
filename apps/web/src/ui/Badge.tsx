@@ -40,6 +40,38 @@ export function Badge({
   );
 }
 
+/** Label, icon and tone of one value of a verdict-like enum. */
+export interface BadgeStyle {
+  label: string;
+  icon: string;
+  tone: BadgeTone;
+}
+
+/** Badge of `value` from a `BadgeStyle` table. */
+export function StyledBadge<K extends string>({
+  styles,
+  value,
+  detail,
+}: {
+  styles: Record<K, BadgeStyle>;
+  value: K;
+  detail?: ReactNode;
+}) {
+  const style = styles[value];
+  return (
+    <Badge tone={style.tone} icon={style.icon} detail={detail}>
+      {style.label}
+    </Badge>
+  );
+}
+
+/** The labels of a `BadgeStyle` table (filters, legends). */
+export function labelsOf<K extends string>(styles: Record<K, BadgeStyle>): Record<K, string> {
+  return Object.fromEntries(
+    Object.entries<BadgeStyle>(styles).map(([key, style]) => [key, style.label]),
+  ) as Record<K, string>;
+}
+
 /** Rounded status label (Beta, Coming soon…). */
 export function Pill({ tone, children }: { tone: BadgeTone; children: ReactNode }) {
   return (

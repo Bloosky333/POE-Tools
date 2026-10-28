@@ -6,6 +6,7 @@ import {
   type Flip,
   type Game,
 } from '@poe-tools/shared';
+import { sortRows } from '../../lib/sort.ts';
 
 /** Filters and view state, kept in the URL so views can be bookmarked. */
 export interface ViewParams {
@@ -88,12 +89,7 @@ export function filterAndSort(rows: readonly FlipRow[], params: ViewParams): Fli
         return flip.margin;
     }
   };
-  return out.sort((a, b) => {
-    const va = value(a);
-    const vb = value(b);
-    const cmp = typeof va === 'string' ? va.localeCompare(String(vb)) : va - (vb as number);
-    return params.desc ? -cmp : cmp;
-  });
+  return sortRows(out, value, params.desc);
 }
 
 /**

@@ -199,6 +199,41 @@ describe('farmSignals', () => {
     expect(s.reasons.join(' ')).toContain('big trades 98 % of its volume');
   });
 
+  it('measures completeness on uncapped volume with reference history', () => {
+    const s = byMechanic(
+      world([
+        {
+          item: item('big', 'Breach', 2, 1000),
+          current: series(TODAY - 1, () => 2, 1000),
+          reference: [], // new this league
+        },
+        ...['a', 'b'].map((id) => ({
+          item: item(id, 'Breach', 2, 10),
+          current: series(TODAY - 1, () => 2, 10),
+          reference: series(60, () => 2),
+        })),
+      ]),
+      'Breach',
+    );
+    // Capped shares would say 60 % is covered; by volume it is 20 / 1020.
+    expect(s.breakdown.completeness).toBeCloseTo(20 / 1020);
+  });
+
+  it('gives no trend or outlook when the market move cannot be measured', () => {
+    const signals = farmSignals({
+      game: 'poe2',
+      items: [item('cat', 'Breach', 2)],
+      currentHistory: { cat: series(TODAY - 1, () => 2) },
+      referenceHistory: { cat: series(60, (d) => (d <= TODAY ? 2 : 4)) },
+      today: TODAY,
+    });
+    const s = byMechanic(signals, 'Breach');
+    expect(s.trend).toBeNull();
+    expect(s.outlook).toBeNull();
+    expect(s.verdict).toBe('farm-sell');
+    expect(s.reasons.join(' ')).toMatch(/Too few items/);
+  });
+
   it('caps shares, or splits evenly when the cap is impossible', () => {
     cappedShares([10, 1, 1, 1], 0.4).forEach((x, i) => expect(x).toBeCloseTo(i ? 0.2 : 0.4));
     expect(cappedShares([3, 1], 0.4)).toEqual([0.5, 0.5]);

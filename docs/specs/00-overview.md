@@ -44,8 +44,8 @@ later: [`07-poe1.md`](./07-poe1.md) (every economy tool, from the 3.30 launch).
   toggleable.
 - Colour used only for meaning (gain / loss / warning) and always paired with a sign
   or icon (colour-blind safe).
-- Keyboard friendly: sortable columns, rows open with Enter/Space, URL reflects filters
-  (shareable/bookmarkable views). (`/` to focus search: not built yet.)
+- Keyboard friendly: `/` focuses search, sortable columns, rows open with Enter/Space, URL
+  reflects filters (shareable/bookmarkable views).
 
 ### 3.3 Tool plugin contract
 
@@ -74,7 +74,7 @@ Adding a tool = a folder under `apps/web/src/tools/<id>` + one registry entry.
   backlog tools "flipping" and "cheapest currency path").
 - **History service**: daily price series per item per league, lazy-loaded.
 - **Local store**: settings, positions, alerts — `localStorage`, with JSON
-  export/import (no accounts).
+  export/import (no accounts): footer "Back up my data" / "Restore" carry every entry.
 
 ## 4. Architecture — static site + scheduled data job (DECIDED)
 

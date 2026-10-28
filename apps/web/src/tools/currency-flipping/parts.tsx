@@ -1,14 +1,15 @@
-import type { CurrentItem, Flip, Hub } from '@poe-tools/shared';
+import {
+  CURRENCY_NAMES,
+  CURRENCY_SHORT,
+  type CurrentItem,
+  type Flip,
+  type Hub,
+} from '@poe-tools/shared';
 import { Badge } from '../../ui/index.ts';
 import { toRatio } from './logic.ts';
 
-export const HUB_NAMES: Record<Hub, string> = {
-  divine: 'Divine Orb',
-  exalted: 'Exalted Orb',
-  chaos: 'Chaos Orb',
-};
-
-export const HUB_SHORT: Record<Hub, string> = { divine: 'div', exalted: 'ex', chaos: 'c' };
+export const HUB_NAMES: Record<Hub, string> = CURRENCY_NAMES;
+export const HUB_SHORT: Record<Hub, string> = CURRENCY_SHORT;
 
 /** Buy / sell prices (hub per item) used for the margin: averages, or the range for spreads. */
 export function quotePrices(flip: Flip): { buy: number; sell: number } {

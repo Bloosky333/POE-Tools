@@ -95,12 +95,15 @@ export function SuggestionsTable({
     },
     {
       id: 'sell',
-      label: 'Sell',
+      label: 'Buy → sell',
       sortKey: 'sellDay',
       align: 'right',
-      title: 'Suggested sell day (league day)',
-      className: 'text-muted',
-      render: (s) => (s.reference ? `day ${s.reference.sellDay}` : '–'),
+      title: 'Suggested buy and sell days (league day; the buy day is after a dip for WAIT)',
+      className: 'text-muted whitespace-nowrap',
+      render: (s) =>
+        s.reference
+          ? `${s.reference.buyDay > today ? `day ${s.reference.buyDay}` : 'now'} → day ${s.reference.sellDay}`
+          : '–',
     },
     {
       id: 'projected',

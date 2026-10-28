@@ -1,6 +1,6 @@
 import { modText, type ModCondition, type ModFamily } from '@poe-tools/shared';
 import { useState } from 'react';
-import { Button, Input, SearchInput, Select } from '../../ui/index.ts';
+import { Button, NumericInput, SearchPicker, Select } from '../../ui/index.ts';
 import { familyText, searchFamilies, useCatalog } from './catalog.ts';
 
 type Mode = 'mod' | 'anyOf' | 'allOf' | 'atLeast';
@@ -81,16 +81,14 @@ export function ConditionEditor({
           ))}
         </Select>
         {'atLeast' in value && (
-          <Input
-            type="number"
+          <NumericInput
             min={1}
             max={list.length}
+            integer
             aria-label="How many"
             className="w-16"
             value={value.atLeast}
-            onChange={(e) =>
-              onChange({ ...value, atLeast: Math.max(1, Math.floor(Number(e.target.value)) || 1) })
-            }
+            onChange={(atLeast) => onChange({ ...value, atLeast })}
           />
         )}
         {'family' in value && <ModPicker value={value} onChange={onChange} families={families} />}
@@ -193,29 +191,21 @@ function ModPicker({
   }
 
   return (
-    <div className="relative">
-      <SearchInput placeholder="Search a mod (e.g. life)" value={q} onChange={setQ} />
-      {matches.length > 0 && (
-        <ul className="absolute z-30 mt-1 max-h-72 w-[min(28rem,90vw)] overflow-y-auto rounded-lg border border-line bg-surface p-1 shadow-xl">
-          {matches.map((f) => (
-            <li key={f.family}>
-              <button
-                type="button"
-                className="flex w-full items-center justify-between gap-2 rounded-md px-2 py-1 text-left text-sm hover:bg-surface-2"
-                onClick={() => {
-                  setQ('');
-                  onChange({ family: f.family });
-                }}
-              >
-                <span>{familyText(f)}</span>
-                <span className="shrink-0 text-xs text-subtle">
-                  {f.kind}, {f.tiers.length} tiers
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+    <SearchPicker
+      placeholder="Search a mod (e.g. life)"
+      query={q}
+      onQueryChange={setQ}
+      options={matches}
+      optionKey={(f) => f.family}
+      onPick={(f) => onChange({ family: f.family })}
+      renderOption={(f) => (
+        <>
+          <span>{familyText(f)}</span>
+          <span className="shrink-0 text-xs text-subtle">
+            {f.kind}, {f.tiers.length} tiers
+          </span>
+        </>
       )}
-    </div>
+    />
   );
 }

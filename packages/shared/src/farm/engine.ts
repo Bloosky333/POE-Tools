@@ -187,17 +187,18 @@ function signalOf(
       ? null
       : Math.min(horizonDay, refMarket.lastDay);
 
+  // Both are "vs the market": unknown when the market's own move is (too few items).
   const memberTrend = (m: Member) => {
     const past = m.cur.priceAt(d - 7);
-    if (!past) return null;
-    return m.item.price / past / (1 + (market7 ?? 0));
+    if (!past || market7 === null) return null;
+    return m.item.price / past / (1 + market7);
   };
   const memberOutlook = (m: Member) => {
-    if (outlookDay === null) return null;
+    if (outlookDay === null || refMarket.change === null) return null;
     const now = m.ref.priceAt(d);
     const later = m.ref.priceAt(outlookDay);
     if (!now || !later) return null;
-    return later / now / (refMarket.change ?? 1);
+    return later / now / refMarket.change;
   };
   const farmItems: FarmItem[] = members.map((m) => ({
     item: m.item,
@@ -215,11 +216,15 @@ function signalOf(
       sum += f.share * value;
       w += f.share;
     }
-    return { value: w ? sum / w : null, coverage: w };
+    return { value: w ? sum / w : null };
   };
   const trend = weighted((f) => f.trend).value;
-  const outlookResult = weighted((f) => f.outlook);
-  const outlook = outlookResult.value;
+  const outlook = weighted((f) => f.outlook).value;
+  const rawTotal = raw.reduce((s, m) => s + m.weight, 0);
+  const withReference = raw.reduce(
+    (s, m, i) => s + ((farmItems[i]?.outlook ?? null) !== null ? m.weight : 0),
+    0,
+  );
 
   const index = {
     current: indexSeries(
@@ -254,7 +259,8 @@ function signalOf(
       outlook === null ? null : refVolume,
       settings.liquiditySaturation,
     ),
-    completeness: outlookResult.coverage,
+    // Share of the mechanic's (uncapped) volume with reference history over the outlook.
+    completeness: rawTotal ? withReference / rawTotal : 0,
     phase: launchPhase(d),
   };
   const confidence = confidenceOf(breakdown);
@@ -297,12 +303,14 @@ function signalOf(
   if (trend !== null && Math.abs(trend - 1) >= 0.1 && verdict !== 'avoid')
     reasons.push(`${pct(trend - 1)} over 7 days vs the market`);
   const top = raw[0];
-  const rawTotal = raw.reduce((s, m) => s + m.weight, 0);
   if (top && raw.length > 1 && top.weight > settings.weightCap * rawTotal)
     reasons.push(
       `${top.item.name} trades ${Math.round((top.weight / rawTotal) * 100)} % of its volume (weight capped)`,
     );
-  if (outlook === null) reasons.push('No reference data for this day');
+  if (outlookDay !== null && refMarket.change === null)
+    reasons.push("Too few items to measure last league's market move: no outlook");
+  else if (outlook === null) reasons.push('No reference data for this day');
+  if (market7 === null) reasons.push("Too few items to measure this league's 7-day market move");
   else if (outlookDay !== null && outlookDay < horizonDay)
     reasons.push('Reference league data ends before the horizon');
   if (outlook !== null && breakdown.similarity < 0.3)

@@ -1,5 +1,5 @@
-import { ECONOMY, isExchangeType, type ExchangeType, type Game } from '@poe-tools/shared';
-import { useSearchParams } from 'react-router';
+import { ECONOMY, type ExchangeType, type Game } from '@poe-tools/shared';
+import { exchangeTypeField, urlField, useUrlParams } from '../../lib/urlParams.ts';
 import { useSettings } from '../../lib/useSettings.ts';
 
 /** Which verdicts are listed: flagged = SELL NOW + SELL SOON. */
@@ -47,41 +47,15 @@ export const defaultsFor = (game: Game): ViewParams => ({
 });
 
 export function useViewParams(): [ViewParams, (patch: Partial<ViewParams>) => void] {
-  const [search, setSearch] = useSearchParams();
   const { game } = useSettings().settings;
-  const DEFAULTS = defaultsFor(game);
-  const num = (key: string, fallback: number) => {
-    const value = Number(search.get(key));
-    return search.has(key) && Number.isFinite(value) ? value : fallback;
-  };
-  const type = search.get('type');
-  const verdict = search.get('verdict');
-  const params: ViewParams = {
-    verdict: VERDICTS.includes(verdict as VerdictFilter)
-      ? (verdict as VerdictFilter)
-      : DEFAULTS.verdict,
-    minVolume: num('minVolume', DEFAULTS.minVolume),
-    minPrice: num('minPrice', DEFAULTS.minPrice),
-    type: type && isExchangeType(game, type) ? type : 'all',
-    q: search.get('q') ?? '',
-    sort: SORT_KEYS.find((key) => key === search.get('sort')) ?? DEFAULTS.sort,
-    desc: search.get('dir') !== 'asc',
-    item: search.get('item'),
-  };
-
-  const update = (patch: Partial<ViewParams>) => {
-    const next = { ...params, ...patch };
-    const out = new URLSearchParams();
-    if (next.verdict !== DEFAULTS.verdict) out.set('verdict', next.verdict);
-    if (next.minVolume !== DEFAULTS.minVolume) out.set('minVolume', String(next.minVolume));
-    if (next.minPrice !== DEFAULTS.minPrice) out.set('minPrice', String(next.minPrice));
-    if (next.type !== 'all') out.set('type', next.type);
-    if (next.q) out.set('q', next.q);
-    if (next.sort !== DEFAULTS.sort) out.set('sort', next.sort);
-    if (!next.desc) out.set('dir', 'asc');
-    if (next.item) out.set('item', next.item);
-    setSearch(out, { replace: true });
-  };
-
-  return [params, update];
+  return useUrlParams(defaultsFor(game), {
+    verdict: urlField.oneOf(VERDICTS),
+    minVolume: urlField.number(),
+    minPrice: urlField.number(),
+    type: exchangeTypeField(game),
+    q: urlField.text(),
+    sort: urlField.oneOf(SORT_KEYS),
+    desc: urlField.descending(),
+    item: urlField.selection(),
+  });
 }

@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { Hub } from './data.ts';
 import {
-  computeFlips,
+  computeFlips as computeFlipsWith,
+  flipSettingsFor,
   marketSides,
   recurrence,
   type ExchangeHour,
   type MarketHour,
 } from './engine.ts';
+
+/** PoE 2 settings. */
+const computeFlips = (leagueId: string, hours: readonly ExchangeHour[], now: Date) =>
+  computeFlipsWith(leagueId, hours, now, flipSettingsFor('poe2'));
 
 const NOW = new Date('2026-10-24T06:17:00Z');
 
@@ -133,19 +138,25 @@ describe('computeFlips', () => {
     expect(flip?.units24h).toBe(3000);
   });
 
-  it('keeps the last known hub values when a hub market is missing', () => {
+  it('skips cross-pair flips whose hub market did not trade that hour', () => {
+    const x = [market('x', 'divine', 0.05, 1000), market('x', 'exalted', 30, 1000)];
     const file = computeFlips(
       'fr',
       [
-        hour(0, []),
-        {
-          epoch: 3600,
-          markets: [market('x', 'divine', 0.05, 1000), market('x', 'exalted', 30, 1000)],
-        },
+        hour(0, x),
+        // No hub ↔ hub trades: the exalted → divine conversion cannot be done this hour.
+        { epoch: 3600, markets: x },
       ],
       NOW,
     );
-    expect(file.flips.find((f) => f.kind === 'cross')?.margin).toBeCloseTo(35 / 30 - 1, 4);
+    expect(file.flips.filter((f) => f.kind === 'cross')).toEqual([]);
+    // Spreads do not convert: still listed when their own market traded.
+    const withRange = computeFlips(
+      'fr',
+      [hour(0, []), { epoch: 3600, markets: [market('y', 'divine', 1, 1000, [1, 1.05])] }],
+      NOW,
+    );
+    expect(withRange.flips.map((f) => f.id)).toEqual(['spread:y:divine:divine']);
   });
 
   it('returns no flips without data', () => {
