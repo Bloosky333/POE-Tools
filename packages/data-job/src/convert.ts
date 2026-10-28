@@ -32,7 +32,8 @@ export function overviewToItems(overview: ExchangeOverview, type: ExchangeType):
   const meta = new Map(overview.items.map((item) => [item.id, item]));
   return overview.lines.flatMap((line) => {
     const item = meta.get(line.id);
-    if (!item) return [];
+    // Ids are stored unquoted in the history CSVs: one with a comma would shift columns.
+    if (!item || /[,"\r\n]/.test(line.id)) return [];
     return [
       {
         id: line.id,
