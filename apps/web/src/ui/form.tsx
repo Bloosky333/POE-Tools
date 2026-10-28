@@ -38,6 +38,7 @@ export function SearchInput({
       <input
         type="search"
         placeholder={placeholder}
+        aria-keyshortcuts="/"
         className={`${controlClass} w-full pl-7 sm:w-56`}
         value={value}
         onChange={(e) => onChange(e.target.value)}

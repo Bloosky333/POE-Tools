@@ -1,4 +1,4 @@
-import { type SellSignal } from '@poe-tools/shared';
+import { CURRENCY_NAMES, type SellSignal } from '@poe-tools/shared';
 import { useMemo } from 'react';
 import { formatPercent } from '../../lib/format.ts';
 import { sortRows } from '../../lib/sort.ts';
@@ -87,7 +87,8 @@ export default function SellNowPage() {
           />
           <p className="text-xs text-subtle">
             {rows.length} of {signals.length} items · expected loss is last league&apos;s move; in a
-            market rising against {unit.id}, flagged items mostly lag the market rather than drop.
+            market rising against the {CURRENCY_NAMES[unit.id]}, flagged items mostly lag the market
+            rather than drop.
             {game === 'poe1' &&
               ' In PoE 1 the signal is weak: replayed on Allflame vs Mirage, flagged items did only slightly worse than the market afterwards — treat them as hints.'}
           </p>

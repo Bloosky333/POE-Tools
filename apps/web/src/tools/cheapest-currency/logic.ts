@@ -1,30 +1,34 @@
-import type { CurrentItem, Game } from '@poe-tools/shared';
-import { useSearchParams } from 'react-router';
+import type { CurrentItem, ExchangeType, Game } from '@poe-tools/shared';
+import { exchangeTypeField, urlField, useUrlParams } from '../../lib/urlParams.ts';
+import { useSettings } from '../../lib/useSettings.ts';
 
 /** Lookup state, kept in the URL so a lookup can be shared. */
 export interface ViewParams {
   item: string | null;
   quantity: number;
   q: string;
+  /** Category of the item search. */
+  type: ExchangeType | 'all';
 }
 
 export function useViewParams(): [ViewParams, (patch: Partial<ViewParams>) => void] {
-  const [search, setSearch] = useSearchParams();
-  const quantity = Math.floor(Number(search.get('qty')));
-  const params: ViewParams = {
-    item: search.get('item'),
-    quantity: Number.isFinite(quantity) && quantity >= 1 ? quantity : 1,
-    q: search.get('q') ?? '',
-  };
-  const update = (patch: Partial<ViewParams>) => {
-    const next = { ...params, ...patch };
-    const out = new URLSearchParams();
-    if (next.item) out.set('item', next.item);
-    if (next.quantity !== 1) out.set('qty', String(next.quantity));
-    if (next.q) out.set('q', next.q);
-    setSearch(out, { replace: true });
-  };
-  return [params, update];
+  const { game } = useSettings().settings;
+  return useUrlParams<ViewParams>(
+    { item: null, quantity: 1, q: '', type: 'all' },
+    {
+      item: urlField.selection(),
+      quantity: {
+        key: 'qty',
+        parse: (raw) => {
+          const quantity = Math.floor(Number(raw));
+          return Number.isFinite(quantity) && quantity >= 1 ? quantity : undefined;
+        },
+        format: String,
+      },
+      q: urlField.text(),
+      type: exchangeTypeField(game),
+    },
+  );
 }
 
 /** Items matching a search, most traded first. */
@@ -32,11 +36,17 @@ export function searchItems(
   items: readonly CurrentItem[],
   q: string,
   exclude: string,
+  type: ExchangeType | 'all' = 'all',
   limit = 12,
 ): CurrentItem[] {
   const query = q.trim().toLowerCase();
   return items
-    .filter((item) => item.id !== exclude && (!query || item.name.toLowerCase().includes(query)))
+    .filter(
+      (item) =>
+        item.id !== exclude &&
+        (type === 'all' || item.type === type) &&
+        (!query || item.name.toLowerCase().includes(query)),
+    )
     .sort((a, b) => b.volume - a.volume)
     .slice(0, limit);
 }

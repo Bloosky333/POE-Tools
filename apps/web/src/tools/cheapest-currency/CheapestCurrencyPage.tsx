@@ -29,6 +29,7 @@ import {
   Panel,
   Pill,
   SearchInput,
+  TypeChips,
   type Column,
 } from '../../ui/index.ts';
 import {
@@ -75,9 +76,14 @@ export default function CheapestCurrencyPage() {
     [current],
   );
   const item = params.item ? items.get(params.item) : undefined;
-  const matches = useMemo(
-    () => (current ? searchItems(current.items, params.q, economy.unit) : []),
+  // Every match of the search (for the category counts), then the shown ones.
+  const allMatches = useMemo(
+    () => (current ? searchItems(current.items, params.q, economy.unit, 'all', Infinity) : []),
     [current, params.q, economy.unit],
+  );
+  const matches = useMemo(
+    () => searchItems(allMatches, '', economy.unit, params.type),
+    [allMatches, params.type, economy.unit],
   );
   const result: CheapestResult | null =
     item && data.status === 'ready'
@@ -130,7 +136,16 @@ export default function CheapestCurrencyPage() {
                 />
               </InlineField>
             </FilterBar>
-            {(params.q || !item) && <ItemPicker items={matches} unit={unit} onSelect={select} />}
+            {(params.q || !item) && (
+              <>
+                <TypeChips
+                  types={allMatches.map((i) => i.type)}
+                  value={params.type}
+                  onChange={(type) => update({ type })}
+                />
+                <ItemPicker items={matches} unit={unit} onSelect={select} />
+              </>
+            )}
             <SavedItems saved={saved} items={items} onSelect={select} />
           </Card>
 
@@ -346,7 +361,11 @@ function Result(props: {
         <ItemCell
           icon={item.icon}
           name={`${quantity} × ${item.name}`}
-          subtitle={`Market price ${formatAmount(item.price, unit.id)} ${unit.short} each`}
+          subtitle={`Market price ${formatAmount(item.price, unit.id)} ${unit.short} each${
+            unit.secondary
+              ? ` (${formatAmount(item.price * unit.secondary.perUnit, unit.secondary.id)} ${unit.secondary.short})`
+              : ''
+          }`}
           size="lg"
         />
       }

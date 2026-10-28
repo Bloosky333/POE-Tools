@@ -99,6 +99,12 @@ export default function CurrencyFlippingPage() {
       <LoadStatus state={data} what="exchange data" />
       {data.status === 'ready' && (
         <>
+          {isStale(data.data.flips.hours, now) && (
+            <Notice>
+              The newest exchange data is over 3 hours old: the data job may be late, and these
+              margins may be gone.
+            </Notice>
+          )}
           <StatTiles
             rows={eligible}
             hours={data.data.flips.hours}
@@ -147,6 +153,12 @@ export default function CurrencyFlippingPage() {
   );
 }
 
+/** Whether the newest hour ended more than `STALE_MS` ago (or there is none). */
+function isStale(hours: readonly number[], now: number): boolean {
+  const newest = hours.at(-1);
+  return newest === undefined || now - (newest + 3600) * 1000 > STALE_MS;
+}
+
 function StatTiles({
   rows,
   hours,
@@ -160,7 +172,7 @@ function StatTiles({
 }) {
   const newest = hours.at(-1);
   const end = newest === undefined ? null : new Date((newest + 3600) * 1000);
-  const stale = end === null || now - end.getTime() > STALE_MS;
+  const stale = isStale(hours, now);
   const best = (kind: 'cross' | 'spread') =>
     rows.filter((r) => r.flip.kind === kind).sort((a, b) => b.flip.margin - a.flip.margin)[0];
   const bestCross = best('cross');

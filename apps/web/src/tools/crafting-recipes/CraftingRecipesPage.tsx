@@ -18,8 +18,8 @@ import {
 import { CatalogContext, buildCatalog, useCatalog } from './catalog.ts';
 import { RecipeEditor } from './RecipeEditor.tsx';
 import { RecipeView, baseLabel } from './RecipeView.tsx';
+import { downloadJson } from '../../lib/backup.ts';
 import {
-  downloadJson,
   exportFile,
   loadRecipes,
   mergeImport,
