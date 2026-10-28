@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { CurrentItem, HistoryPoint } from '../site-data.ts';
 import {
-  DEFAULT_ENGINE_SETTINGS,
   engineSettingsFor,
-  marketFactor,
-  suggest,
+  marketFactor as marketFactorFor,
+  suggest as suggestWith,
+  type EngineInput,
   type SellMode,
 } from './engine.ts';
 import { Series } from './series.ts';
@@ -24,6 +24,16 @@ const item = (overrides: Partial<CurrentItem> = {}): CurrentItem => ({
 /** Daily series from a price function, days 0..last, volume 100. */
 const series = (last: number, price: (day: number) => number): HistoryPoint[] =>
   Array.from({ length: last + 1 }, (_, day) => [day, price(day), 100]);
+
+const POE2 = engineSettingsFor('poe2');
+/** PoE 2 settings unless the test passes its own. */
+const suggest = (input: Omit<EngineInput, 'settings'> & { settings?: EngineInput['settings'] }) =>
+  suggestWith({ settings: POE2, ...input });
+const marketFactor = (
+  ...args: Parameters<typeof marketFactorFor> extends [infer A, infer B, infer C, ...unknown[]]
+    ? [A, B, C]
+    : never
+) => marketFactorFor(...args, POE2);
 
 const horizon = (days: number): SellMode => ({ kind: 'horizon', days });
 
@@ -207,7 +217,7 @@ describe('suggest', () => {
         ...base,
         item: item({ price: 4 }),
         marketFactor: 1,
-        settings: { ...DEFAULT_ENGINE_SETTINGS, premiumDamping: 0.5 },
+        settings: { ...POE2, premiumDamping: 0.5 },
       });
       expect(s.reference?.expectedMultiplier).toBeCloseTo(1.5 / Math.SQRT2);
     });

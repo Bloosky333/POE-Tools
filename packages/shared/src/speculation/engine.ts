@@ -49,8 +49,6 @@ export function engineSettingsFor(game: Game): EngineSettings {
   };
 }
 
-export const DEFAULT_ENGINE_SETTINGS: EngineSettings = engineSettingsFor('poe2');
-
 /** Items needed to estimate the market factor. */
 
 export interface ConfidenceBreakdown {
@@ -111,7 +109,8 @@ export interface EngineInput {
   mode: SellMode;
   /** Market-wide N/R price ratio today (see `marketFactor`); null/absent disables it. */
   marketFactor?: number | null;
-  settings?: EngineSettings;
+  /** The game's settings (`engineSettingsFor`): thresholds carry its unit. */
+  settings: EngineSettings;
 }
 
 /**
@@ -124,7 +123,7 @@ export function marketFactor(
   items: readonly CurrentItem[],
   referenceHistory: Readonly<Record<string, readonly HistoryPoint[]>>,
   today: number,
-  settings: Pick<EngineSettings, 'minVolume' | 'minPrice' | 'unit'> = DEFAULT_ENGINE_SETTINGS,
+  settings: Pick<EngineSettings, 'minVolume' | 'minPrice' | 'unit'>,
 ): number | null {
   const d = Math.floor(today);
   const ratios: number[] = [];
@@ -143,7 +142,7 @@ export function marketFactor(
 }
 
 export function suggest(input: EngineInput): Suggestion {
-  const settings = input.settings ?? DEFAULT_ENGINE_SETTINGS;
+  const { settings } = input;
   const { item } = input;
   const d = Math.floor(input.today);
   const ref = new Series(input.reference ?? []);
@@ -334,7 +333,7 @@ function pearson(a: readonly number[], b: readonly number[]): number | null {
 export function liquidityScore(
   currentVolume: number,
   referenceVolume: number | null,
-  saturation = DEFAULT_ENGINE_SETTINGS.liquiditySaturation,
+  saturation: number,
 ): number {
   const score = (v: number) => Math.min(1, Math.log10(1 + v) / Math.log10(1 + saturation));
   return referenceVolume === null

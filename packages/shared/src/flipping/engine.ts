@@ -45,8 +45,6 @@ export function flipSettingsFor(game: Game): FlipSettings {
   };
 }
 
-export const DEFAULT_FLIP_SETTINGS: FlipSettings = flipSettingsFor('poe2');
-
 /** Rank of the hubs: in a hub ↔ hub market, the higher-ranked one is the `hub` side. */
 const HUB_RANK: Record<Hub, number> = { divine: 0, exalted: 1, chaos: 2 };
 
@@ -190,7 +188,7 @@ export function computeFlips(
   leagueId: string,
   hours: readonly ExchangeHour[],
   generatedAt: Date,
-  settings: FlipSettings = DEFAULT_FLIP_SETTINGS,
+  settings: FlipSettings,
 ): FlipsFile {
   const views: (HourView | null)[] = [];
   let previous: Partial<Record<Hub, number>> | null = null;

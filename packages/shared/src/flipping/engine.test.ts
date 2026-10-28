@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import type { Hub } from './data.ts';
 import {
-  computeFlips,
+  computeFlips as computeFlipsWith,
+  flipSettingsFor,
   marketSides,
   recurrence,
   type ExchangeHour,
   type MarketHour,
 } from './engine.ts';
+
+/** PoE 2 settings. */
+const computeFlips = (leagueId: string, hours: readonly ExchangeHour[], now: Date) =>
+  computeFlipsWith(leagueId, hours, now, flipSettingsFor('poe2'));
 
 const NOW = new Date('2026-10-24T06:17:00Z');
 
