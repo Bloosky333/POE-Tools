@@ -93,14 +93,14 @@ well above last league's level on the same day has partly "used up" that rise.
 
 ### 4.3 Actions
 
-| Action                      | Rule (defaults agreed, tunable in settings)                                                                  |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| **BUY NOW**                 | `M_eff ≥ 1.3`, no significant dip ahead, liquidity OK                                                        |
-| **WAIT**                    | significant dip expected before the rise (4.2)                                                               |
-| **AVOID**                   | `M < 1.0` (expected to lose value)                                                                           |
-| **NEUTRAL**                 | everything else                                                                                              |
-| **SELL** _(held positions)_ | reference price has peaked (`d ≥ peak day`), or remaining upside `< 5 %`, or price reached the user's target |
-| **HOLD** _(held positions)_ | remaining upside still ≥ 5 %                                                                                 |
+| Action                      | Rule (defaults agreed, tunable in settings)                                                                   |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **BUY NOW**                 | `M_eff ≥ 1.3`, no significant dip ahead, liquidity OK                                                         |
+| **WAIT**                    | significant dip expected before the rise (4.2), and `M_eff` from the dip ≥ 1.3                                |
+| **AVOID**                   | `M < 0.95` (holding from today lost > 5 %) and neither of the above (a dip entry under ×1.3 does not save it) |
+| **NEUTRAL**                 | everything else                                                                                               |
+| **SELL** _(held positions)_ | reference price has peaked (`d ≥ peak day`), or remaining upside `< 5 %`, or price reached the user's target  |
+| **HOLD** _(held positions)_ | remaining upside still ≥ 5 %                                                                                  |
 
 ### 4.4 Confidence (0–100)
 

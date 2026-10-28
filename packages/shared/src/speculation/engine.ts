@@ -17,6 +17,11 @@ export interface EngineSettings {
   buyMultiplier: number;
   /** WAIT when the price is expected to dip by at least this fraction first. */
   dipThreshold: number;
+  /**
+   * AVOID when holding from today lost more than this fraction last league (and waiting for
+   * a dip does not reach `buyMultiplier` either). A small band keeps noise out of AVOID.
+   */
+  avoidDrop: number;
   /** Minimum current daily volume (game unit) for BUY NOW and the market factor. */
   minVolume: number;
   /** Minimum price (game unit) of an item counted in the market factor. */
@@ -40,6 +45,7 @@ export function engineSettingsFor(game: Game): EngineSettings {
   return {
     buyMultiplier: 1.3,
     dipThreshold: 0.1,
+    avoidDrop: 0.05,
     minVolume: economy.minVolume,
     minPrice: economy.minPrice,
     liquiditySaturation: economy.liquiditySaturation,
@@ -216,11 +222,10 @@ export function suggest(input: EngineInput): Suggestion {
   const liquid = item.volume >= settings.minVolume;
   const reasons: string[] = [];
   let action: Action;
-  // AVOID stays on the raw reference curve: a premium alone did not predict losses.
-  if (multiplierFromBuy < 1 || (!dipAhead && multiplier < 1)) {
-    action = 'avoid';
-    reasons.push(`Fell to ×${fmt(multiplier)} by day ${sellDay} last league`);
-  } else if (dipAhead && expectedMultiplier >= settings.buyMultiplier) {
+  // A real opportunity (now, or after the dip) first; otherwise AVOID when holding from today
+  // lost money last league. AVOID stays on the raw reference curve: a premium alone did not
+  // predict losses (backtest).
+  if (dipAhead && expectedMultiplier >= settings.buyMultiplier) {
     action = 'wait';
     reasons.push(
       `Dipped ${Math.round((1 - lowPrice / refToday) * 100)}% until day ${lowDay} last league, then ×${fmt(multiplierFromBuy)}`,
@@ -230,6 +235,11 @@ export function suggest(input: EngineInput): Suggestion {
     reasons.push(`Rose ×${fmt(multiplier)} by day ${sellDay} last league`);
     if (!liquid)
       reasons.push(`Low volume (${fmt(item.volume)} ${CURRENCY_SHORT[settings.unit]}/day)`);
+  } else if (multiplier < 1 - settings.avoidDrop) {
+    action = 'avoid';
+    reasons.push(`Fell to ×${fmt(multiplier)} by day ${sellDay} last league`);
+    if (dipAhead)
+      reasons.push(`Even bought at its day-${lowDay} dip: only ×${fmt(multiplierFromBuy)}`);
   } else {
     action = 'neutral';
     reasons.push(
