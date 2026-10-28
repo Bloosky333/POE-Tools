@@ -166,6 +166,9 @@
 | R6  | Web data refresh     | Site data is refetched every 15 min in an open tab (shown data kept while reloading).                                                                                                    |
 | R7  | Game switch          | Clears the page's URL filters (they are in the game's unit).                                                                                                                             |
 | R8  | Order ratio > 1:1000 | Shown unclamped (e.g. 2500 : 1) rather than clamped to a wrong order.                                                                                                                    |
+| R9  | Engine settings      | Engines take the game's settings explicitly (no PoE 2 defaults).                                                                                                                         |
+| R10 | Backup               | One app-wide JSON backup of everything in `localStorage` under `poe-tools:` (restore replaces the entries it carries; each tool validates its data on load).                             |
+| R11 | Feed gaps            | A feed hour still missing 2 h after the newest one is a gap: kept empty in the window, not requested again.                                                                              |
 
 ## Still open
 

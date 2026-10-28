@@ -21,6 +21,8 @@ Build pages from the kit; add to it (not to a tool folder) when something is reu
 | Change in %                                   | `Change` (fraction, or `ratio` vs 1)                                 |
 | 0–100 score / ratio                           | `ScoreMeter`, `RatioBar`                                             |
 | Small trend                                   | `Sparkline`                                                          |
+| Search with a pick list                       | `SearchPicker` (combobox: arrows, Enter, Escape)                     |
+| Number input                                  | `NumericInput` (keeps what is typed; valid values only)              |
 | Item / row details                            | `Sheet` (side panel, Escape to close) with `StatCard`s               |
 | Loading / errors                              | `LoadStatus` for a tool's data, `Skeleton`, `Notice`                 |
 
