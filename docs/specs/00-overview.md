@@ -39,12 +39,13 @@ later: [`07-poe1.md`](./07-poe1.md) (every economy tool, from the 3.30 launch).
 ### 3.2 Visual design (decided: clean & efficient)
 
 - English only.
-- Neutral, information-dense UI: system font stack, compact tables, tabular numbers,
-  minimal decoration, no game-art backgrounds. Light/dark following OS, toggleable.
+- Neutral, information-dense UI: Inter, compact tables, tabular numbers, minimal
+  decoration, no game-art backgrounds. Dark by default; light or following the OS,
+  toggleable.
 - Colour used only for meaning (gain / loss / warning) and always paired with a sign
   or icon (colour-blind safe).
-- Keyboard friendly: `/` focuses search, sortable columns, URL reflects filters
-  (shareable/bookmarkable views).
+- Keyboard friendly: sortable columns, rows open with Enter/Space, URL reflects filters
+  (shareable/bookmarkable views). (`/` to focus search: not built yet.)
 
 ### 3.3 Tool plugin contract
 
@@ -56,7 +57,8 @@ interface ToolDefinition {
   category: 'economy' | 'crafting' | 'misc';
   games: ('poe1' | 'poe2')[];
   status: 'stable' | 'beta' | 'coming-soon';
-  route: string; // "/tools/currency-speculation"
+  path: string; // "tools/currency-speculation"
+  icon: IconComponent;
   component: LazyComponent; // lazy-loaded
 }
 ```
@@ -129,11 +131,12 @@ GitHub Actions (cron)                           Static hosting
 ### 4.3 Stack (decided: Claude's choice)
 
 - TypeScript (strict) everywhere, **pnpm** workspaces, Node 22.
-- Web: React + Vite, Tailwind CSS, React Router, TanStack Query (data), TanStack Table
-  (sort/filter/virtualised tables), Recharts (charts), zod (schemas).
+- Web: React + Vite, Tailwind CSS, React Router, zod (schemas). Data fetching, tables and
+  charts are small in-house pieces (`apps/web/src/lib/data.ts`, `apps/web/src/ui/`) rather
+  than TanStack Query/Table and Recharts: the data is a few static JSON files.
 - Data job: plain TypeScript run by Node in Actions, sharing schemas/types and the
   computation code with the web app.
-- Tests: Vitest (unit, especially the suggestion engine), Playwright (smoke e2e).
+- Tests: Vitest (unit, especially the engines; jsdom for the web app). No e2e suite yet.
 - Lint/format: ESLint + Prettier; CI on every push.
 - Layout: `apps/web`, `packages/data-job`, `packages/shared` (schemas, engine).
 

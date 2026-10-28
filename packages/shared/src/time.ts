@@ -1,13 +1,11 @@
 export const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** Fractional days elapsed since `startsAt` (ISO string) at instant `now`. */
-export function daysSince(startsAt: string, now: Date = new Date()): number {
-  return (now.getTime() - Date.parse(startsAt)) / DAY_MS;
-}
-
-/** Whole league day index (day 0 = first 24 h of the league). */
+/**
+ * League day of an instant: its UTC calendar date's `leagueDayOfDate`, the index price
+ * histories are stored under (the start date is day 0, whatever the start hour).
+ */
 export function leagueDay(startsAt: string, now: Date = new Date()): number {
-  return Math.floor(daysSince(startsAt, now));
+  return leagueDayOfDate(startsAt, utcDate(now));
 }
 
 /** UTC calendar date `YYYY-MM-DD` of an instant. */

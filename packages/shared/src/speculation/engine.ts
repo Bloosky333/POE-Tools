@@ -1,5 +1,6 @@
-import { ECONOMY, type CoreCurrency, type Game } from '../games.ts';
+import { CURRENCY_SHORT, ECONOMY, type CoreCurrency, type Game } from '../games.ts';
 import type { CurrentItem, HistoryPoint } from '../site-data.ts';
+import { MARKET_MIN_ITEMS, confidenceOf, launchPhase, median } from '../scoring.ts';
 import { Series } from './series.ts';
 
 /*
@@ -51,7 +52,6 @@ export function engineSettingsFor(game: Game): EngineSettings {
 export const DEFAULT_ENGINE_SETTINGS: EngineSettings = engineSettingsFor('poe2');
 
 /** Items needed to estimate the market factor. */
-const MARKET_MIN_ITEMS = 10;
 
 export interface ConfidenceBreakdown {
   /** 0–1: how closely the current league follows the reference recently. */
@@ -139,12 +139,7 @@ export function marketFactor(
     const ref = history && new Series(history).priceAt(d);
     if (ref) ratios.push(item.price / ref);
   }
-  if (ratios.length < MARKET_MIN_ITEMS) return null;
-  ratios.sort((a, b) => a - b);
-  const mid = ratios.length >> 1;
-  return ratios.length % 2
-    ? (ratios[mid] ?? null)
-    : ((ratios[mid - 1] ?? 0) + (ratios[mid] ?? 0)) / 2;
+  return median(ratios, MARKET_MIN_ITEMS);
 }
 
 export function suggest(input: EngineInput): Suggestion {
@@ -153,7 +148,7 @@ export function suggest(input: EngineInput): Suggestion {
   const d = Math.floor(input.today);
   const ref = new Series(input.reference ?? []);
   const cur = new Series(input.current ?? []);
-  const phase = d <= 3 ? 0.5 : 1;
+  const phase = launchPhase(d);
 
   const refToday = ref.priceAt(d);
   const lastDay = ref.lastDay;
@@ -216,11 +211,7 @@ export function suggest(input: EngineInput): Suggestion {
     completeness: completeness(ref, d, sellDay),
     phase,
   };
-  const confidence = Math.round(
-    100 *
-      breakdown.phase *
-      (0.4 * breakdown.similarity + 0.35 * breakdown.liquidity + 0.25 * breakdown.completeness),
-  );
+  const confidence = confidenceOf(breakdown);
 
   // Action.
   const liquid = item.volume >= settings.minVolume;
@@ -238,7 +229,8 @@ export function suggest(input: EngineInput): Suggestion {
   } else if (!dipAhead && expectedMultiplier >= settings.buyMultiplier) {
     action = liquid ? 'buy' : 'neutral';
     reasons.push(`Rose ×${fmt(multiplier)} by day ${sellDay} last league`);
-    if (!liquid) reasons.push(`Low volume (${fmt(item.volume)} div/day)`);
+    if (!liquid)
+      reasons.push(`Low volume (${fmt(item.volume)} ${CURRENCY_SHORT[settings.unit]}/day)`);
   } else {
     action = 'neutral';
     reasons.push(

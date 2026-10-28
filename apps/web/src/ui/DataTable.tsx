@@ -18,8 +18,8 @@ export interface SortState<Key extends string> {
 }
 
 /**
- * Sortable, clickable data table with the app's table styling (sticky header, row hover,
- * keyboard focus). Sorting itself is done by the caller.
+ * Sortable, clickable data table with the app's table styling (row hover, keyboard
+ * focus: Enter or Space opens a row). Sorting itself is done by the caller.
  */
 export function DataTable<Row, Key extends string>({
   columns,
@@ -43,7 +43,7 @@ export function DataTable<Row, Key extends string>({
   return (
     <div className="overflow-x-auto rounded-lg border border-line bg-surface">
       <table className="w-full text-sm" style={{ minWidth }}>
-        <thead className="sticky top-0 border-b border-line bg-surface-2 text-left text-xs text-muted">
+        <thead className="border-b border-line bg-surface-2 text-left text-xs text-muted">
           <tr>
             {columns.map((col) => {
               const active = col.sortKey !== undefined && sort?.key === col.sortKey;
@@ -85,7 +85,14 @@ export function DataTable<Row, Key extends string>({
               }
               tabIndex={onRowClick ? 0 : undefined}
               onClick={onRowClick && (() => onRowClick(row))}
-              onKeyDown={onRowClick && ((e) => e.key === 'Enter' && onRowClick(row))}
+              onKeyDown={
+                onRowClick &&
+                ((e) => {
+                  if (e.key !== 'Enter' && e.key !== ' ') return;
+                  e.preventDefault();
+                  onRowClick(row);
+                })
+              }
             >
               {columns.map((col) => (
                 <td

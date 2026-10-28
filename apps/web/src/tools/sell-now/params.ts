@@ -17,18 +17,20 @@ export interface ViewParams {
   item: string | null;
 }
 
-export type SortKey =
-  | 'score'
-  | 'name'
-  | 'price'
-  | 'change1d'
-  | 'change3d'
-  | 'change7d'
-  | 'fromHigh'
-  | 'loss'
-  | 'sellDay'
-  | 'confidence'
-  | 'volume';
+const SORT_KEYS = [
+  'score',
+  'name',
+  'price',
+  'change1d',
+  'change3d',
+  'change7d',
+  'fromHigh',
+  'loss',
+  'sellDay',
+  'confidence',
+  'volume',
+] as const;
+export type SortKey = (typeof SORT_KEYS)[number];
 
 const VERDICTS: readonly VerdictFilter[] = ['flagged', 'sell-now', 'sell-soon', 'all'];
 
@@ -62,7 +64,7 @@ export function useViewParams(): [ViewParams, (patch: Partial<ViewParams>) => vo
     minPrice: num('minPrice', DEFAULTS.minPrice),
     type: type && isExchangeType(game, type) ? type : 'all',
     q: search.get('q') ?? '',
-    sort: (search.get('sort') as SortKey | null) ?? DEFAULTS.sort,
+    sort: SORT_KEYS.find((key) => key === search.get('sort')) ?? DEFAULTS.sort,
     desc: search.get('dir') !== 'asc',
     item: search.get('item'),
   };

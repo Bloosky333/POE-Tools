@@ -1,6 +1,7 @@
 /** Divine (or exalted) amount with precision adapted to its magnitude. */
 export function formatDiv(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return '–';
+  if (value < 0) return `-${formatDiv(-value)}`;
   if (value >= 1000) return Math.round(value).toLocaleString('en-US');
   if (value >= 10) return value.toFixed(1);
   if (value >= 1) return value.toFixed(2);
@@ -10,6 +11,7 @@ export function formatDiv(value: number | null | undefined): string {
 /** Chaos amount: whole chaos from 10 c, one decimal below, two digits under 1 c. */
 export function formatChaos(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return '–';
+  if (value < 0) return `-${formatChaos(-value)}`;
   if (value >= 10) return Math.round(value).toLocaleString('en-US');
   if (value >= 1) return value.toFixed(1);
   return value.toPrecision(2);
@@ -27,7 +29,9 @@ export function formatMultiplier(value: number | null | undefined): string {
 
 export function formatPercent(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return '–';
-  return `${value > 0 ? '+' : ''}${value.toFixed(0)}%`;
+  const rounded = Math.round(value);
+  if (rounded === 0) return '0%';
+  return `${rounded > 0 ? '+' : ''}${rounded}%`;
 }
 
 /** "23 min ago", "3 h ago", "2 d ago". */

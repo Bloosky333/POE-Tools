@@ -24,6 +24,8 @@ export interface NinjaClientOptions {
   retries?: number;
   fetchImpl?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
+  /** Per-request timeout, in ms. */
+  timeoutMs?: number;
 }
 
 const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -33,6 +35,7 @@ export function createNinjaClient(options: NinjaClientOptions = {}) {
   const retries = options.retries ?? 2;
   const fetchImpl = options.fetchImpl ?? fetch;
   const sleep = options.sleep ?? defaultSleep;
+  const timeoutMs = options.timeoutMs ?? 30_000;
   let lastRequestAt = 0;
 
   async function throttle() {
@@ -46,6 +49,7 @@ export function createNinjaClient(options: NinjaClientOptions = {}) {
     await throttle();
     const res = await fetchImpl(new URL(pathOrUrl, NINJA_BASE_URL).toString(), {
       headers: { 'User-Agent': USER_AGENT },
+      signal: AbortSignal.timeout(timeoutMs),
     });
     return { status: res.status, body: new Uint8Array(await res.arrayBuffer()) };
   }
@@ -57,6 +61,7 @@ export function createNinjaClient(options: NinjaClientOptions = {}) {
       try {
         const res = await fetchImpl(url, {
           headers: { 'User-Agent': USER_AGENT, Accept: 'application/json, text/*' },
+          signal: AbortSignal.timeout(timeoutMs),
         });
         const retryable = res.status === 429 || res.status >= 500;
         if (retryable && attempt < retries) {

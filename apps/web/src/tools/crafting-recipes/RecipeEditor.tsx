@@ -63,7 +63,7 @@ export function RecipeEditor({
     const steps = [...draft.steps];
     const [step] = steps.splice(index, 1);
     if (step) steps.splice(index + delta, 0, step);
-    patch({ steps });
+    patch({ steps: withValidGotos(steps) });
   };
 
   return (
@@ -115,7 +115,9 @@ export function RecipeEditor({
                 families={families}
                 onChange={(s) => setStep(i, s)}
                 onMove={(delta) => moveStep(i, delta)}
-                onRemove={() => patch({ steps: draft.steps.filter((_, j) => j !== i) })}
+                onRemove={() =>
+                  patch({ steps: withValidGotos(draft.steps.filter((_, j) => j !== i)) })
+                }
               />
             </li>
           ))}
@@ -637,4 +639,18 @@ function describeIssue(recipe: Recipe, path: readonly PropertyKey[], message: st
     return `${where}: ${message}`;
   }
   return message;
+}
+
+/**
+ * A gate goes back to itself or an earlier step: after a move or removal, a gate whose
+ * target is gone or now later goes back to a new base instead.
+ */
+function withValidGotos(steps: Step[]): Step[] {
+  const seen = new Set<string>();
+  return steps.map((step) => {
+    seen.add(step.id);
+    if (step.kind !== 'gate' || step.onFail.goto === BASE_STEP || seen.has(step.onFail.goto))
+      return step;
+    return { ...step, onFail: { ...step.onFail, goto: BASE_STEP } };
+  });
 }

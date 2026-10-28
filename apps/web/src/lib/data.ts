@@ -23,25 +23,31 @@ import { useEffect, useState } from 'react';
 import type { z } from 'zod';
 
 /*
- * Site data published by the data job under `<base>/data/`. Each file is fetched once per
- * page load and validated; responses are cached by path.
+ * Site data published by the data job under `<base>/data/` (refreshed hourly). Files are
+ * validated and cached by URL; site data is fetched again once older than `DATA_MAX_AGE_MS`,
+ * so a tab left open picks up new prices (see `useAsync`).
  */
 
-const cache = new Map<string, Promise<unknown>>();
+const DATA_MAX_AGE_MS = 15 * 60 * 1000;
 
-export class DataNotFoundError extends Error {}
+const cache = new Map<string, { at: number; promise: Promise<unknown> }>();
+
+class DataNotFoundError extends Error {}
 
 export function fetchData<T>(path: string, schema: z.ZodType<T>): Promise<T> {
-  let promise = cache.get(path) as Promise<T> | undefined;
-  if (!promise) {
-    promise = fetch(`${import.meta.env.BASE_URL}data/${path}`).then(async (res) => {
-      if (res.status === 404) throw new DataNotFoundError(path);
-      if (!res.ok) throw new Error(`HTTP ${res.status} for ${path}`);
-      return schema.parse(await res.json());
-    });
-    promise.catch(() => cache.delete(path));
-    cache.set(path, promise);
-  }
+  return cachedFetch(`${import.meta.env.BASE_URL}data/${path}`, schema, DATA_MAX_AGE_MS);
+}
+
+function cachedFetch<T>(url: string, schema: z.ZodType<T>, maxAgeMs: number): Promise<T> {
+  const entry = cache.get(url);
+  if (entry && Date.now() - entry.at < maxAgeMs) return entry.promise as Promise<T>;
+  const promise = fetch(url).then(async (res) => {
+    if (res.status === 404) throw new DataNotFoundError(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+    return schema.parse(await res.json());
+  });
+  promise.catch(() => cache.delete(url));
+  cache.set(url, { at: Date.now(), promise });
   return promise;
 }
 
@@ -84,32 +90,46 @@ export function fetchFlips(game: string, leagueId: string): Promise<FlipsFile> {
 export type AsyncState<T> =
   { status: 'loading' } | { status: 'error'; error: Error } | { status: 'ready'; data: T };
 
-/** Runs `load` whenever `key` changes. */
+const REFRESH_MS = 15 * 60 * 1000;
+
+/**
+ * Runs `load` whenever `key` changes, then again every 15 minutes: new data replaces the
+ * shown one without a loading state, a failed refresh keeps it, and an error is retried.
+ */
 export function useAsync<T>(key: string, load: () => Promise<T>): AsyncState<T> {
   const [state, setState] = useState<{ key: string; value: AsyncState<T> }>({
     key,
     value: { status: 'loading' },
   });
+  const [refresh, setRefresh] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setRefresh((n) => n + 1), REFRESH_MS);
+    return () => clearInterval(id);
+  }, []);
   useEffect(() => {
     let active = true;
     load().then(
       (data) => active && setState({ key, value: { status: 'ready', data } }),
       (error: unknown) =>
         active &&
-        setState({
-          key,
-          value: {
-            status: 'error',
-            error: error instanceof Error ? error : new Error(String(error)),
-          },
-        }),
+        setState((prev) =>
+          prev.key === key && prev.value.status === 'ready'
+            ? prev
+            : {
+                key,
+                value: {
+                  status: 'error',
+                  error: error instanceof Error ? error : new Error(String(error)),
+                },
+              },
+        ),
     );
     return () => {
       active = false;
     };
     // `load` is expected to be derived from `key`.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [key, refresh]);
   return state.key === key ? state.value : { status: 'loading' };
 }
 
@@ -128,15 +148,7 @@ export function fetchCraftingData(
   ]).then(([mods, bases]) => ({ mods, bases }));
 }
 
+/** Hashed build assets never change: cached for the page's life. */
 function fetchAsset<T>(url: string, schema: z.ZodType<T>): Promise<T> {
-  let promise = cache.get(url) as Promise<T> | undefined;
-  if (!promise) {
-    promise = fetch(url).then(async (res) => {
-      if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
-      return schema.parse(await res.json());
-    });
-    promise.catch(() => cache.delete(url));
-    cache.set(url, promise);
-  }
-  return promise;
+  return cachedFetch(url, schema, Infinity);
 }

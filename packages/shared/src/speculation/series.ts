@@ -8,10 +8,6 @@ export class Series {
     this.points = [...points].filter((p) => p[1] > 0).sort((a, b) => a[0] - b[0]);
   }
 
-  get firstDay(): number | null {
-    return this.points[0]?.[0] ?? null;
-  }
-
   get lastDay(): number | null {
     return this.points.at(-1)?.[0] ?? null;
   }
@@ -25,7 +21,7 @@ export class Series {
     return this.interpolate(day, 1);
   }
 
-  /** Volume (div) on `day`, interpolated like the price. */
+  /** Volume (game unit) on `day`, interpolated like the price. */
   volumeAt(day: number): number | null {
     return this.interpolate(day, 2);
   }

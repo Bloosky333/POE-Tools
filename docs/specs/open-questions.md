@@ -7,12 +7,12 @@
 | Q1     | Game                             | **PoE 2 first**; PoE 1 later via the game switch.                                                                                                              |
 | Q3/Q21 | Leagues                          | Softcore trade. Current: **Forbidden Rites** (0.5.5, start 2026-09-04 20:00 UTC). Reference: **Runes of Aldur** (0.5.0, start 2026-05-29). Hardcore not in M1. |
 | Q4     | Architecture                     | **Static site + scheduled job** (no server). Hosting provider → Q22.                                                                                           |
-| Q5     | Stack                            | Claude's choice: TypeScript, React + Vite, Tailwind, TanStack, Recharts, zod, Vitest, pnpm monorepo.                                                           |
+| Q5     | Stack                            | Claude's choice: TypeScript, React + Vite, Tailwind, zod, Vitest, pnpm monorepo (TanStack / Recharts not needed, see `00-overview.md` §4.3).                   |
 | Q6/Q20 | History                          | Previous-league data exists (5th league). Source decided by M0 probe: dumps → one-time throttled backfill → alt source; own daily snapshots from now on.       |
 | Q7     | Sell point                       | All modes: fixed horizon (7/14/30 d), peak, end of league.                                                                                                     |
 | Q8     | Categories                       | Currency + common stackables.                                                                                                                                  |
 | Q9     | League dates                     | `leagues.json`, maintained per league (+ auto-detect where possible).                                                                                          |
-| Q10    | Unit                             | **Divine only.**                                                                                                                                               |
+| Q10    | Unit                             | **Divine only** for PoE 2 (PoE 1: chaos, P1; flipping: each market's own hubs, F7).                                                                            |
 | Q11    | Reference leagues                | **Only the immediately previous league** (older economies irrelevant); manual override available.                                                              |
 | Q12    | Positions                        | M1, localStorage + export/import.                                                                                                                              |
 | Q13    | Budget basket                    | M1.                                                                                                                                                            |
@@ -61,7 +61,7 @@
 | Pair store | `pairs/<ExchangeType>.csv` filled by the existing daily details pass of selectable leagues; reference leagues only get it on a backfill re-run.      |
 | Open check | Pairs differ 5–12× for 10+ days (exalted cheapest) — verify in game that these rates are payable before relying on the tool (`03-poe-ninja-api.md`). |
 
-## Currency flipping (M2, draft — `04-currency-flipping.md`)
+## Currency flipping (`04-currency-flipping.md`)
 
 | #   | Topic       | Decision                                                                                                                                                 |
 | --- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -152,8 +152,22 @@
 | W11 | Placement  | Tool page only, no home-page widget.                                                                                                                                                                       |
 | W12 | Backtest   | 2026-10-24: weak signal (PoE 1 hold ×1.04 / avoid ×0.94 vs market at 14 d; PoE 2 inconclusive) → defaults kept, "falling" AVOID rule dropped (rebounds), weak signal noted on the page; re-run per league. |
 
+## Code review (2026-10-28)
+
+| #   | Topic                | Decision                                                                                                                                                                                 |
+| --- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | Today's league day   | `leagueDay(now)` = UTC calendar date − start date, the index histories are stored under (it counted 24 h periods from the start hour: one day behind from 00:00 to the start hour).      |
+| R2  | Re-backfill          | Keeps the stored series: every item with details history is refetched and its series replaced once the new one arrives (it used to wipe them first, losing items that are illiquid now). |
+| R3  | Ended league         | Backfilled once more on the first run after its last UTC day (that day was left out).                                                                                                    |
+| R4  | Data branch          | Only `main` runs write the `data` branch; other branches build with fresh data only. Committed even when a game fails; the site is deployed only when the whole job succeeded.           |
+| R5  | Failures             | A failing league does not stop the others (the run still fails); a failing feed hour keeps the other hours; a truncated exchange window is rebuilt.                                      |
+| R6  | Web data refresh     | Site data is refetched every 15 min in an open tab (shown data kept while reloading).                                                                                                    |
+| R7  | Game switch          | Clears the page's URL filters (they are in the game's unit).                                                                                                                             |
+| R8  | Order ratio > 1:1000 | Shown unclamped (e.g. 2500 : 1) rather than clamped to a wrong order.                                                                                                                    |
+
 ## Still open
 
+- Positions tracker, budget basket and in-app alerts (Q12–Q14, M1d): not built yet.
 - Currency flipping: recurrence thresholds (calibrate on data), gold (deferred), base item id mapping, Gemcutter's Prism in-game check — see
   `04-currency-flipping.md` §9.
 - PoE 1: chaos thresholds (starting values), 3.30 name after ExileCon — see `07-poe1.md` §9.

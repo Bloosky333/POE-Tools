@@ -16,6 +16,16 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     applyTheme(settings.theme);
   }, [settings]);
 
+  // "System" follows later OS theme changes too.
+  useEffect(() => {
+    if (settings.theme !== 'system') return;
+    const query = window.matchMedia?.('(prefers-color-scheme: dark)');
+    if (!query) return;
+    const onChange = () => applyTheme('system');
+    query.addEventListener('change', onChange);
+    return () => query.removeEventListener('change', onChange);
+  }, [settings.theme]);
+
   const value = useMemo(
     () => ({
       settings,

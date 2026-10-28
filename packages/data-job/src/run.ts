@@ -55,7 +55,7 @@ export interface JobOptions {
   historyMinVolume?: number;
   /** Max items whose details history is refreshed per league per day. */
   maxHistoryItems?: number;
-  /** fetch used to download icons from GGG's CDN (tests inject a fake). */
+  /** fetch used to download icons from GGG's CDN (tests inject a fake, unthrottled). */
   iconFetch?: typeof fetch;
 }
 
@@ -84,7 +84,8 @@ interface LeagueSnapshot {
  *   selectable leagues from the store plus the hourly busiest pair.
  *
  * Leagues not listed by poe.ninja are skipped, except ended ones (their data stays
- * available); a league is backfilled once more after its end so its curve is complete.
+ * available); a league is backfilled once more after its last UTC day so its curve is
+ * complete. A failing league does not stop the others; the run then throws at the end.
  */
 export async function runJob(options: JobOptions): Promise<void> {
   const { client, store, site, now, log } = options;
@@ -101,16 +102,21 @@ export async function runJob(options: JobOptions): Promise<void> {
   checkLeagues(tracked, ninjaLeagues, now, log);
   const busiestByLeague = new Map<string, Map<string, BusiestPair>>();
 
-  for (const league of tracked) {
+  async function updateLeague(league: League): Promise<void> {
     const ended = league.endsAt !== null && Date.parse(league.endsAt) <= now.getTime();
-    if (!hasStarted(league, now) || (!ninjaLeagues.has(league.ninjaName) && !ended)) continue;
+    if (!hasStarted(league, now) || (!ninjaLeagues.has(league.ninjaName) && !ended)) return;
     const meta = await store.readMeta(league.id);
+    // Once the league's last UTC day is over, it is backfilled once more so that day is in.
+    const endDayOver =
+      league.endsAt === null ? null : Date.parse(utcDate(Date.parse(league.endsAt) + DAY_MS));
     const needsBackfill =
       meta.backfilledAt === null ||
       meta.backfillVersion !== BACKFILL_VERSION ||
-      (ended && meta.backfilledAt < (league.endsAt ?? ''));
+      (endDayOver !== null &&
+        now.getTime() >= endDayOver &&
+        Date.parse(meta.backfilledAt) < endDayOver);
     const needsDaily = meta.lastClosedDate === null || meta.lastClosedDate < yesterday;
-    if (!league.selectable && !needsBackfill) continue;
+    if (!league.selectable && !needsBackfill) return;
 
     const snapshot = await fetchSnapshot(client, game, league);
     log.info(`${league.name}: ${snapshot.items.length} items`);
@@ -121,7 +127,7 @@ export async function runJob(options: JobOptions): Promise<void> {
         storeDir: store.root,
         client,
         log,
-        ...(options.iconFetch ? { fetchImpl: options.iconFetch } : {}),
+        ...(options.iconFetch ? { fetchImpl: options.iconFetch, cdnIntervalMs: 0 } : {}),
       });
       await site.writeCurrent({
         version: 1,
@@ -148,17 +154,15 @@ export async function runJob(options: JobOptions): Promise<void> {
         log.warn(`${league.name}: flips not updated: ${error}`);
       }
     }
-    if (!needsBackfill && !(league.selectable && needsDaily)) continue;
+    if (!needsBackfill && !(league.selectable && needsDaily)) return;
 
     let history = await store.readHistory(league.id);
     let fx = await store.readFx(league.id);
     let pairs = await store.readPairs(league.id);
+    // A re-backfill refetches every item that has details history: each series is replaced
+    // once its new one has arrived, so items that fail (or left poe.ninja) keep theirs.
     if (needsBackfill && meta.backfilledAt !== null) {
       log.info(`${league.name}: re-running backfill v${BACKFILL_VERSION}`);
-      history = new Map(
-        [...history].map(([type, points]) => [type, points.filter((p) => p.source === 'snapshot')]),
-      );
-      meta.detailsFetched = [];
     }
 
     // Items with details history: previously fetched ones plus newly liquid ones.
@@ -211,6 +215,17 @@ export async function runJob(options: JobOptions): Promise<void> {
     await store.writeMeta(league.id, meta);
   }
 
+  const failures: string[] = [];
+  for (const league of tracked) {
+    try {
+      await updateLeague(league);
+    } catch (error) {
+      // One league failing (e.g. a reference league's overview) does not stop the others.
+      log.warn(`${league.name}: not updated: ${error}`);
+      failures.push(league.name);
+    }
+  }
+
   // The site needs selectable leagues and their references; backtest-only leagues
   // (`track`) stay in the store.
   const published = tracked.filter(
@@ -233,6 +248,7 @@ export async function runJob(options: JobOptions): Promise<void> {
   }
   await site.copyIcons(store.root);
   await site.writeLeagues(tracked, now);
+  if (failures.length) throw new Error(`leagues not updated: ${failures.join(', ')}`);
 }
 
 /** Units of the other core currencies per 1 unit, from an overview. */
@@ -315,13 +331,19 @@ async function fetchHistories(
   log: Logger,
 ): Promise<{ points: DailyPoint[]; pairs: PairPoint[]; fx: FxPoint[]; fetched: string[] } | null> {
   const { unit, fxCurrencies } = ECONOMY[game];
-  const unitDetails = await fetchDetails(
-    client,
-    game,
-    league.ninjaName,
-    'Currency',
-    CURRENCY_DETAILS_ID[unit],
-  );
+  let unitDetails;
+  try {
+    unitDetails = await fetchDetails(
+      client,
+      game,
+      league.ninjaName,
+      'Currency',
+      CURRENCY_DETAILS_ID[unit],
+    );
+  } catch (error) {
+    log.warn(`${league.name}: ${CURRENCY_NAMES[unit]} details failed: ${error}`);
+    return null;
+  }
   if (!unitDetails) {
     log.warn(`${league.name}: ${CURRENCY_NAMES[unit]} details not found`);
     return null;
@@ -364,7 +386,10 @@ function replaceItemSeries<P extends { item: string }>(
   );
   for (const point of points) {
     const type = typeOf.get(point.item);
-    if (type) next.set(type, [...(next.get(type) ?? []), point]);
+    if (!type) continue;
+    const list = next.get(type) ?? [];
+    list.push(point);
+    next.set(type, list);
   }
   return next;
 }
@@ -385,7 +410,18 @@ function addSnapshotPoints(
     byType.set(type, list);
   }
   const next: LeagueHistory = new Map(history);
-  for (const [type, incoming] of byType)
-    next.set(type, mergeHistory(next.get(type) ?? [], incoming));
+  for (const [type, incoming] of byType) {
+    // A day's snapshot is taken once: later runs of a postponed day must not overwrite
+    // it with a price from the next day.
+    const existing = next.get(type) ?? [];
+    const taken = new Set(existing.map((p) => `${p.item}|${p.date}`));
+    next.set(
+      type,
+      mergeHistory(
+        existing,
+        incoming.filter((p) => !taken.has(`${p.item}|${p.date}`)),
+      ),
+    );
+  }
   return next;
 }

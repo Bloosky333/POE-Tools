@@ -53,11 +53,16 @@ const key = (game: Game) => `poe-tools:cheapest-currency:${game}`;
 export function loadSaved(game: Game): Saved {
   try {
     const raw = localStorage.getItem(key(game));
-    const parsed = raw ? (JSON.parse(raw) as Partial<Saved>) : {};
-    return { recent: parsed.recent ?? [], favourites: parsed.favourites ?? [] };
+    const parsed = raw ? (JSON.parse(raw) as Record<string, unknown> | null) : null;
+    return { recent: ids(parsed?.recent), favourites: ids(parsed?.favourites) };
   } catch {
     return { recent: [], favourites: [] };
   }
+}
+
+/** Item ids of a stored list; anything else (hand-edited or corrupt storage) is dropped. */
+function ids(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 }
 
 export function storeSaved(game: Game, saved: Saved): void {

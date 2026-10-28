@@ -192,9 +192,17 @@ describe('runJob (PoE 1)', () => {
   });
   afterEach(() => rm(root, { recursive: true, force: true }));
 
-  async function run(now: Date, calls: string[], listed = LISTED) {
+  async function run(
+    now: Date,
+    calls: string[],
+    listed = LISTED,
+    wrap: (fetchImpl: typeof fetch) => typeof fetch = (f) => f,
+  ) {
     await runJob({
-      client: createNinjaClient({ fetchImpl: poe1Fetch(calls, listed), sleep: async () => {} }),
+      client: createNinjaClient({
+        fetchImpl: wrap(poe1Fetch(calls, listed)),
+        sleep: async () => {},
+      }),
       store: createStore(join(root, 'store'), 'poe1'),
       site: createSiteWriter(join(root, 'site'), 'poe1'),
       now,
@@ -244,14 +252,57 @@ describe('runJob (PoE 1)', () => {
     expect(await readdir(site)).not.toContain('mirage');
   });
 
-  it('re-backfills a league once after it ended', async () => {
+  it('re-backfills a league once after its last day, keeping series it cannot refetch', async () => {
     await run(new Date('2026-10-24T12:00:00Z'), []);
+    const store = createStore(join(root, 'store'), 'poe1');
+    const oilOf = async () =>
+      (await store.readHistory('allflame')).get('Oil')?.filter((p) => p.item === 'golden-oil');
+    const oil = await oilOf();
+    expect(oil?.length).toBeGreaterThan(80);
+
+    // Ended, but its last UTC day is not over yet: no re-backfill.
+    const sameDay: string[] = [];
+    await run(new Date('2026-11-09T22:00:00Z'), sameDay);
+    expect(sameDay.some((c) => c.includes('league=Allflame') && c.includes('/details'))).toBe(
+      false,
+    );
+
+    // Next day: every item is refetched; one that fails keeps its stored series.
     const calls: string[] = [];
-    await run(new Date('2026-11-10T12:00:00Z'), calls);
+    await run(
+      new Date('2026-11-10T00:30:00Z'),
+      calls,
+      LISTED,
+      (f) => async (input, init) =>
+        String(input).includes('id=golden-oil')
+          ? new Response('', { status: 503 })
+          : f(input, init),
+    );
     expect(calls.some((c) => c.includes('league=Allflame') && c.includes('/details'))).toBe(true);
+    expect(await oilOf()).toEqual(oil);
+    expect((await store.readMeta('allflame')).detailsFetched).toContain('golden-oil');
+
     const later: string[] = [];
     await run(new Date('2026-11-10T13:00:00Z'), later);
     expect(later.some((c) => c.includes('league=Allflame'))).toBe(false);
+  });
+
+  it('keeps publishing the other leagues when one league fails', async () => {
+    const calls: string[] = [];
+    await expect(
+      run(
+        new Date('2026-10-24T12:00:00Z'),
+        calls,
+        LISTED,
+        (f) => async (input, init) =>
+          String(input).includes('league=Mirage')
+            ? new Response('', { status: 500 })
+            : f(input, init),
+      ),
+    ).rejects.toThrow('leagues not updated: Mirage');
+    const store = createStore(join(root, 'store'), 'poe1');
+    expect((await store.readMeta('allflame')).backfilledAt).not.toBeNull();
+    expect(await readdir(join(root, 'site', 'poe1', 'allflame', 'history'))).toContain('Oil.json');
   });
 
   it('uses the new challenge league for the unnamed 3.30 entry once it started', async () => {

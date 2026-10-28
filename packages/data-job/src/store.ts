@@ -31,7 +31,7 @@ export const metaSchema = z.object({
   backfillVersion: z.number().default(1),
   /** Latest completed UTC date present in history. */
   lastClosedDate: z.string().nullable(),
-  /** Items whose details history was already fetched (or attempted). */
+  /** Items whose details history was fetched (a re-backfill refetches all of them). */
   detailsFetched: z.array(z.string()),
 });
 export type LeagueMeta = z.infer<typeof metaSchema>;

@@ -27,7 +27,11 @@ export interface IconSyncOptions {
   fetchImpl?: typeof fetch;
   /** Max downloads per run. */
   maxDownloads?: number;
+  /** Delay between two CDN downloads, in ms (polite burst at a league launch). */
+  cdnIntervalMs?: number;
 }
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /**
  * Downloads the icons not stored yet, then rewrites every item's `icon` from its
@@ -49,9 +53,11 @@ export async function syncIcons(
     if (file && !stored.has(file)) missing.set(file, item.icon);
   }
 
+  const cdnIntervalMs = options.cdnIntervalMs ?? 250;
   let downloaded = 0;
   let failed = 0;
-  for (const [file, source] of [...missing].slice(0, maxDownloads)) {
+  for (const [index, [file, source]] of [...missing].slice(0, maxDownloads).entries()) {
+    if (index > 0 && cdnIntervalMs > 0) await sleep(cdnIntervalMs);
     const png = (await fromCdn(source, fetchImpl)) ?? (await fromNinja(source, options.client));
     if (!png) {
       failed++;
@@ -76,6 +82,7 @@ async function fromCdn(source: string, fetchImpl: typeof fetch): Promise<Uint8Ar
   try {
     const res = await fetchImpl(new URL(source, ICON_CDN), {
       headers: { 'User-Agent': USER_AGENT },
+      signal: AbortSignal.timeout(30_000),
     });
     return await asPng(res);
   } catch {

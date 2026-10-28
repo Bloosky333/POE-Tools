@@ -22,6 +22,8 @@ describe('format', () => {
     expect(formatChaos(287.5)).toBe('288');
     expect(formatChaos(4.02)).toBe('4.0');
     expect(formatChaos(0.123)).toBe('0.12');
+    expect(formatChaos(-1500)).toBe('-1,500');
+    expect(formatDiv(-1500)).toBe('-1,500');
     expect(formatAmount(287.5, 'chaos')).toBe('288');
     expect(formatAmount(0.8723, 'divine')).toBe('0.87');
   });
@@ -29,6 +31,9 @@ describe('format', () => {
   it('formats multipliers, percents and ages', () => {
     expect(formatMultiplier(1.5)).toBe('×1.50');
     expect(formatPercent(12.4)).toBe('+12%');
+    expect(formatPercent(-12.6)).toBe('-13%');
+    expect(formatPercent(-0.3)).toBe('0%');
+    expect(formatPercent(0.4)).toBe('0%');
     expect(formatAge('2026-10-24T10:00:00Z', Date.parse('2026-10-24T10:23:00Z'))).toBe(
       '23 min ago',
     );

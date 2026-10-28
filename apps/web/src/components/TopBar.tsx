@@ -7,7 +7,7 @@ import {
   leagueDay,
   type Game,
 } from '@poe-tools/shared';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import type { Theme } from '../lib/settings.ts';
 import { useNow } from '../lib/useNow.ts';
 import { useSettings } from '../lib/useSettings.ts';
@@ -22,7 +22,7 @@ const THEMES: { value: Theme; label: string }[] = [
   { value: 'system', label: 'System' },
 ];
 
-export function TopBar({ onToggleNav }: { onToggleNav: () => void }) {
+export function TopBar({ navOpen, onToggleNav }: { navOpen: boolean; onToggleNav: () => void }) {
   const { settings, update } = useSettings();
   const now = useNow();
   const leagues = LEAGUES.filter((l) => l.game === settings.game && l.selectable);
@@ -34,6 +34,8 @@ export function TopBar({ onToggleNav }: { onToggleNav: () => void }) {
         type="button"
         className="rounded-md p-1.5 text-muted hover:bg-surface-2 md:hidden"
         aria-label="Toggle navigation"
+        aria-expanded={navOpen}
+        aria-controls="tools-nav"
         onClick={onToggleNav}
       >
         <MenuIcon />
@@ -45,32 +47,7 @@ export function TopBar({ onToggleNav }: { onToggleNav: () => void }) {
         </span>
       </Link>
 
-      <div
-        role="radiogroup"
-        aria-label="Game"
-        className="ml-4 hidden rounded-md border border-line bg-surface-2 p-0.5 sm:flex"
-      >
-        {GAMES.map((game) => {
-          const enabled = ENABLED_GAMES.includes(game);
-          const active = settings.game === game;
-          return (
-            <button
-              key={game}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              disabled={!enabled}
-              title={enabled ? undefined : 'Coming soon'}
-              onClick={() => update({ game })}
-              className={`rounded px-2.5 py-1 text-xs font-medium ${
-                active ? 'bg-surface text-fg shadow-sm' : 'text-subtle'
-              } ${enabled ? 'hover:text-fg' : 'cursor-not-allowed opacity-60'}`}
-            >
-              {GAME_SHORT[game]}
-            </button>
-          );
-        })}
-      </div>
+      <GameSwitch className="ml-4 hidden sm:flex" />
 
       <div className="ml-auto flex items-center gap-3">
         <DataFreshness />
@@ -96,22 +73,74 @@ export function TopBar({ onToggleNav }: { onToggleNav: () => void }) {
             </span>
           )}
         </div>
-        <label className="sr-only" htmlFor="theme">
-          Theme
-        </label>
-        <select
-          id="theme"
-          className={`${selectClass} hidden sm:block`}
-          value={settings.theme}
-          onChange={(e) => update({ theme: e.target.value as Theme })}
-        >
-          {THEMES.map((t) => (
-            <option key={t.value} value={t.value}>
-              {t.label}
-            </option>
-          ))}
-        </select>
+        <ThemeSelect id="theme" className="hidden sm:block" />
       </div>
     </header>
+  );
+}
+
+/**
+ * PoE 2 / PoE 1 switch (top bar; in the navigation drawer on phones). Switching clears the
+ * page's URL parameters: filters are in the game's unit, items and recipes are per game.
+ */
+export function GameSwitch({ className = '' }: { className?: string }) {
+  const { settings, update } = useSettings();
+  const [, setSearch] = useSearchParams();
+  const select = (game: Game) => {
+    if (game === settings.game) return;
+    update({ game });
+    setSearch({}, { replace: true });
+  };
+  return (
+    <div
+      role="radiogroup"
+      aria-label="Game"
+      className={`rounded-md border border-line bg-surface-2 p-0.5 ${className}`}
+    >
+      {GAMES.map((game) => {
+        const enabled = ENABLED_GAMES.includes(game);
+        const active = settings.game === game;
+        return (
+          <button
+            key={game}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            disabled={!enabled}
+            title={enabled ? undefined : 'Coming soon'}
+            onClick={() => select(game)}
+            className={`rounded px-2.5 py-1 text-xs font-medium ${
+              active ? 'bg-surface text-fg shadow-sm' : 'text-subtle'
+            } ${enabled ? 'hover:text-fg' : 'cursor-not-allowed opacity-60'}`}
+          >
+            {GAME_SHORT[game]}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Theme select (top bar; in the navigation drawer on phones). */
+export function ThemeSelect({ id, className = '' }: { id: string; className?: string }) {
+  const { settings, update } = useSettings();
+  return (
+    <>
+      <label className="sr-only" htmlFor={id}>
+        Theme
+      </label>
+      <select
+        id={id}
+        className={`${selectClass} ${className}`}
+        value={settings.theme}
+        onChange={(e) => update({ theme: e.target.value as Theme })}
+      >
+        {THEMES.map((t) => (
+          <option key={t.value} value={t.value}>
+            {t.label}
+          </option>
+        ))}
+      </select>
+    </>
   );
 }

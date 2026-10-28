@@ -22,7 +22,7 @@ export interface PairPoint {
   pair: PayCurrency;
   /** Units of `pair` per 1 item. */
   rate: number;
-  /** Volume traded on this pair that day, in divine. */
+  /** Volume traded on this pair that day, in the game unit (divine for PoE 2, chaos for PoE 1). */
   volume: number;
 }
 

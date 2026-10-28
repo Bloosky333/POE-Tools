@@ -45,10 +45,9 @@ describe('toRatio', () => {
     expect(toRatio(378 / 5)).toEqual([378, 5]);
   });
 
-  it('keeps both terms within the limit', () => {
-    const [hub, items] = toRatio(1 / 3000);
-    expect(items).toBeLessThanOrEqual(1000);
-    expect(hub).toBe(1);
+  it('keeps both terms within the limit, except one side of an extreme price', () => {
+    expect(toRatio(1 / 3000)).toEqual([1, 3000]);
+    expect(toRatio(2500)).toEqual([2500, 1]);
     const [h, i] = toRatio(Math.PI, 100);
     expect(h).toBeLessThanOrEqual(100);
     expect([h, i]).toEqual([22, 7]);

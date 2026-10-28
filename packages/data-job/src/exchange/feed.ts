@@ -33,7 +33,7 @@ export const exchangeDigestSchema = z.object({
 export type ExchangeDigest = z.infer<typeof exchangeDigestSchema>;
 export type ExchangeMarket = ExchangeDigest['markets'][number];
 
-/** Start of the newest hour whose digest should be published (~5 min after it closes). */
+/** Start of the newest hour whose digest should be published (10 min after it closes). */
 export function newestCompleteHour(now: Date): number {
   return Math.floor((now.getTime() / 1000 - 10 * 60) / HOUR_S) * HOUR_S - HOUR_S;
 }

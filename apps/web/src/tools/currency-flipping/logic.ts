@@ -98,7 +98,9 @@ export function filterAndSort(rows: readonly FlipRow[], params: ViewParams): Fli
 
 /**
  * Integer ratio `[hub, items]` closest to `price` (hub units per 1 item), as typed in the
- * in-game exchange: the best rational approximation with both terms ≤ `max`.
+ * in-game exchange: the best rational approximation with both terms ≤ `max`. A price
+ * beyond 1/`max`…`max` is `[1, n]` or `[n, 1]` with n over `max` (clamping it would show
+ * a wrong order).
  */
 export function toRatio(price: number, max = 1000): [number, number] {
   if (!(price > 0) || !Number.isFinite(price)) return [0, 1];
@@ -106,8 +108,7 @@ export function toRatio(price: number, max = 1000): [number, number] {
   let [h0, h1] = [0, 1];
   let [k0, k1] = [1, 0];
   let x = price;
-  let best: [number, number] =
-    price >= 1 ? [Math.min(Math.round(price), max), 1] : [1, Math.min(Math.round(1 / price), max)];
+  let best: [number, number] = price >= 1 ? [Math.round(price), 1] : [1, Math.round(1 / price)];
   for (let i = 0; i < 32; i++) {
     const a = Math.floor(x);
     const h = a * h1 + h0;
