@@ -7,7 +7,7 @@ import {
   leagueDay,
   type Game,
 } from '@poe-tools/shared';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import type { Theme } from '../lib/settings.ts';
 import { useNow } from '../lib/useNow.ts';
 import { useSettings } from '../lib/useSettings.ts';
@@ -79,9 +79,18 @@ export function TopBar({ navOpen, onToggleNav }: { navOpen: boolean; onToggleNav
   );
 }
 
-/** PoE 2 / PoE 1 switch (top bar; in the navigation drawer on phones). */
+/**
+ * PoE 2 / PoE 1 switch (top bar; in the navigation drawer on phones). Switching clears the
+ * page's URL parameters: filters are in the game's unit, items and recipes are per game.
+ */
 export function GameSwitch({ className = '' }: { className?: string }) {
   const { settings, update } = useSettings();
+  const [, setSearch] = useSearchParams();
+  const select = (game: Game) => {
+    if (game === settings.game) return;
+    update({ game });
+    setSearch({}, { replace: true });
+  };
   return (
     <div
       role="radiogroup"
@@ -99,7 +108,7 @@ export function GameSwitch({ className = '' }: { className?: string }) {
             aria-checked={active}
             disabled={!enabled}
             title={enabled ? undefined : 'Coming soon'}
-            onClick={() => update({ game })}
+            onClick={() => select(game)}
             className={`rounded px-2.5 py-1 text-xs font-medium ${
               active ? 'bg-surface text-fg shadow-sm' : 'text-subtle'
             } ${enabled ? 'hover:text-fg' : 'cursor-not-allowed opacity-60'}`}

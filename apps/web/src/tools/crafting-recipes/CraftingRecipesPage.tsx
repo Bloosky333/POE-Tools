@@ -99,9 +99,10 @@ function Recipes({ game }: { game: Game }) {
   const editing = search.get('edit') === '1' || isNew;
   const baseIndex = Math.max(
     0,
-    Math.min(Number(search.get('base')) || 0, (recipe?.bases.length ?? 1) - 1),
+    Math.min(Math.floor(Number(search.get('base'))) || 0, (recipe?.bases.length ?? 1) - 1),
   );
-  const [draftNew] = useState(() => newRecipe(game));
+  // Draft of the next new recipe: replaced once saved, so each new recipe gets its own id.
+  const [draftNew, setDraftNew] = useState(() => newRecipe(game));
 
   if (id && !isNew && !recipe) {
     return (
@@ -124,6 +125,7 @@ function Recipes({ game }: { game: Game }) {
           onCancel={() => go(isNew ? null : current.id)}
           onSave={(saved) => {
             save(isNew ? [...recipes, saved] : recipes.map((r) => (r.id === saved.id ? saved : r)));
+            if (isNew) setDraftNew(newRecipe(game));
             go(saved.id);
           }}
         />

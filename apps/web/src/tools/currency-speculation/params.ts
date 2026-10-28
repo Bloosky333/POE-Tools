@@ -21,8 +21,17 @@ export interface ViewParams {
   item: string | null;
 }
 
-export type SortKey =
-  'score' | 'name' | 'price' | 'multiplier' | 'confidence' | 'volume' | 'change7d' | 'sellDay';
+const SORT_KEYS = [
+  'score',
+  'name',
+  'price',
+  'multiplier',
+  'confidence',
+  'volume',
+  'change7d',
+  'sellDay',
+] as const;
+export type SortKey = (typeof SORT_KEYS)[number];
 
 export const MODES: { value: string; label: string; short: string; mode: SellMode }[] = [
   { value: 'h7', short: '7 days', label: 'Hold 7 days', mode: { kind: 'horizon', days: 7 } },
@@ -66,7 +75,7 @@ export function useViewParams(): [ViewParams, (patch: Partial<ViewParams>) => vo
       ? (action as ViewParams['action'])
       : 'all',
     q: search.get('q') ?? '',
-    sort: (search.get('sort') as SortKey | null) ?? DEFAULTS.sort,
+    sort: SORT_KEYS.find((key) => key === search.get('sort')) ?? DEFAULTS.sort,
     desc: search.get('dir') !== 'asc',
     item: search.get('item'),
   };

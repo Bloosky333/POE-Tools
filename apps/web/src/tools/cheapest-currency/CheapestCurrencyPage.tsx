@@ -136,7 +136,9 @@ export default function CheapestCurrencyPage() {
                   step={1}
                   className="w-24"
                   value={params.quantity}
-                  onChange={(e) => update({ quantity: Math.max(1, Number(e.target.value) || 1) })}
+                  onChange={(e) =>
+                    update({ quantity: Math.max(1, Math.floor(Number(e.target.value)) || 1) })
+                  }
                 />
               </InlineField>
             </FilterBar>
