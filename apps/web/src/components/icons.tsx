@@ -74,6 +74,14 @@ export const PickaxeIcon = (p: SVGProps<SVGSVGElement>) => (
   </Icon>
 );
 
+export const BookIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z" />
+    <path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19" />
+    <path d="M9 7h6" />
+  </Icon>
+);
+
 export const MenuIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}>
     <path d="M4 6h16M4 12h16M4 18h16" />
