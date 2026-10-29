@@ -12,7 +12,8 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate: () =>
     <nav
       id="tools-nav"
       aria-label="Tools"
-      className={`${open ? 'block' : 'hidden'} w-full shrink-0 border-line bg-surface px-3 py-5 md:sticky md:top-14 md:block md:h-[calc(100vh-3.5rem)] md:w-60 md:border-r`}
+      // Phones: a drawer over the page below the top bar, with its own scroller.
+      className={`${open ? 'block' : 'hidden'} fixed inset-x-0 top-14 bottom-0 z-20 w-full shrink-0 overflow-y-auto overscroll-contain border-line bg-surface px-3 py-5 md:sticky md:inset-x-auto md:bottom-auto md:z-auto md:block md:h-[calc(100vh-3.5rem)] md:w-60 md:border-r`}
     >
       {/* Phones: the top bar has no room for these. */}
       <div className="mb-6 flex items-center gap-3 px-3 sm:hidden">
