@@ -51,6 +51,14 @@ export const CoinsIcon = (p: SVGProps<SVGSVGElement>) => (
   </Icon>
 );
 
+/** Price tag (selling). */
+export const TagIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Icon {...p}>
+    <path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9z" />
+    <circle cx="7.5" cy="7.5" r="1.5" />
+  </Icon>
+);
+
 export const HammerIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon {...p}>
     <path d="M14 5l5 5" />

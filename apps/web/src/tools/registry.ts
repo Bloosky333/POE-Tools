@@ -4,6 +4,7 @@ import {
   HammerIcon,
   PickaxeIcon,
   SwapIcon,
+  TagIcon,
   TrendDownIcon,
   TrendIcon,
 } from '../components/icons.tsx';
@@ -46,15 +47,26 @@ export const TOOLS: readonly ToolDefinition[] = [
     component: lazy(() => import('./currency-flipping/CurrencyFlippingPage.tsx')),
   },
   {
-    id: 'cheapest-currency',
+    id: 'buy-with',
     icon: CoinsIcon,
-    name: 'Cheapest Currency',
+    name: 'Buy With',
     description: 'Which currency to pay with for an exchange item, in whole units.',
     category: 'economy',
     games: ['poe2', 'poe1'],
     status: 'beta',
-    path: 'tools/cheapest-currency',
-    component: lazy(() => import('./cheapest-currency/CheapestCurrencyPage.tsx')),
+    path: 'tools/buy-with',
+    component: lazy(() => import('./buy-with/BuyWithPage.tsx')),
+  },
+  {
+    id: 'sell-for',
+    icon: TagIcon,
+    name: 'Sell For',
+    description: 'Which currency to ask for when selling an exchange item, in whole units.',
+    category: 'economy',
+    games: ['poe2', 'poe1'],
+    status: 'beta',
+    path: 'tools/sell-for',
+    component: lazy(() => import('./sell-for/SellForPage.tsx')),
   },
   {
     id: 'what-to-farm',
@@ -79,3 +91,8 @@ export const TOOLS: readonly ToolDefinition[] = [
     component: lazy(() => import('./crafting-recipes/CraftingRecipesPage.tsx')),
   },
 ];
+
+/** Old tool paths still reachable from bookmarks: old path → current path (query kept). */
+export const REDIRECTS: Readonly<Record<string, string>> = {
+  'tools/cheapest-currency': 'tools/buy-with',
+};

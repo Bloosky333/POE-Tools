@@ -1,6 +1,7 @@
+// @vitest-environment jsdom
 import type { CurrentItem } from '@poe-tools/shared';
 import { describe, expect, it } from 'vitest';
-import { addRecent, searchItems, toggleFavourite } from './logic.ts';
+import { addRecent, loadSaved, searchItems, storeSaved, toggleFavourite } from './logic.ts';
 
 const item = (id: string, name: string, volume: number): CurrentItem => ({
   id,
@@ -13,7 +14,7 @@ const item = (id: string, name: string, volume: number): CurrentItem => ({
   change7d: null,
 });
 
-describe('cheapest currency logic', () => {
+describe('exchange pair logic', () => {
   const items = [
     item('chaos', 'Chaos Orb', 9e5),
     item('alch', 'Orb of Alchemy', 10),
@@ -38,5 +39,15 @@ describe('cheapest currency logic', () => {
     saved = toggleFavourite(saved, 'x');
     expect(saved.favourites).toEqual(['x']);
     expect(toggleFavourite(saved, 'x').favourites).toEqual([]);
+  });
+
+  it('keeps lists per tool and reads Buy With from the old Cheapest Currency key', () => {
+    localStorage.clear();
+    localStorage.setItem('poe-tools:cheapest-currency:poe2', '{"recent":["x"],"favourites":[]}');
+    expect(loadSaved('buy-with', 'poe2').recent).toEqual(['x']);
+    expect(loadSaved('sell-for', 'poe2').recent).toEqual([]);
+    storeSaved('buy-with', 'poe2', { recent: ['y'], favourites: [] });
+    expect(localStorage.getItem('poe-tools:cheapest-currency:poe2')).toBeNull();
+    expect(loadSaved('buy-with', 'poe2').recent).toEqual(['y']);
   });
 });

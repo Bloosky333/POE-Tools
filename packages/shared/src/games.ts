@@ -37,7 +37,7 @@ export interface GameEconomy {
   secondary: CoreCurrency | null;
   /** poe.ninja `core.rates` kept in the daily fx series: units per 1 `unit`. */
   fxCurrencies: readonly CoreCurrency[];
-  /** Hub currencies of the exchange = what an item can be paid with (flipping, cheapest). */
+  /** Hub currencies of the exchange = what an item can be paid with (flipping, Buy With, Sell For). */
   hubs: readonly CoreCurrency[];
   /** Min price of an item counted in market-wide measures (market factor, market move). */
   minPrice: number;
@@ -51,8 +51,8 @@ export interface GameEconomy {
   flipMinLegValue: number;
   /** Default of the flipping page's min value per leg (24 h). */
   flipDefaultValue: number;
-  /** Cheapest Currency: the recommended pair must trade at least this per day. */
-  payMinVolume: number;
+  /** Buy With / Sell For: the recommended pair must trade at least this per day. */
+  pairMinVolume: number;
 }
 
 export const ECONOMY: Record<Game, GameEconomy> = {
@@ -67,7 +67,7 @@ export const ECONOMY: Record<Game, GameEconomy> = {
     historyMinVolume: 2,
     flipMinLegValue: 10,
     flipDefaultValue: 120,
-    payMinVolume: 1,
+    pairMinVolume: 1,
   },
   // Chaos-denominated: 1 div ≈ 330 c in 3.29 (probe, 2026-10-24). Starting values, spec 07 §9.
   poe1: {
@@ -81,6 +81,6 @@ export const ECONOMY: Record<Game, GameEconomy> = {
     historyMinVolume: 300,
     flipMinLegValue: 2000,
     flipDefaultValue: 20000,
-    payMinVolume: 200,
+    pairMinVolume: 200,
   },
 };

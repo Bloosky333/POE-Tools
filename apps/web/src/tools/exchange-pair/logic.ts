@@ -58,11 +58,16 @@ export interface Saved {
 }
 
 const MAX_RECENT = 8;
-const key = (game: Game) => `poe-tools:cheapest-currency:${game}`;
+const key = (tool: string, game: Game) => `poe-tools:${tool}:${game}`;
+/** Buy With was called Cheapest Currency: its lists are read from the old key until saved. */
+const LEGACY: Record<string, string> = { 'buy-with': 'cheapest-currency' };
 
-export function loadSaved(game: Game): Saved {
+export function loadSaved(tool: string, game: Game): Saved {
   try {
-    const raw = localStorage.getItem(key(game));
+    const legacy = LEGACY[tool];
+    const raw =
+      localStorage.getItem(key(tool, game)) ??
+      (legacy ? localStorage.getItem(key(legacy, game)) : null);
     const parsed = raw ? (JSON.parse(raw) as Record<string, unknown> | null) : null;
     return { recent: ids(parsed?.recent), favourites: ids(parsed?.favourites) };
   } catch {
@@ -75,9 +80,11 @@ function ids(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 }
 
-export function storeSaved(game: Game, saved: Saved): void {
+export function storeSaved(tool: string, game: Game, saved: Saved): void {
   try {
-    localStorage.setItem(key(game), JSON.stringify(saved));
+    localStorage.setItem(key(tool, game), JSON.stringify(saved));
+    const legacy = LEGACY[tool];
+    if (legacy) localStorage.removeItem(key(legacy, game));
   } catch {
     // Storage unavailable: lookups just aren't remembered.
   }

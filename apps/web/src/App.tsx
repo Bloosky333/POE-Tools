@@ -1,11 +1,17 @@
 import { Suspense } from 'react';
-import { RouterProvider, createHashRouter, type RouteObject } from 'react-router';
+import {
+  Navigate,
+  RouterProvider,
+  createHashRouter,
+  useLocation,
+  type RouteObject,
+} from 'react-router';
 import { Layout } from './components/Layout.tsx';
 import { SettingsProvider } from './lib/SettingsProvider.tsx';
 import { HomePage } from './pages/HomePage.tsx';
 import { NotFoundPage } from './pages/NotFoundPage.tsx';
 import { RouteErrorPage } from './pages/RouteErrorPage.tsx';
-import { TOOLS } from './tools/registry.ts';
+import { REDIRECTS, TOOLS } from './tools/registry.ts';
 
 export const routes: RouteObject[] = [
   {
@@ -31,12 +37,21 @@ export const routes: RouteObject[] = [
                 ]
               : [],
           ),
+          ...Object.entries(REDIRECTS).map(([path, to]) => ({
+            path,
+            element: <Redirect to={to} />,
+          })),
           { path: '*', element: <NotFoundPage /> },
         ],
       },
     ],
   },
 ];
+
+/** A renamed tool's old path: same page, same lookup (query string kept). */
+function Redirect({ to }: { to: string }) {
+  return <Navigate to={{ pathname: `/${to}`, search: useLocation().search }} replace />;
+}
 
 // Hash routing: GitHub Pages has no SPA fallback for deep links.
 const router = createHashRouter(routes);

@@ -37,7 +37,7 @@
 | Price level      | Expected multiplier `M_eff = M × max(1, π)^−β` (spec 01 §4.2b), premium `π` = item price vs reference price × market factor (median N/R of liquid items). Only premiums damp (β = 1); AVOID stays on the raw curve. Backtest FR vs RoA days 7–35, 14-day hold (`pnpm --filter @poe-tools/data-job backtest`): BUY NOW calls rose 81 % (median ×1.25) vs 78 % (×1.21) without. Premium alone does not predict losses (×1.09, like NEUTRAL). Re-tune per league. |
 | Known limitation | Market-wide moves of the reference league (e.g. Runes of Aldur day ~55: divine +20% vs chaos, most items −10% in divine) drive WAIT/BUY for many items at once. Possible refinement: compare items against a market index.                                                                                                                                                                                                                                     |
 
-## Tool #2 — Cheapest Currency (spec `04-cheapest-currency.md`)
+## Tool #2 — Buy With / Sell For, formerly Cheapest Currency (spec `04-buy-with-sell-for.md`)
 
 | #   | Topic        | Decision                                                                                                      |
 | --- | ------------ | ------------------------------------------------------------------------------------------------------------- |
@@ -52,6 +52,16 @@
 | Q33 | Item scope   | All 14 exchange categories.                                                                                   |
 | Q34 | Pair history | Store daily per-pair CSV on the `data` branch (not used by v1 UI).                                            |
 | Q35 | Rounding     | Whole units: round paid amount up, show waste and a "same price buys N'" hint; verdict uses real costs.       |
+
+### Sell For (2026-10-29)
+
+| #   | Topic     | Decision                                                                                                                |
+| --- | --------- | ----------------------------------------------------------------------------------------------------------------------- |
+| X1  | Names     | Cheapest Currency renamed **Buy With** (`buy-with`); its selling twin is **Sell For** (`sell-for`). Old path redirects. |
+| X2  | Engine    | One engine `bestPair` with a side (`packages/shared/src/best-pair/`), one page component (`tools/exchange-pair/`).      |
+| X3  | Sell rate | Same per-pair rate as buying (poe.ninja has no bid/ask); received amount rounded **down** to whole units.               |
+| X4  | Verdict   | Same thresholds as buying: next pair pays ≥ 5 % less and the chosen pair trades ≥ 1 div/day (`pairMinVolume`).          |
+| X5  | Saved     | Recent / favourites kept per tool; Buy With reads the old `cheapest-currency` lists until it saves its own.             |
 
 ### Implementation decisions (M2a)
 

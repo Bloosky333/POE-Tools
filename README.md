@@ -23,7 +23,7 @@ Repository layout: `apps/web` (site), `packages/shared` (shared code and engines
 - [Tool #1 — Currency Speculation Advisor](docs/specs/01-currency-speculation.md)
 - [Tool backlog](docs/specs/02-backlog.md)
 - [poe.ninja API — verified facts](docs/specs/03-poe-ninja-api.md)
-- [Cheapest Currency](docs/specs/04-cheapest-currency.md)
+- [Buy With / Sell For](docs/specs/04-buy-with-sell-for.md)
 - [Currency Flipping](docs/specs/04-currency-flipping.md)
 - [GGG currency-exchange feed — verified facts](docs/specs/05-ggg-exchange-api.md)
 - [Sell Now](docs/specs/06-sell-now.md)

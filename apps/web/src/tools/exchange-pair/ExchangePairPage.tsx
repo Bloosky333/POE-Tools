@@ -2,12 +2,13 @@ import {
   CURRENCY_NAMES,
   CURRENCY_SHORT,
   ECONOMY,
-  cheapest,
-  cheapestSettingsFor,
+  bestPair,
+  bestPairSettingsFor,
   getLeague,
-  type CheapestResult,
+  type BestPairResult,
   type CurrentItem,
-  type PayOption,
+  type PairOption,
+  type PairSide,
 } from '@poe-tools/shared';
 import { useMemo, useState } from 'react';
 import { fetchCurrent, fetchPairs, useAsync } from '../../lib/data.ts';
@@ -45,14 +46,70 @@ import {
 /** A daily quote older than this is flagged as stale. */
 const STALE_MS = 2 * 86_400_000;
 
-export default function CheapestCurrencyPage() {
+/** Wording of each side; the two tools differ only in it. */
+const SIDES: Record<
+  PairSide,
+  {
+    tool: string;
+    title: string;
+    description: string;
+    /** "Pay with Exalted Orb" / "Sell for Exalted Orb". */
+    verb: string;
+    currencyLabel: string;
+    amountLabel: string;
+    amountTitle: string;
+    valueLabel: string;
+    valueTitle: string;
+    roundingTitle: string;
+    /** Saving / extra proceeds vs the next and the worst option. */
+    edge: (next: number, worst: number) => string;
+  }
+> = {
+  buy: {
+    tool: 'buy-with',
+    title: 'Buy With',
+    description: 'Which currency to pay with for an item on the exchange',
+    verb: 'Pay with',
+    currencyLabel: 'Pay with',
+    amountLabel: 'Hand over',
+    amountTitle: 'Whole units of the currency to pay',
+    valueLabel: 'Cost',
+    valueTitle: "Real cost of what you hand over, at today's rate",
+    roundingTitle: 'Paid beyond the exact price because the exchange trades whole units',
+    edge: (next, worst) =>
+      `${next} % cheaper than the next option, ${worst} % than the most expensive.`,
+  },
+  sell: {
+    tool: 'sell-for',
+    title: 'Sell For',
+    description: 'Which currency to ask for when selling an item on the exchange',
+    verb: 'Sell for',
+    currencyLabel: 'Sell for',
+    amountLabel: 'Receive',
+    amountTitle: 'Whole units of the currency to ask for',
+    valueLabel: 'Worth',
+    valueTitle: "Real value of what you receive, at today's rate",
+    roundingTitle: 'Not received because the exchange trades whole units',
+    // 100 % less = not even one whole unit at this quantity.
+    edge: (next, worst) =>
+      next === 100
+        ? 'The other currencies pay less than one whole unit for this quantity.'
+        : `The next option pays ${next} % less, the worst ${
+            worst === 100 ? 'less than one whole unit' : `${worst} % less`
+          }.`,
+  },
+};
+
+export function ExchangePairPage({ side }: { side: PairSide }) {
+  const text = SIDES[side];
   const [params, update] = useViewParams();
   const { settings } = useSettings();
   const { game } = settings;
   const league = getLeague(settings.leagueId);
   const economy = ECONOMY[game];
 
-  const data = useAsync(`cheapest:${game}:${settings.leagueId}`, async () => {
+  // Shared by both sides: the same files, loaded once.
+  const data = useAsync(`exchange-pair:${game}:${settings.leagueId}`, async () => {
     if (!league) throw new Error('No league selected');
     const [current, pairs] = await Promise.all([
       fetchCurrent(game, league.id),
@@ -64,11 +121,14 @@ export default function CheapestCurrencyPage() {
   const unit = unitInfo(game, current);
 
   // Recent lookups and favourites of the selected game.
-  const [stored, setStored] = useState(() => ({ game, saved: loadSaved(game) }));
-  const saved = stored.game === game ? stored.saved : loadSaved(game);
+  const [stored, setStored] = useState(() => ({
+    key: `${side}:${game}`,
+    saved: loadSaved(text.tool, game),
+  }));
+  const saved = stored.key === `${side}:${game}` ? stored.saved : loadSaved(text.tool, game);
   const save = (next: Saved) => {
-    setStored({ game, saved: next });
-    storeSaved(game, next);
+    setStored({ key: `${side}:${game}`, saved: next });
+    storeSaved(text.tool, game, next);
   };
 
   const items = useMemo(
@@ -85,15 +145,16 @@ export default function CheapestCurrencyPage() {
     () => searchItems(allMatches, '', economy.unit, params.type),
     [allMatches, params.type, economy.unit],
   );
-  const result: CheapestResult | null =
+  const result: BestPairResult | null =
     item && data.status === 'ready'
-      ? cheapest({
+      ? bestPair({
+          side,
           quotes: data.data.pairs.items[item.id] ?? {},
           quantity: params.quantity,
           unit: economy.unit,
           rates: data.data.current.rates,
           currencies: economy.hubs,
-          settings: cheapestSettingsFor(game),
+          settings: bestPairSettingsFor(game),
         })
       : null;
 
@@ -107,8 +168,8 @@ export default function CheapestCurrencyPage() {
   return (
     <section className="space-y-5">
       <PageHeader
-        title="Cheapest Currency"
-        description={`Which currency to pay with on the exchange: ${economy.hubs
+        title={text.title}
+        description={`${text.description}: ${economy.hubs
           .map((h) => CURRENCY_NAMES[h])
           .join(', ')}, compared in whole units at today's rates.`}
       />
@@ -155,7 +216,7 @@ export default function CheapestCurrencyPage() {
               quantity={params.quantity}
               result={result}
               unit={unit}
-              minPairVolume={economy.payMinVolume}
+              minPairVolume={economy.pairMinVolume}
               favourite={saved.favourites.includes(item.id)}
               onToggleFavourite={() => save(toggleFavourite(saved, item.id))}
               current={data.data.current}
@@ -238,17 +299,18 @@ function SavedItems({
   );
 }
 
-const REASONS: Record<NonNullable<CheapestResult['reason']>, string> = {
+const REASONS: Record<NonNullable<BestPairResult['reason']>, string> = {
   'single-pair': 'Only one currency has a rate for this item: nothing to compare.',
-  'small-difference': 'No meaningful difference: pay with whatever you have.',
-  'low-volume': 'The cheapest pair barely trades: its rate may not be available.',
-  'unknown-volume': 'The cheapest pair has no daily volume yet: its rate may not be available.',
+  'small-difference': 'No meaningful difference: use whichever currency suits you.',
+  'low-volume': 'The best pair barely trades: its rate may not be available.',
+  'unknown-volume': 'The best pair has no daily volume yet: its rate may not be available.',
+  'too-few': 'Worth less than one whole unit of every currency: sell more at once.',
 };
 
 function Result(props: {
   item: CurrentItem;
   quantity: number;
-  result: CheapestResult;
+  result: BestPairResult;
   unit: UnitInfo;
   minPairVolume: number;
   favourite: boolean;
@@ -256,6 +318,7 @@ function Result(props: {
   current: Parameters<typeof currencyView>[1];
 }) {
   const { item, quantity, result, unit } = props;
+  const text = SIDES[result.side];
   const now = useNow();
   const { verdict } = result;
   const partial = result.options.every((o) => o.quote.source === 'hourly');
@@ -264,10 +327,10 @@ function Result(props: {
     null,
   );
 
-  const columns: Column<PayOption, string>[] = [
+  const columns: Column<PairOption, string>[] = [
     {
       id: 'currency',
-      label: 'Pay with',
+      label: text.currencyLabel,
       render: (o) => (
         <ItemCell
           icon={currencyView(o.currency, props.current).icon}
@@ -277,13 +340,13 @@ function Result(props: {
       ),
     },
     {
-      id: 'pay',
-      label: 'Hand over',
+      id: 'amount',
+      label: text.amountLabel,
       align: 'right',
-      title: 'Whole units of the currency to pay',
+      title: text.amountTitle,
       render: (o) => (
         <Amount
-          value={o.pay}
+          value={o.amount}
           unit={currencyView(o.currency, props.current)}
           secondary={false}
           whole
@@ -291,35 +354,24 @@ function Result(props: {
       ),
     },
     {
-      id: 'cost',
-      label: 'Cost',
+      id: 'value',
+      label: text.valueLabel,
       align: 'right',
-      title: `Real cost of what you hand over, in ${unit.id} at today's rate`,
-      render: (o) => <Amount value={o.cost} unit={unit} />,
+      title: `${text.valueTitle}, in ${unit.id}`,
+      render: (o) => <Amount value={o.value} unit={unit} />,
     },
     {
       id: 'each',
       label: 'Per item',
       align: 'right',
-      render: (o) => <Amount value={o.unitPrice} unit={unit} secondary={false} />,
+      render: (o) => <Amount value={o.unitValue} unit={unit} secondary={false} />,
     },
     {
-      id: 'waste',
+      id: 'rounding',
       label: 'Rounding',
       align: 'right',
-      title: 'Paid beyond the exact price because the exchange trades whole units',
-      render: (o) =>
-        o.cleanQuantity > quantity ? (
-          <span className="text-xs text-muted">
-            same price buys <span className="font-medium text-fg">{o.cleanQuantity}</span>
-          </span>
-        ) : o.waste > 0.005 ? (
-          <span className="text-xs text-muted">
-            +{formatAmount(o.waste, o.currency)} {CURRENCY_SHORT[o.currency]}
-          </span>
-        ) : (
-          <span className="text-xs text-subtle">exact</span>
-        ),
+      title: text.roundingTitle,
+      render: (o) => <Rounding option={o} side={result.side} quantity={quantity} />,
     },
     {
       id: 'volume',
@@ -385,7 +437,7 @@ function Result(props: {
         <p className="text-sm">
           {verdict ? (
             <Badge tone="gain" icon="✓">
-              Pay with {CURRENCY_NAMES[verdict.currency]}
+              {text.verb} {CURRENCY_NAMES[verdict.currency]}
             </Badge>
           ) : (
             <Badge tone="neutral" icon="=">
@@ -394,9 +446,10 @@ function Result(props: {
           )}{' '}
           <span className="text-muted">
             {verdict
-              ? `${Math.round(verdict.savingVsNext * 100)} % cheaper than the next option, ${Math.round(
-                  verdict.savingVsWorst * 100,
-                )} % than the most expensive.`
+              ? text.edge(
+                  Math.round(verdict.edgeVsNext * 100),
+                  Math.round(verdict.edgeVsWorst * 100),
+                )
               : result.reason
                 ? REASONS[result.reason]
                 : 'No rate known for this item.'}
@@ -422,4 +475,37 @@ function Result(props: {
       )}
     </Panel>
   );
+}
+
+/** Whole-unit rounding of an option: a cleaner quantity when there is one, else the loss. */
+function Rounding({
+  option: o,
+  side,
+  quantity,
+}: {
+  option: PairOption;
+  side: PairSide;
+  quantity: number;
+}) {
+  if (side === 'sell' && o.amount === 0)
+    return (
+      <span className="text-xs text-muted">
+        sell at least <span className="font-medium text-fg">{o.cleanQuantity}</span>
+      </span>
+    );
+  if (o.cleanQuantity !== quantity)
+    return (
+      <span className="text-xs text-muted">
+        {side === 'buy' ? 'same price buys' : 'same amount for'}{' '}
+        <span className="font-medium text-fg">{o.cleanQuantity}</span>
+      </span>
+    );
+  if (o.rounding > 0.005)
+    return (
+      <span className="text-xs text-muted">
+        {side === 'buy' ? '+' : '−'}
+        {formatAmount(o.rounding, o.currency)} {CURRENCY_SHORT[o.currency]}
+      </span>
+    );
+  return <span className="text-xs text-subtle">exact</span>;
 }

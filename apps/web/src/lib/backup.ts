@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 /*
  * App-wide backup (spec 00 §3, local store): everything the app keeps in this browser
- * (settings, crafting recipes, Cheapest Currency recents and favourites) as one JSON file,
+ * (settings, crafting recipes, Buy With / Sell For recents and favourites) as one JSON file,
  * to move to another browser. Each tool still validates its own data when it loads it.
  */
 
