@@ -1,4 +1,4 @@
-import type { HistoryPoint } from '@poe-tools/shared';
+import { relativeDay, type HistoryPoint } from '@poe-tools/shared';
 import { useId, useState, type PointerEvent } from 'react';
 import { formatAmount, formatDiv } from '../lib/format.ts';
 
@@ -180,7 +180,10 @@ export function PriceChart(props: Props) {
               transform: x(hoverDay) > W / 2 ? 'translateX(calc(-100% - 8px))' : 'translateX(8px)',
             }}
           >
-            <div className="font-medium">Day {hoverDay}</div>
+            <div className="font-medium">
+              Day {hoverDay}
+              <span className="font-normal text-muted"> · {relativeDay(hoverDay, today)}</span>
+            </div>
             {hoverRef && (
               <div>
                 {props.referenceLabel}: {fmt(hoverRef[1])} {unit.short}

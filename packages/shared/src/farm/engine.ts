@@ -5,6 +5,7 @@ import { liquidityScore, similarity, type ConfidenceBreakdown } from '../specula
 import { confidenceOf, formatPct as pct, launchPhase, median } from '../scoring.ts';
 import { Series } from '../speculation/series.ts';
 import { farmRole } from './mechanics.ts';
+import { formatDays } from '../time.ts';
 
 /*
  * What to Farm engine (spec 09): groups liquid exchange items by league mechanic and judges
@@ -278,7 +279,7 @@ function signalOf(
     if (outlook !== null && outlook <= 1 - settings.avoidDrop) {
       verdict = 'avoid';
       reasons.push(
-        `Last league its loot fell ${pct(outlook - 1)} vs the market by day ${outlookDay}`,
+        `Last league its loot fell ${pct(outlook - 1)} vs the market over the next ${formatDays((outlookDay ?? d) - d)}`,
       );
     } else if (falling) {
       verdict = 'avoid';
@@ -288,7 +289,7 @@ function signalOf(
     } else if (outlook !== null && outlook >= 1 + settings.holdRise) {
       verdict = 'farm-hold';
       reasons.push(
-        `Last league its loot rose ${pct(outlook - 1)} vs the market by day ${outlookDay}: farm now, sell later`,
+        `Last league its loot rose ${pct(outlook - 1)} vs the market over the next ${formatDays((outlookDay ?? d) - d)}: farm now, sell later`,
       );
     } else if (marketSize >= settings.minMarket) {
       verdict = 'farm-sell';

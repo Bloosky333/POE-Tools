@@ -9,6 +9,7 @@ import {
 } from '../speculation/engine.ts';
 import { confidenceOf, formatPct as pct, launchPhase, median } from '../scoring.ts';
 import { Series } from '../speculation/series.ts';
+import { formatDays } from '../time.ts';
 
 /*
  * Sell Now engine (spec 06): flags items to sell because last league's curve peaks here
@@ -227,15 +228,15 @@ export function sellSignal(input: SellInput): SellSignal {
   }
   if (reference && (peakNow || peakAhead)) {
     signals.push('peak');
-    const drop = `then fell ${pct(reference.change - 1)} by day ${reference.horizonDay}`;
+    const drop = `then fell ${pct(reference.change - 1)} over the next ${formatDays(reference.horizonDay - reference.peakDay)}`;
     if (peakAhead) {
       if (verdict === 'hold') verdict = 'sell-soon';
       reasons.push(
-        `Last league peaked on day ${reference.peakDay} (${pct(reference.peakPrice / reference.priceToday - 1)} from today), ${drop}`,
+        `Last league peaked ${formatDays(reference.peakDay - d)} later (${pct(reference.peakPrice / reference.priceToday - 1)} from today), ${drop}`,
       );
     } else {
       verdict = 'sell-now';
-      reasons.push(`Last league peaked around day ${d}, ${drop}`);
+      reasons.push(`Last league peaked around this point, ${drop}`);
     }
   }
   const sellDay =

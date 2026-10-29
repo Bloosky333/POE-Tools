@@ -1,4 +1,4 @@
-import { ECONOMY } from '@poe-tools/shared';
+import { ECONOMY, relativeDay } from '@poe-tools/shared';
 import { Link } from 'react-router';
 import { formatMultiplier } from '../lib/format.ts';
 import { ActionBadge } from '../tools/currency-speculation/ActionBadge.tsx';
@@ -65,7 +65,7 @@ export function HomePage() {
 function TopOpportunities() {
   const { settings } = useSettings();
   const economy = ECONOMY[settings.game];
-  const { data, suggestions, unit, reference } = useSuggestions(MODE, economy.minVolume);
+  const { data, suggestions, unit, reference, today } = useSuggestions(MODE, economy.minVolume);
   if (data.status !== 'ready') return null;
   const top = suggestions
     .filter((s) => (s.action === 'buy' || s.action === 'wait') && s.item.price >= economy.minPrice)
@@ -96,7 +96,9 @@ function TopOpportunities() {
               <ActionBadge
                 action={s.action}
                 detail={
-                  s.action === 'wait' && s.reference ? `day ${s.reference.buyDay}` : undefined
+                  s.action === 'wait' && s.reference
+                    ? relativeDay(s.reference.buyDay, today)
+                    : undefined
                 }
               />
               <Amount value={s.item.price} unit={unit} className="w-20 text-sm" />

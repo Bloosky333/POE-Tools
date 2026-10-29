@@ -1,4 +1,4 @@
-import type { FarmSignal } from '@poe-tools/shared';
+import { relativeDay, type FarmSignal } from '@poe-tools/shared';
 import { Link } from 'react-router';
 import { formatPercent } from '../../lib/format.ts';
 import type { UnitInfo } from '../../lib/unit.ts';
@@ -139,7 +139,11 @@ export function FarmDetail(props: Props) {
           {pct(s.trend)}
         </StatCard>
         <StatCard
-          label={s.outlookDay === null ? 'Last league' : `Last league · day ${s.outlookDay}`}
+          label={
+            s.outlookDay === null
+              ? 'Last league'
+              : `Last league · ${relativeDay(s.outlookDay, props.today)}`
+          }
           tone={tone(s.outlook)}
         >
           {pct(s.outlook)}

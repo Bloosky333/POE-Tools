@@ -1,4 +1,9 @@
-import { EXCHANGE_TYPE_LABELS, type HistoryPoint, type SellSignal } from '@poe-tools/shared';
+import {
+  EXCHANGE_TYPE_LABELS,
+  relativeDay,
+  type HistoryPoint,
+  type SellSignal,
+} from '@poe-tools/shared';
 import { formatPercent } from '../../lib/format.ts';
 import {
   DataTable,
@@ -41,8 +46,8 @@ export function SellTable({ rows, params, currentHistory, today, unit, onSort, o
       id: 'verdict',
       label: 'Verdict',
       sortKey: 'sellDay',
-      title: 'Sell now, or sell soon around the given league day',
-      render: (s) => <VerdictBadge signal={s} />,
+      title: 'Sell now, or sell soon in the given number of days',
+      render: (s) => <VerdictBadge signal={s} today={today} />,
     },
     {
       id: 'price',
@@ -105,7 +110,10 @@ export function SellTable({ rows, params, currentHistory, today, unit, onSort, o
         s.reference ? (
           <span className="whitespace-nowrap">
             <Change value={s.reference.change - 1} />
-            <span className="text-xs text-subtle"> by day {s.reference.horizonDay}</span>
+            <span className="text-xs text-subtle">
+              {' '}
+              {relativeDay(s.reference.horizonDay, today)}
+            </span>
           </span>
         ) : (
           <span className="text-subtle">–</span>

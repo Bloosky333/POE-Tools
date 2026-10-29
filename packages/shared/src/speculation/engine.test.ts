@@ -99,7 +99,7 @@ describe('suggest', () => {
     expect(s.reference?.multiplier).toBeCloseTo(0.95);
     expect(s.reference?.multiplierFromBuy).toBeCloseTo(95 / 80);
     expect(s.action).toBe('avoid');
-    expect(s.reasons.join(' ')).toMatch(/Even bought at its day-15 dip: only ×1\.19/);
+    expect(s.reasons.join(' ')).toMatch(/Even bought at its dip in 5 days: only ×1\.19/);
     // A 5 % loss is within the default band: no call.
     expect(run(POE2.avoidDrop).action).toBe('neutral');
   });
