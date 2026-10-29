@@ -182,6 +182,15 @@
 | R12 | Speculation AVOID    | AVOID when holding from today lost > 5 % (`avoidDrop`), unless BUY NOW or WAIT (dip entry ≥ ×1.3) applies; was: only when even the dip entry lost. Backtest (`backtest`, liquid items, days 7+): the items that move from NEUTRAL to AVOID did ×0.92 vs the market after 14 days (62 % under it) and ×0.80 after 30 d in PoE 2 (FR vs RoA); ×0.97 / ×0.96 in PoE 1 (Allflame vs Mirage); ~×0.98 after 7 d. The 5 % band gives the same accuracy with ~10–15 % fewer calls. |
 | R13 | Days in the UI       | Upcoming days are shown relative to today ("sell soon · in 3 days", "now → in 12 days", "over the next 14 days"), not as league day numbers; the current league day stays in the header and stat tiles, and the chart hover shows both.                                                                                                                                                                                                                                    |
 
+## Builds (`10-builds.md`)
+
+| #   | Topic      | Decision                                                                                        |
+| --- | ---------- | ----------------------------------------------------------------------------------------------- |
+| B1  | Fields     | Name, ascendancy, links (URL + optional label); nothing else in v1.                             |
+| B2  | Ascendancy | Free text with per-game suggestions (new ascendancies arrive with patches).                     |
+| B3  | Links      | http(s) only (`javascript:` and the like refused); site badge from the host; open in a new tab. |
+| B4  | Storage    | Per game in `localStorage`, moved with the app-wide backup (R10); no separate import/export.    |
+
 ## Still open
 
 - Positions tracker, budget basket and in-app alerts (Q12–Q14, M1d): not built yet.

@@ -1,5 +1,6 @@
 import { lazy } from 'react';
 import {
+  BookIcon,
   CoinsIcon,
   HammerIcon,
   PickaxeIcon,
@@ -89,6 +90,17 @@ export const TOOLS: readonly ToolDefinition[] = [
     status: 'beta',
     path: 'tools/crafting-recipes',
     component: lazy(() => import('./crafting-recipes/CraftingRecipesPage.tsx')),
+  },
+  {
+    id: 'builds',
+    icon: BookIcon,
+    name: 'Builds',
+    description: 'Your builds with their ascendancy and links to guides, videos and planners.',
+    category: 'misc',
+    games: ['poe2', 'poe1'],
+    status: 'beta',
+    path: 'tools/builds',
+    component: lazy(() => import('./builds/BuildsPage.tsx')),
   },
 ];
 
