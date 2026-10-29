@@ -12,11 +12,11 @@ describe('backup', () => {
     const text = JSON.stringify(createBackup(localStorage, new Date('2026-10-28T00:00:00Z')));
 
     localStorage.clear();
-    localStorage.setItem('poe-tools:cheapest-currency:poe2', '{"recent":["x"]}');
+    localStorage.setItem('poe-tools:buy-with:poe2', '{"recent":["x"]}');
     expect(restoreBackup(parseBackup(text))).toBe(2);
     expect(localStorage.getItem('poe-tools:settings')).toBe('{"game":"poe1"}');
     expect(localStorage.getItem('poe-tools:crafting-recipes:poe2')).toBe('[{"id":"r"}]');
-    expect(localStorage.getItem('poe-tools:cheapest-currency:poe2')).toBe('{"recent":["x"]}');
+    expect(localStorage.getItem('poe-tools:buy-with:poe2')).toBe('{"recent":["x"]}');
     expect(localStorage.getItem('other-app')).toBeNull();
   });
 

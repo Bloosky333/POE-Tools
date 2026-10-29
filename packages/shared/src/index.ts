@@ -6,6 +6,6 @@ export * from './scoring.ts';
 export * from './speculation/index.ts';
 export * from './sell-now/index.ts';
 export * from './flipping/index.ts';
-export * from './cheapest/index.ts';
+export * from './best-pair/index.ts';
 export * from './crafting/index.ts';
 export * from './farm/index.ts';

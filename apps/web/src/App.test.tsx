@@ -6,11 +6,12 @@ import { SettingsProvider } from './lib/SettingsProvider.tsx';
 
 function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
-  return render(
+  render(
     <SettingsProvider>
       <RouterProvider router={router} />
     </SettingsProvider>,
   );
+  return router;
 }
 
 describe('App shell', () => {
@@ -27,6 +28,15 @@ describe('App shell', () => {
     renderAt('/tools/currency-speculation');
     expect(await screen.findByRole('heading', { name: 'Currency Speculation' })).toBeDefined();
     expect(screen.getByText('Runes of Aldur')).toBeDefined();
+  });
+
+  it('sends the old Cheapest Currency path to Buy With, lookup kept', async () => {
+    const router = renderAt('/tools/cheapest-currency?item=x&qty=3');
+    expect(await screen.findByRole('heading', { name: 'Buy With' })).toBeDefined();
+    expect(router.state.location).toMatchObject({
+      pathname: '/tools/buy-with',
+      search: '?item=x&qty=3',
+    });
   });
 
   it('shows a not-found page for unknown routes', () => {

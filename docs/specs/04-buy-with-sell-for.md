@@ -1,8 +1,14 @@
-# Tool #2 — Cheapest Currency (v1.0 — agreed)
+# Tool #2 — Buy With / Sell For (v1.1)
 
-Games: **PoE 2** and **PoE 1** (pay currencies = the game's hubs, `07-poe1.md` §5.3). Tool id:
-`cheapest-currency`, status beta.
-Category: economy. Decisions are logged in [`open-questions.md`](./open-questions.md) (Q25–Q35).
+Two tools on one engine and one page, one per side of the trade:
+
+- **Buy With** (id `buy-with`, formerly _Cheapest Currency_ `cheapest-currency`, whose path
+  redirects): which currency to pay with. §§1–4.
+- **Sell For** (id `sell-for`): which currency to ask for when selling. §6.
+
+Games: **PoE 2** and **PoE 1** (currencies = the game's hubs, `07-poe1.md` §5.3). Status beta.
+Category: economy. Decisions are logged in [`open-questions.md`](./open-questions.md) (Q25–Q35,
+X1–X5).
 
 ## 1. Goal
 
@@ -53,7 +59,7 @@ market-wide spread table, price charts, home-page widget, alerts.
   `poe2/<league>/pairs/<ExchangeType>.csv` — `date,item,pair,rate,volume_div`
   (not used by the v1 UI; enables a later chart/backtest of gap persistence).
 
-## 3. Computation (`packages/shared`, Vitest-covered)
+## 3. Computation (`packages/shared/src/best-pair/`, Vitest-covered)
 
 For item X, quantity N, pay currency C ∈ {divine, exalted, chaos} with rate `r_C`
 (C per item) and cross rate `x_C` (C per divine, `x_divine = 1`):
@@ -72,7 +78,7 @@ For item X, quantity N, pay currency C ∈ {divine, exalted, chaos} with rate `r
 
 ## 4. UI
 
-- Route `/tools/cheapest-currency`; built from `apps/web/src/ui/` per
+- Route `/tools/buy-with` (`/tools/cheapest-currency` redirects, query kept); built from `apps/web/src/ui/` per
   `docs/ui-guidelines.md`.
 - **Inputs**: item search (`/` focuses, category filter, icons), quantity (default 1).
   URL reflects item + quantity (shareable).
@@ -80,8 +86,9 @@ For item X, quantity N, pay currency C ∈ {divine, exalted, chaos} with rate `r
   per pair: native amount to hand over, cost in divine, effective unit price, waste,
   clean-quantity hint, daily volume, data age. Low-volume or stale legs carry a warning
   icon. Partial-data items show the low-liquidity label.
-- **Recent & favourites**: localStorage list (recent lookups, star to pin); one click
-  re-runs the lookup. Included in the app's JSON export/import.
+- **Recent & favourites**: localStorage list per tool (recent lookups, star to pin); one
+  click re-runs the lookup. Included in the app's JSON export/import. Buy With reads the
+  old `cheapest-currency` lists until it first saves its own.
 - Footer line: "Rates as of …" (oldest leg used).
 
 ## 5. Milestone
@@ -90,3 +97,26 @@ For item X, quantity N, pay currency C ∈ {divine, exalted, chaos} with rate `r
 | ---- | ------------------------------------------------------------------------------ |
 | M2a  | Data job: confirm `rate` direction, publish per-pair rates, daily per-pair CSV |
 | M2b  | Shared computation + tests; tool page (lookup, result card, recent/favourites) |
+
+## 6. Sell For
+
+Same question from the other side: **"I want to sell N of item X on the exchange — should I
+ask for divine, exalted or chaos?"** Same data (§2): poe.ninja gives one rate per pair, not
+separate bid and ask, so the rate a seller gets is assumed equal to the rate a buyer pays.
+Same engine (`bestPair({ side: 'sell' })`), page and thresholds.
+
+For currency C with rate `r_C` (C per item) and cross rate `x_C`:
+
+1. **Whole units**: the seller receives `get_C = floor(N × r_C)` units of C (asking for more
+   than the market rate does not fill); the fraction `N × r_C − get_C` is lost.
+2. **Real proceeds in the game's unit**: `value_C = get_C / x_C`; per item `value_C / N`.
+3. **Clean quantity hint**: the smallest N' ≤ N that still gets `get_C`
+   (`ceil(get_C / r_C)`): "the same 2 div for 6 — keep one". When `get_C = 0`, the quantity
+   needed for one whole unit (`ceil(1 / r_C)`): "sell at least 209".
+4. **Verdict**: C\* = the pair with the highest `value_C`. Recommend "sell for C\*" only if
+   the next pair pays **≥ 5 %** less (`1 − value_next / value_C*`) and pair C\* traded
+   **≥ 1 div/day** (PoE 1: 200 c). When every pair yields 0 whole units: no verdict, "sell
+   more at once".
+
+UI: route `/tools/sell-for`; the Buy With page with "Receive" / "Worth" columns and the
+rounding shown as units not received.
