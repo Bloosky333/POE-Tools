@@ -49,12 +49,17 @@ export type NoVerdictReason =
   | 'small-difference'
   | 'low-volume'
   | 'unknown-volume'
+  /** No pair traded at all over the last day (volume 0). */
+  | 'no-trades'
   /** Selling: the quantity is worth less than one whole unit of every currency. */
   | 'too-few';
 
 export interface BestPairResult {
   side: PairSide;
-  /** Options sorted from best to worst (cheapest when buying, highest proceeds when selling). */
+  /**
+   * Options sorted from best to worst (cheapest when buying, highest proceeds when selling),
+   * pairs that did not trade at all last (never recommended: their rate is not available).
+   */
   options: PairOption[];
   verdict: {
     currency: PayCurrency;
@@ -81,6 +86,9 @@ export interface BestPairInput {
   currencies: readonly PayCurrency[];
   settings: BestPairSettings;
 }
+
+/** A pair that did not trade at all over the last day (unknown volume is not "none"). */
+export const untraded = (option: PairOption): boolean => option.quote.volume === 0;
 
 /** Tolerance on whole-unit rounding (rates are rounded to 6 significant digits). */
 const EPSILON = 1e-9;
@@ -112,11 +120,17 @@ export function bestPair(input: BestPairInput): BestPairResult {
           : Math.ceil(Math.max(1, amount) / quote.rate - EPSILON),
     });
   }
-  options.sort((a, b) => (side === 'buy' ? a.value - b.value : b.value - a.value));
+  options.sort(
+    (a, b) =>
+      Number(untraded(a)) - Number(untraded(b)) ||
+      (side === 'buy' ? a.value - b.value : b.value - a.value),
+  );
 
-  const [best, next] = options;
-  const worst = options.at(-1);
-  if (!best) return { side, options, verdict: null, reason: null };
+  if (!options.length) return { side, options, verdict: null, reason: null };
+  const traded = options.filter((o) => !untraded(o));
+  const [best, next] = traded;
+  const worst = traded.at(-1);
+  if (!best) return { side, options, verdict: null, reason: 'no-trades' };
   if (best.amount === 0) return { side, options, verdict: null, reason: 'too-few' };
   if (!next || !worst) return { side, options, verdict: null, reason: 'single-pair' };
   // Buying: 1 − best/other (best is X % cheaper). Selling: 1 − other/best (other pays X % less).
