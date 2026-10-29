@@ -82,8 +82,13 @@ For item X, quantity N, pay currency C ∈ {divine, exalted, chaos} with rate `r
   `docs/ui-guidelines.md`.
 - **Inputs**: item search (`/` focuses, category filter, icons), quantity (default 1).
   URL reflects item + quantity (shareable).
-- **Result card**: verdict line (pay with C\*, saving vs next and vs worst), then one row
-  per pair: native amount to hand over, cost in divine, effective unit price, waste,
+- **Item list**: each item shows the recommended currency and the whole units to hand
+  over for the quantity (green ✓ badge); when no currency is meaningfully better, the
+  cheapest option in plain text (reason on hover).
+- **Result** in a side sheet (like the other tools' details; Escape / ✕ closes it):
+  verdict line (pay with C\*, saving vs next and vs worst), then one row per pair, the
+  recommended one marked "✓ Best" (or "≈ Cheapest" when nothing is meaningfully better),
+  each with how much worse it is than the best: native amount to hand over, cost in divine, effective unit price (when N > 1), waste,
   clean-quantity hint, daily volume, data age. Low-volume or stale legs carry a warning
   icon. Partial-data items show the low-liquidity label.
 - **Recent & favourites**: localStorage list per tool (recent lookups, star to pin); one

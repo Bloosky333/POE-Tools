@@ -9,11 +9,14 @@ export function Sheet({
   label,
   header,
   onClose,
+  wide = false,
   children,
 }: {
   label: string;
   header: ReactNode;
   onClose: () => void;
+  /** Room for a full-width table. */
+  wide?: boolean;
   children: ReactNode;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -42,7 +45,7 @@ export function Sheet({
         role="dialog"
         aria-modal="true"
         aria-label={label}
-        className="fixed inset-y-0 right-0 z-50 w-full max-w-2xl overflow-y-auto border-l border-line bg-surface shadow-2xl"
+        className={`fixed inset-y-0 right-0 z-50 w-full ${wide ? 'max-w-4xl' : 'max-w-2xl'} overflow-y-auto border-l border-line bg-surface shadow-2xl`}
       >
         <header className="flex items-start gap-3 border-b border-line p-5">
           <div className="min-w-0 flex-1">{header}</div>
