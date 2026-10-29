@@ -4,6 +4,7 @@ import {
   ECONOMY,
   bestPair,
   bestPairSettingsFor,
+  untraded,
   getLeague,
   type BestPairResult,
   type CurrentItem,
@@ -292,7 +293,7 @@ function BestChoice({
   children: ReactNode;
 }) {
   const best = result?.options[0];
-  if (!result || !best || best.amount === 0)
+  if (!result || !best || best.amount === 0 || untraded(best))
     return (
       <span title={result?.reason ? REASONS[result.reason] : 'No rate known for this item.'}>
         {children}
@@ -358,7 +359,8 @@ function SavedItems({
 }
 
 const REASONS: Record<NonNullable<BestPairResult['reason']>, string> = {
-  'single-pair': 'Only one currency has a rate for this item: nothing to compare.',
+  'single-pair': 'Only one currency has a traded rate for this item: nothing to compare.',
+  'no-trades': 'No pair traded over the last day: these rates may not be available.',
   'small-difference': 'No meaningful difference: use whichever currency suits you.',
   'low-volume': 'The best pair barely trades: its rate may not be available.',
   'unknown-volume': 'The best pair has no daily volume yet: its rate may not be available.',
@@ -404,7 +406,8 @@ function Result(props: {
           ) : (
             !verdict &&
             o === result.options[0] &&
-            result.options.length > 1 &&
+            result.reason !== 'single-pair' &&
+            !untraded(o) &&
             o.amount > 0 && (
               <Badge tone="neutral" icon="≈">
                 {result.side === 'buy' ? 'Cheapest' : 'Pays most'}
@@ -574,6 +577,12 @@ function VsBest({
   best: PairOption | undefined;
   side: PairSide;
 }) {
+  if (untraded(o))
+    return (
+      <span className="text-xs text-warn" title="This pair did not trade over the last day">
+        no trades
+      </span>
+    );
   if (!best || o === best) return <span className="text-xs text-subtle">—</span>;
   if (!(best.value > 0)) return <span className="text-xs text-subtle">—</span>;
   const pct = Math.round((Math.abs(o.value - best.value) / best.value) * 100);

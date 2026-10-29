@@ -58,6 +58,27 @@ describe('bestPair, buying (PoE 2, divine unit)', () => {
       'single-pair',
     );
   });
+
+  it('never recommends a pair that did not trade, and ranks it last', () => {
+    // 1,087 ex (1.36 div) looks cheapest but traded 0; then 15 chaos (1.5 div), 2 div.
+    const result = bestPair({
+      ...base,
+      quantity: 1,
+      quotes: { divine: quote(1.38715, 336), exalted: quote(1087, 0), chaos: quote(14.74, 103) },
+      rates: { exalted: 800, chaos: 10 },
+    });
+    expect(result.options.map((o) => o.currency)).toEqual(['chaos', 'divine', 'exalted']);
+    expect(result.verdict).toMatchObject({ currency: 'chaos' });
+    const alone = bestPair({
+      ...base,
+      quantity: 1,
+      quotes: { exalted: quote(70, 0), chaos: quote(2) },
+    });
+    expect(alone).toMatchObject({ verdict: null, reason: 'single-pair' });
+    expect(alone.options[0]?.currency).toBe('chaos');
+    const none = bestPair({ ...base, quantity: 1, quotes: { exalted: quote(70, 0) } });
+    expect(none).toMatchObject({ verdict: null, reason: 'no-trades' });
+  });
 });
 
 describe('bestPair, buying (PoE 1, chaos unit)', () => {

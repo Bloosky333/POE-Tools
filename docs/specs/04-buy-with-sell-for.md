@@ -74,7 +74,10 @@ For item X, quantity N, pay currency C ∈ {divine, exalted, chaos} with rate `r
    - pair C\* traded **≥ 1 div/day**.
 
    Otherwise: "no meaningful difference". Both thresholds are tunable in settings.
-   Pairs with no data are excluded; a single known pair yields no verdict.
+   Pairs with no data are excluded; a single known pair yields no verdict. Pairs that did
+   not trade at all over the last day (volume 0; unknown volume is not 0) are listed last
+   ("no trades") and never recommended, even when cheapest on paper: C\* and the
+   comparison are taken among the traded pairs only.
 
 ## 4. UI
 
