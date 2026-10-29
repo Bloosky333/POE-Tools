@@ -1,4 +1,4 @@
-import type { SellReason, SellSignal, SellVerdict } from '@poe-tools/shared';
+import { relativeDay, type SellReason, type SellSignal, type SellVerdict } from '@poe-tools/shared';
 import { StyledBadge, labelsOf, type BadgeStyle } from '../../ui/index.ts';
 
 const STYLES: Record<SellVerdict, BadgeStyle> = {
@@ -14,11 +14,11 @@ export const SIGNAL_LABELS: Record<SellReason, string> = {
   falling: 'Falling',
 };
 
-/** Verdict with its signals (Peak / Falling) or, for SELL SOON, the sell day. */
-export function VerdictBadge({ signal }: { signal: SellSignal }) {
+/** Verdict with its signals (Peak / Falling) or, for SELL SOON, when to sell ("in 3 days"). */
+export function VerdictBadge({ signal, today }: { signal: SellSignal; today: number }) {
   const detail =
     signal.verdict === 'sell-soon'
-      ? `day ${signal.sellDay}`
+      ? relativeDay(signal.sellDay ?? today, today)
       : signal.signals.map((s) => SIGNAL_LABELS[s]).join(' · ') || undefined;
   return <StyledBadge styles={STYLES} value={signal.verdict} detail={detail} />;
 }

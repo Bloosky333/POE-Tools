@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { leagueDay, leagueDayOfDate, utcDate } from './time.ts';
+import { formatDays, leagueDay, leagueDayOfDate, relativeDay, utcDate } from './time.ts';
 
 describe('time', () => {
   const start = '2026-09-04T20:00:00Z';
@@ -25,5 +25,14 @@ describe('calendar dates', () => {
     expect(leagueDayOfDate(start, '2026-09-05')).toBe(1);
     expect(leagueDayOfDate(start, '2026-10-23')).toBe(49);
     expect(leagueDayOfDate(start, '2026-09-03')).toBe(-1);
+  });
+
+  it('describes a league day relative to today', () => {
+    expect(relativeDay(12, 12)).toBe('today');
+    expect(relativeDay(13, 12)).toBe('tomorrow');
+    expect(relativeDay(17, 12.6)).toBe('in 5 days');
+    expect(relativeDay(11, 12)).toBe('yesterday');
+    expect(relativeDay(9, 12)).toBe('3 days ago');
+    expect(formatDays(1)).toBe('1 day');
   });
 });

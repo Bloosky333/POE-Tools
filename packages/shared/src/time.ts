@@ -21,3 +21,20 @@ export function leagueDayOfDate(startsAt: string, date: string): number {
   const start = Date.parse(`${startsAt.slice(0, 10)}T00:00:00Z`);
   return Math.round((Date.parse(`${date}T00:00:00Z`) - start) / DAY_MS);
 }
+
+/** "1 day", "5 days". */
+export function formatDays(days: number): string {
+  return `${days} day${days === 1 ? '' : 's'}`;
+}
+
+/**
+ * A league day relative to `today`, so readers need not know the current league day:
+ * "today", "tomorrow", "in 5 days" (or "yesterday", "5 days ago").
+ */
+export function relativeDay(day: number, today: number): string {
+  const delta = Math.round(day - Math.floor(today));
+  if (delta === 0) return 'today';
+  if (delta === 1) return 'tomorrow';
+  if (delta === -1) return 'yesterday';
+  return delta > 0 ? `in ${formatDays(delta)}` : `${formatDays(-delta)} ago`;
+}

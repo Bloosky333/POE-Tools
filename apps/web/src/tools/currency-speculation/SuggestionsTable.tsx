@@ -1,4 +1,9 @@
-import { EXCHANGE_TYPE_LABELS, type HistoryPoint, type Suggestion } from '@poe-tools/shared';
+import {
+  EXCHANGE_TYPE_LABELS,
+  relativeDay,
+  type HistoryPoint,
+  type Suggestion,
+} from '@poe-tools/shared';
 import { formatMultiplier, formatPercent } from '../../lib/format.ts';
 import { DataTable, Amount, ItemCell, ScoreMeter, Sparkline, type Column } from '../../ui/index.ts';
 import type { UnitInfo } from '../../lib/unit.ts';
@@ -43,7 +48,9 @@ export function SuggestionsTable({
       render: (s) => (
         <ActionBadge
           action={s.action}
-          detail={s.action === 'wait' && s.reference ? `day ${s.reference.buyDay}` : undefined}
+          detail={
+            s.action === 'wait' && s.reference ? relativeDay(s.reference.buyDay, today) : undefined
+          }
         />
       ),
     },
@@ -98,11 +105,11 @@ export function SuggestionsTable({
       label: 'Buy → sell',
       sortKey: 'sellDay',
       align: 'right',
-      title: 'Suggested buy and sell days (league day; the buy day is after a dip for WAIT)',
+      title: 'When to buy and sell, from today (the buy is after a dip for WAIT)',
       className: 'text-muted whitespace-nowrap',
       render: (s) =>
         s.reference
-          ? `${s.reference.buyDay > today ? `day ${s.reference.buyDay}` : 'now'} → day ${s.reference.sellDay}`
+          ? `${s.reference.buyDay > today ? relativeDay(s.reference.buyDay, today) : 'now'} → ${relativeDay(s.reference.sellDay, today)}`
           : '–',
     },
     {

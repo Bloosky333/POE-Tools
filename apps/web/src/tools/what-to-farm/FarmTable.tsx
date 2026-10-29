@@ -1,4 +1,4 @@
-import type { FarmSignal } from '@poe-tools/shared';
+import { relativeDay, type FarmSignal } from '@poe-tools/shared';
 import { Amount, DataTable, ScoreMeter, Sparkline, type Column, Change } from '../../ui/index.ts';
 import type { UnitInfo } from '../../lib/unit.ts';
 import type { SortKey, ViewParams } from './params.ts';
@@ -103,7 +103,10 @@ export function FarmTable({ rows, params, today, unit, onSort, onSelect }: Props
         ) : (
           <span className="whitespace-nowrap">
             <Change value={s.outlook} ratio />
-            <span className="text-xs text-subtle"> by day {s.outlookDay}</span>
+            <span className="text-xs text-subtle">
+              {' '}
+              {s.outlookDay !== null && relativeDay(s.outlookDay, today)}
+            </span>
           </span>
         ),
     },

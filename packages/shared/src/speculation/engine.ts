@@ -2,6 +2,7 @@ import { CURRENCY_SHORT, ECONOMY, type CoreCurrency, type Game } from '../games.
 import type { CurrentItem, HistoryPoint } from '../site-data.ts';
 import { MARKET_MIN_ITEMS, confidenceOf, launchPhase, median } from '../scoring.ts';
 import { Series } from './series.ts';
+import { formatDays, relativeDay } from '../time.ts';
 
 /*
  * Suggestion engine of the Currency Speculation Advisor (spec 01, §4).
@@ -228,22 +229,26 @@ export function suggest(input: EngineInput): Suggestion {
   if (dipAhead && expectedMultiplier >= settings.buyMultiplier) {
     action = 'wait';
     reasons.push(
-      `Dipped ${Math.round((1 - lowPrice / refToday) * 100)}% until day ${lowDay} last league, then ×${fmt(multiplierFromBuy)}`,
+      `Dipped ${Math.round((1 - lowPrice / refToday) * 100)}% over the next ${formatDays(lowDay - d)} last league, then ×${fmt(multiplierFromBuy)}`,
     );
   } else if (!dipAhead && expectedMultiplier >= settings.buyMultiplier) {
     action = liquid ? 'buy' : 'neutral';
-    reasons.push(`Rose ×${fmt(multiplier)} by day ${sellDay} last league`);
+    reasons.push(`Rose ×${fmt(multiplier)} over the next ${formatDays(sellDay - d)} last league`);
     if (!liquid)
       reasons.push(`Low volume (${fmt(item.volume)} ${CURRENCY_SHORT[settings.unit]}/day)`);
   } else if (multiplier < 1 - settings.avoidDrop) {
     action = 'avoid';
-    reasons.push(`Fell to ×${fmt(multiplier)} by day ${sellDay} last league`);
+    reasons.push(
+      `Fell to ×${fmt(multiplier)} over the next ${formatDays(sellDay - d)} last league`,
+    );
     if (dipAhead)
-      reasons.push(`Even bought at its day-${lowDay} dip: only ×${fmt(multiplierFromBuy)}`);
+      reasons.push(
+        `Even bought at its dip ${relativeDay(lowDay, d)}: only ×${fmt(multiplierFromBuy)}`,
+      );
   } else {
     action = 'neutral';
     reasons.push(
-      `×${fmt(dipAhead ? multiplierFromBuy : multiplier)} by day ${sellDay} last league`,
+      `×${fmt(dipAhead ? multiplierFromBuy : multiplier)} over the next ${formatDays(sellDay - d)} last league`,
     );
   }
   if (premium !== null && levelAdjustment < 1) {

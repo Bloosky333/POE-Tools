@@ -1,4 +1,9 @@
-import { EXCHANGE_TYPE_LABELS, type HistoryPoint, type SellSignal } from '@poe-tools/shared';
+import {
+  EXCHANGE_TYPE_LABELS,
+  relativeDay,
+  type HistoryPoint,
+  type SellSignal,
+} from '@poe-tools/shared';
 import { formatPercent } from '../../lib/format.ts';
 import {
   Amount,
@@ -45,7 +50,7 @@ export function SellDetail(props: Props) {
       }
     >
       <div className="rounded-lg bg-surface-2 p-3">
-        <VerdictBadge signal={s} />
+        <VerdictBadge signal={s} today={props.today} />
         <ul className="mt-2 space-y-0.5 text-sm text-muted">
           {s.reasons.map((reason) => (
             <li key={reason}>{reason}</li>
@@ -85,10 +90,13 @@ export function SellDetail(props: Props) {
             <StatCard label={`${props.referenceName} today`}>
               <Amount value={ref.priceToday} unit={unit} />
             </StatCard>
-            <StatCard label={`Last league peak · day ${ref.peakDay}`}>
+            <StatCard label={`Last league peak · ${relativeDay(ref.peakDay, props.today)}`}>
               <Amount value={ref.peakPrice} unit={unit} />
             </StatCard>
-            <StatCard label={`Last league · day ${ref.horizonDay}`} tone={tone(ref.change - 1)}>
+            <StatCard
+              label={`Last league · ${relativeDay(ref.horizonDay, props.today)}`}
+              tone={tone(ref.change - 1)}
+            >
               {pct(ref.change - 1)}
             </StatCard>
           </>

@@ -1,5 +1,6 @@
 import {
   EXCHANGE_TYPE_LABELS,
+  relativeDay,
   type HistoryPoint,
   type SellSignal,
   type Suggestion,
@@ -47,7 +48,7 @@ export function ItemDetail(props: Props) {
       <div className="rounded-lg bg-surface-2 p-3">
         <ActionBadge
           action={s.action}
-          detail={s.action === 'wait' && ref ? `day ${ref.buyDay}` : undefined}
+          detail={s.action === 'wait' && ref ? relativeDay(ref.buyDay, props.today) : undefined}
         />
         <ul className="mt-2 space-y-0.5 text-sm text-muted">
           {s.reasons.map((reason) => (
@@ -83,10 +84,12 @@ export function ItemDetail(props: Props) {
           <StatCard label={`${props.referenceName} today`}>
             <Amount value={ref.priceToday} unit={unit} />
           </StatCard>
-          <StatCard label={`Buy · day ${ref.buyDay}`}>
+          <StatCard
+            label={`Buy · ${ref.buyDay > props.today ? relativeDay(ref.buyDay, props.today) : 'now'}`}
+          >
             <Amount value={ref.buyPrice} unit={unit} />
           </StatCard>
-          <StatCard label={`Sell · day ${ref.sellDay}`}>
+          <StatCard label={`Sell · ${relativeDay(ref.sellDay, props.today)}`}>
             <Amount value={ref.sellPrice} unit={unit} />
           </StatCard>
           <StatCard label="Last league ×" tone={ref.multiplierFromBuy >= 1 ? 'gain' : 'loss'}>

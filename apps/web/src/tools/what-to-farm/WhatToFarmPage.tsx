@@ -1,4 +1,4 @@
-import { FARM_START_DAY, type FarmSignal } from '@poe-tools/shared';
+import { FARM_START_DAY, relativeDay, type FarmSignal } from '@poe-tools/shared';
 import { useMemo } from 'react';
 import { formatPercent } from '../../lib/format.ts';
 import { sortRows } from '../../lib/sort.ts';
@@ -47,8 +47,9 @@ export default function WhatToFarmPage() {
 
       {today < FARM_START_DAY ? (
         <Notice>
-          Waiting for data: verdicts start on day {FARM_START_DAY} of {league.name}, once a week of
-          prices shows how each mechanic&apos;s loot moves (today is day {Math.max(0, today)}).
+          Waiting for data: verdicts for {league.name} start{' '}
+          {relativeDay(FARM_START_DAY, Math.max(0, today))}, once a week of prices shows how each
+          mechanic&apos;s loot moves.
         </Notice>
       ) : (
         <>
