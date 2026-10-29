@@ -10,7 +10,7 @@ import {
   type PairOption,
   type PairSide,
 } from '@poe-tools/shared';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { fetchCurrent, fetchPairs, useAsync } from '../../lib/data.ts';
 import { formatAge, formatAmount } from '../../lib/format.ts';
 import { currencyView, unitInfo, type UnitInfo } from '../../lib/unit.ts';
@@ -27,9 +27,9 @@ import {
   ItemCell,
   LoadStatus,
   PageHeader,
-  Panel,
   Pill,
   SearchInput,
+  Sheet,
   TypeChips,
   type Column,
 } from '../../ui/index.ts';
@@ -145,11 +145,11 @@ export function ExchangePairPage({ side }: { side: PairSide }) {
     () => searchItems(allMatches, '', economy.unit, params.type),
     [allMatches, params.type, economy.unit],
   );
-  const result: BestPairResult | null =
-    item && data.status === 'ready'
+  const compare = (id: string): BestPairResult | null =>
+    data.status === 'ready'
       ? bestPair({
           side,
-          quotes: data.data.pairs.items[item.id] ?? {},
+          quotes: data.data.pairs.items[id] ?? {},
           quantity: params.quantity,
           unit: economy.unit,
           rates: data.data.current.rates,
@@ -157,9 +157,10 @@ export function ExchangePairPage({ side }: { side: PairSide }) {
           settings: bestPairSettingsFor(game),
         })
       : null;
+  const result = item ? compare(item.id) : null;
 
   const select = (id: string) => {
-    update({ item: id, q: '' });
+    update({ item: id });
     save(addRecent(saved, id));
   };
 
@@ -197,16 +198,24 @@ export function ExchangePairPage({ side }: { side: PairSide }) {
                 />
               </InlineField>
             </FilterBar>
-            {(params.q || !item) && (
-              <>
-                <TypeChips
-                  types={allMatches.map((i) => i.type)}
-                  value={params.type}
-                  onChange={(type) => update({ type })}
-                />
-                <ItemPicker items={matches} unit={unit} onSelect={select} />
-              </>
-            )}
+            <TypeChips
+              types={allMatches.map((i) => i.type)}
+              value={params.type}
+              onChange={(type) => update({ type })}
+            />
+            <ItemPicker
+              items={matches}
+              unit={unit}
+              side={side}
+              compare={compare}
+              current={data.data.current}
+              onSelect={select}
+            />
+            <p className="text-xs text-subtle">
+              <span className="text-gain">✓</span> recommended currency and the whole units to{' '}
+              {side === 'buy' ? 'pay' : 'ask'} for the quantity; plain amounts: no currency is
+              meaningfully better ({side === 'buy' ? 'cheapest' : 'best paying'} shown).
+            </p>
             <SavedItems saved={saved} items={items} onSelect={select} />
           </Card>
 
@@ -220,6 +229,7 @@ export function ExchangePairPage({ side }: { side: PairSide }) {
               favourite={saved.favourites.includes(item.id)}
               onToggleFavourite={() => save(toggleFavourite(saved, item.id))}
               current={data.data.current}
+              onClose={() => update({ item: null })}
             />
           )}
         </>
@@ -231,10 +241,16 @@ export function ExchangePairPage({ side }: { side: PairSide }) {
 function ItemPicker({
   items,
   unit,
+  side,
+  compare,
+  current,
   onSelect,
 }: {
   items: readonly CurrentItem[];
   unit: UnitInfo;
+  side: PairSide;
+  compare: (id: string) => BestPairResult | null;
+  current: Parameters<typeof currencyView>[1];
   onSelect: (id: string) => void;
 }) {
   if (!items.length) return <p className="text-sm text-muted">No matching item.</p>;
@@ -250,11 +266,53 @@ function ItemPicker({
             <div className="min-w-0 flex-1">
               <ItemCell icon={item.icon} name={item.name} size="sm" />
             </div>
-            <Amount value={item.price} unit={unit} secondary={false} className="text-muted" />
+            <BestChoice result={compare(item.id)} side={side} current={current}>
+              <Amount value={item.price} unit={unit} secondary={false} className="text-muted" />
+            </BestChoice>
           </button>
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * The recommended currency of a list row, with the whole units it takes; the market price
+ * (`children`) when no currency is meaningfully better.
+ */
+function BestChoice({
+  result,
+  side,
+  current,
+  children,
+}: {
+  result: BestPairResult | null;
+  side: PairSide;
+  current: Parameters<typeof currencyView>[1];
+  children: ReactNode;
+}) {
+  const best = result?.options[0];
+  if (!result || !best || best.amount === 0)
+    return (
+      <span title={result?.reason ? REASONS[result.reason] : 'No rate known for this item.'}>
+        {children}
+      </span>
+    );
+  const name = CURRENCY_NAMES[best.currency] ?? best.currency;
+  const amount = <Amount value={best.amount} unit={currencyView(best.currency, current)} whole />;
+  return result.verdict ? (
+    <span title={`${SIDES[side].verb} ${name}`}>
+      <Badge tone="gain" icon="✓">
+        {amount}
+      </Badge>
+    </span>
+  ) : (
+    <span
+      className="text-muted"
+      title={`${SIDES[side].verb} ${name}${result.reason ? ` · ${REASONS[result.reason]}` : ''}`}
+    >
+      {amount}
+    </span>
   );
 }
 
@@ -316,6 +374,7 @@ function Result(props: {
   favourite: boolean;
   onToggleFavourite: () => void;
   current: Parameters<typeof currencyView>[1];
+  onClose: () => void;
 }) {
   const { item, quantity, result, unit } = props;
   const text = SIDES[result.side];
@@ -332,11 +391,27 @@ function Result(props: {
       id: 'currency',
       label: text.currencyLabel,
       render: (o) => (
-        <ItemCell
-          icon={currencyView(o.currency, props.current).icon}
-          name={CURRENCY_NAMES[o.currency] ?? o.currency}
-          size="sm"
-        />
+        <span className="inline-flex items-center gap-2">
+          <ItemCell
+            icon={currencyView(o.currency, props.current).icon}
+            name={CURRENCY_NAMES[o.currency] ?? o.currency}
+            size="sm"
+          />
+          {o.currency === verdict?.currency ? (
+            <Badge tone="gain" icon="✓">
+              Best
+            </Badge>
+          ) : (
+            !verdict &&
+            o === result.options[0] &&
+            result.options.length > 1 &&
+            o.amount > 0 && (
+              <Badge tone="neutral" icon="≈">
+                {result.side === 'buy' ? 'Cheapest' : 'Pays most'}
+              </Badge>
+            )
+          )}
+        </span>
       ),
     },
     {
@@ -361,11 +436,25 @@ function Result(props: {
       render: (o) => <Amount value={o.value} unit={unit} />,
     },
     {
-      id: 'each',
-      label: 'Per item',
+      id: 'diff',
+      label: 'vs best',
       align: 'right',
-      render: (o) => <Amount value={o.unitValue} unit={unit} secondary={false} />,
+      title:
+        result.side === 'buy'
+          ? 'How much more this option costs than the cheapest'
+          : 'How much less this option pays than the best',
+      render: (o) => <VsBest option={o} best={result.options[0]} side={result.side} />,
     },
+    ...(quantity > 1
+      ? [
+          {
+            id: 'each',
+            label: 'Per item',
+            align: 'right' as const,
+            render: (o: PairOption) => <Amount value={o.unitValue} unit={unit} secondary={false} />,
+          },
+        ]
+      : []),
     {
       id: 'rounding',
       label: 'Rounding',
@@ -408,72 +497,92 @@ function Result(props: {
   ];
 
   return (
-    <Panel
-      title={
-        <ItemCell
-          icon={item.icon}
-          name={`${quantity} × ${item.name}`}
-          subtitle={`Market price ${formatAmount(item.price, unit.id)} ${unit.short} each${
-            unit.secondary
-              ? ` (${formatAmount(item.price * unit.secondary.perUnit, unit.secondary.id)} ${unit.secondary.short})`
-              : ''
-          }`}
-          size="lg"
-        />
-      }
-      action={
-        <button
-          type="button"
-          onClick={props.onToggleFavourite}
-          aria-pressed={props.favourite}
-          className="rounded-md px-2 py-1 text-sm text-muted hover:bg-surface-2 hover:text-accent"
-          title={props.favourite ? 'Remove from favourites' : 'Add to favourites'}
-        >
-          {props.favourite ? '★ Favourite' : '☆ Favourite'}
-        </button>
+    <Sheet
+      label={`${text.title}: ${item.name}`}
+      onClose={props.onClose}
+      wide
+      header={
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <ItemCell
+            icon={item.icon}
+            name={`${quantity} × ${item.name}`}
+            subtitle={`Market price ${formatAmount(item.price, unit.id)} ${unit.short} each${
+              unit.secondary
+                ? ` (${formatAmount(item.price * unit.secondary.perUnit, unit.secondary.id)} ${unit.secondary.short})`
+                : ''
+            }`}
+            size="lg"
+          />
+          <button
+            type="button"
+            onClick={props.onToggleFavourite}
+            aria-pressed={props.favourite}
+            className="rounded-md px-2 py-1 text-sm text-muted hover:bg-surface-2 hover:text-accent"
+            title={props.favourite ? 'Remove from favourites' : 'Add to favourites'}
+          >
+            {props.favourite ? '★ Favourite' : '☆ Favourite'}
+          </button>
+        </div>
       }
     >
-      <div className="space-y-3 p-4">
-        <p className="text-sm">
-          {verdict ? (
-            <Badge tone="gain" icon="✓">
-              {text.verb} {CURRENCY_NAMES[verdict.currency]}
-            </Badge>
-          ) : (
-            <Badge tone="neutral" icon="=">
-              No recommendation
-            </Badge>
-          )}{' '}
-          <span className="text-muted">
-            {verdict
-              ? text.edge(
-                  Math.round(verdict.edgeVsNext * 100),
-                  Math.round(verdict.edgeVsWorst * 100),
-                )
-              : result.reason
-                ? REASONS[result.reason]
-                : 'No rate known for this item.'}
-          </span>
-        </p>
-        {partial && result.options.length > 0 && (
-          <Pill tone="warn">Other pairs unknown: low liquidity</Pill>
-        )}
-      </div>
+      <p className="text-sm">
+        {verdict ? (
+          <Badge tone="gain" icon="✓">
+            {text.verb} {CURRENCY_NAMES[verdict.currency]}
+          </Badge>
+        ) : (
+          <Badge tone="neutral" icon="=">
+            No recommendation
+          </Badge>
+        )}{' '}
+        <span className="text-muted">
+          {verdict
+            ? text.edge(Math.round(verdict.edgeVsNext * 100), Math.round(verdict.edgeVsWorst * 100))
+            : result.reason
+              ? REASONS[result.reason]
+              : 'No rate known for this item.'}
+        </span>
+      </p>
+      {partial && result.options.length > 0 && (
+        <Pill tone="warn">Other pairs unknown: low liquidity</Pill>
+      )}
       {result.options.length > 0 && (
         <DataTable
           rows={result.options}
           columns={columns}
           rowKey={(o) => o.currency}
-          minWidth="48rem"
+          minWidth="50rem"
         />
       )}
       {oldest && (
-        <p className="border-t border-line px-4 py-2 text-xs text-subtle">
+        <p className="text-xs text-subtle">
           Rates as of {new Date(oldest).toLocaleString()} (oldest leg) · daily rates come from the
           previous day&apos;s trades, the busiest pair is refreshed hourly.
         </p>
       )}
-    </Panel>
+    </Sheet>
+  );
+}
+
+/** How much worse an option is than the best one (buying: costs more; selling: pays less). */
+function VsBest({
+  option: o,
+  best,
+  side,
+}: {
+  option: PairOption;
+  best: PairOption | undefined;
+  side: PairSide;
+}) {
+  if (!best || o === best) return <span className="text-xs text-subtle">—</span>;
+  if (!(best.value > 0)) return <span className="text-xs text-subtle">—</span>;
+  const pct = Math.round((Math.abs(o.value - best.value) / best.value) * 100);
+  if (pct === 0) return <span className="text-xs text-subtle">same</span>;
+  return (
+    <span className="text-xs text-loss">
+      {side === 'buy' ? '+' : '−'}
+      {pct} %
+    </span>
   );
 }
 
