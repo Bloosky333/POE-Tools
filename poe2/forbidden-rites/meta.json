@@ -1,7 +1,7 @@
 {
   "backfilledAt": "2026-10-24T00:02:43.007Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-10-31",
+  "lastClosedDate": "2026-11-01",
   "detailsFetched": [
     "adaptive-alloy",
     "adaptive-catalyst",
@@ -58,6 +58,7 @@
     "concentrated-liquid-isolation",
     "concentrated-liquid-suffering",
     "core-destabiliser",
+    "countess-seskes-rune-of-archery",
     "cowardly-fate",
     "crackling-flux",
     "cryptic-key",
@@ -258,6 +259,7 @@
     "swift-alloy",
     "tangmazus-reliquary-key",
     "tecrods-gaze",
+    "thane-girts-rune-of-wildness",
     "thaumaturgic-flux-16",
     "the-arbiters-reliquary-key",
     "the-runebinders-alloy",
@@ -325,6 +327,7 @@
     "voranas-saga",
     "voranas-siege",
     "warding-rune-of-heart",
+    "warding-rune-of-protection",
     "warding-rune-of-reinforcement",
     "warding-starlit-ore",
     "weathered-crisis-fragment",
