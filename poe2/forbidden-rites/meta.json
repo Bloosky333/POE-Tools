@@ -1,7 +1,7 @@
 {
   "backfilledAt": "2026-10-24T00:02:43.007Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-11-01",
+  "lastClosedDate": "2026-11-02",
   "detailsFetched": [
     "adaptive-alloy",
     "adaptive-catalyst",
@@ -55,6 +55,7 @@
     "chayulas-catalyst",
     "chilling-flux",
     "citaqualotls-thesis",
+    "concentrated-liquid-fear",
     "concentrated-liquid-isolation",
     "concentrated-liquid-suffering",
     "core-destabiliser",
@@ -98,6 +99,7 @@
     "greater-jewellers-orb",
     "greater-orb-of-augmentation",
     "greater-regal-orb",
+    "greater-robust-rune",
     "greater-rune-of-alacrity",
     "greater-rune-of-leadership",
     "greater-rune-of-tithing",
@@ -122,6 +124,7 @@
     "katlas-gloom",
     "khatals-rejuvenation",
     "kolrs-hunt",
+    "kopecs-orb-of-sacrifice",
     "kulemaks-invitation",
     "kurgals-gaze",
     "lesser-jewellers-orb",
