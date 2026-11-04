@@ -1,7 +1,7 @@
 {
   "backfilledAt": "2026-10-24T00:02:43.007Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-11-02",
+  "lastClosedDate": "2026-11-03",
   "detailsFetched": [
     "adaptive-alloy",
     "adaptive-catalyst",
@@ -139,6 +139,7 @@
     "mórrigans-insight",
     "necrotic-catalyst",
     "neural-catalyst",
+    "oisins-oath",
     "olroths-conviction",
     "olroths-crest-of-the-sun",
     "olroths-reliquary-key",
@@ -209,6 +210,7 @@
     "perfect-ward-rune",
     "potent-liquid-contempt",
     "potent-liquid-ferocity",
+    "potent-liquid-melancholy",
     "preserved-collarbone",
     "preserved-cranium",
     "preserved-jawbone",
@@ -264,6 +266,7 @@
     "tecrods-gaze",
     "thane-girts-rune-of-wildness",
     "thaumaturgic-flux-16",
+    "thaumaturgic-flux-20",
     "the-arbiters-reliquary-key",
     "the-runebinders-alloy",
     "the-trialmasters-reliquary-key",
@@ -329,6 +332,7 @@
     "void-flux",
     "voranas-saga",
     "voranas-siege",
+    "vruuns-inevitability",
     "warding-rune-of-heart",
     "warding-rune-of-protection",
     "warding-rune-of-reinforcement",
@@ -340,6 +344,7 @@
     "xopecs-soul-core-of-power",
     "xophs-catalyst",
     "xophs-pyre",
+    "yaomacs-orb-of-sacrifice",
     "zarokhs-refrain"
   ]
 }
