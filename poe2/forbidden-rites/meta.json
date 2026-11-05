@@ -1,10 +1,11 @@
 {
   "backfilledAt": "2026-10-24T00:02:43.007Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-11-03",
+  "lastClosedDate": "2026-11-04",
   "detailsFetched": [
     "adaptive-alloy",
     "adaptive-catalyst",
+    "adept-rune",
     "against-the-darkness",
     "ailiths-chimes",
     "alch",
@@ -99,6 +100,7 @@
     "greater-jewellers-orb",
     "greater-orb-of-augmentation",
     "greater-regal-orb",
+    "greater-resolve-rune",
     "greater-robust-rune",
     "greater-rune-of-alacrity",
     "greater-rune-of-leadership",
@@ -294,6 +296,7 @@
     "uncut-skill-gem-12",
     "uncut-skill-gem-13",
     "uncut-skill-gem-15",
+    "uncut-skill-gem-18",
     "uncut-skill-gem-19",
     "uncut-skill-gem-20",
     "uncut-skill-gem-5",
