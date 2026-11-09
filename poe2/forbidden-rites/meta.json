@@ -1,7 +1,7 @@
 {
   "backfilledAt": "2026-10-24T00:02:43.007Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-11-07",
+  "lastClosedDate": "2026-11-08",
   "detailsFetched": [
     "adaptive-alloy",
     "adaptive-catalyst",
@@ -138,6 +138,7 @@
     "lesser-robust-rune",
     "liquid-verisium",
     "masterwork-rune",
+    "medveds-felling",
     "medveds-saga",
     "medveds-tending",
     "mind-rune",
@@ -247,6 +248,8 @@
     "revered-starlit-ore",
     "rigwalds-ferocity",
     "ritualistic-reliquary-key",
+    "rune-of-accumulation",
+    "rune-of-acrobatics",
     "rune-of-foundations",
     "rune-of-the-blossom",
     "runic-alloy",
