@@ -1,7 +1,7 @@
 {
   "backfilledAt": "2026-10-24T00:02:43.007Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-11-09",
+  "lastClosedDate": "2026-11-10",
   "detailsFetched": [
     "adaptive-alloy",
     "adaptive-catalyst",
@@ -309,6 +309,7 @@
     "uncut-skill-gem-18",
     "uncut-skill-gem-19",
     "uncut-skill-gem-20",
+    "uncut-skill-gem-3",
     "uncut-skill-gem-5",
     "uncut-skill-gem-6",
     "uncut-skill-gem-7",
