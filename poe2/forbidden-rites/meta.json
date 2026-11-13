@@ -1,7 +1,7 @@
 {
   "backfilledAt": "2026-10-24T00:02:43.007Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-11-11",
+  "lastClosedDate": "2026-11-12",
   "detailsFetched": [
     "adaptive-alloy",
     "adaptive-catalyst",
@@ -195,6 +195,7 @@
     "perfect-chaos-orb",
     "perfect-charging-rune",
     "perfect-desert-rune",
+    "perfect-essence-of-alacrity",
     "perfect-essence-of-battle",
     "perfect-essence-of-enhancement",
     "perfect-essence-of-grounding",
@@ -255,6 +256,7 @@
     "rune-of-acrobatics",
     "rune-of-foundations",
     "rune-of-the-blossom",
+    "rune-of-the-prism",
     "runic-alloy",
     "sacred-bloom",
     "saqawals-rune-of-the-sky",
