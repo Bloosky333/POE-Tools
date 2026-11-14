@@ -1,6 +1,16 @@
 {
   "backfilledAt": "2026-11-13T22:37:53.286Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-11-12",
-  "detailsFetched": []
+  "lastClosedDate": "2026-11-13",
+  "detailsFetched": [
+    "alt",
+    "divine",
+    "exalted",
+    "fusing",
+    "gcp",
+    "jewellers",
+    "regret",
+    "stacked-deck",
+    "the-chains-that-bind"
+  ]
 }
