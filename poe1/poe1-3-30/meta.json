@@ -1,7 +1,7 @@
 {
   "backfilledAt": "2026-11-13T22:37:53.286Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-11-18",
+  "lastClosedDate": "2026-11-19",
   "detailsFetched": [
     "a-fate-worse-than-death",
     "a-stone-perfected",
@@ -17,6 +17,7 @@
     "allflame-ember-of-propagation",
     "allflame-ember-of-resplendence",
     "allflame-ember-of-the-cloister",
+    "allflame-ember-of-the-divine",
     "allflame-ember-of-the-ethereal",
     "allflame-ember-of-the-gilded",
     "allflame-ember-of-the-multitude",
@@ -164,6 +165,7 @@
     "i-see-brothers",
     "imbued-catalyst",
     "immortal-resolve",
+    "imperial-enshrouding-crystal",
     "incursion-thread",
     "indigo-oil",
     "instilling-orb",
@@ -218,6 +220,7 @@
     "orb-of-remembrance",
     "orb-of-unmaking",
     "orb-of-unravelling",
+    "peaceful-moments",
     "pearls-before-swine",
     "phoenix",
     "portal",
@@ -368,6 +371,7 @@
     "tattoo-of-the-tukohama-shaman",
     "tattoo-of-the-tukohama-warcaller",
     "tattoo-of-the-valako-scout",
+    "tattoo-of-the-valako-shaman",
     "tattoo-of-the-valako-shieldbearer",
     "tattoo-of-the-valako-stormrider",
     "tattoo-of-the-valako-warrior",
@@ -434,6 +438,7 @@
     "the-strategist",
     "the-void",
     "the-wilted-rose",
+    "the-wretched",
     "threaded-delirium-orb",
     "timeless-astrolabe",
     "timeless-eternal-emblem",
@@ -464,6 +469,8 @@
     "whetstone",
     "wild-lifeforce",
     "wisdom",
+    "zoraths-eye-of-authority",
+    "zoraths-eye-of-malevolence",
     "zoraths-eye-of-the-inevitable"
   ]
 }
