@@ -1,7 +1,7 @@
 {
   "backfilledAt": "2026-10-24T00:02:43.007Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-11-19",
+  "lastClosedDate": "2026-11-20",
   "detailsFetched": [
     "adaptive-alloy",
     "adaptive-catalyst",
@@ -76,6 +76,7 @@
     "emergent-possibility",
     "emergent-protection",
     "emergent-vigour",
+    "eonyrs-thunder",
     "eshs-catalyst",
     "eshs-prowess",
     "eshs-radiance",
@@ -93,6 +94,7 @@
     "expedition-logbook",
     "faded-crisis-fragment",
     "farruls-rune-of-the-chase",
+    "fenumus-rune-of-spinning",
     "flesh-catalyst",
     "fox-idol",
     "fracturing-orb",
@@ -306,6 +308,7 @@
     "thaumaturgic-flux-20",
     "the-arbiters-reliquary-key",
     "the-runebinders-alloy",
+    "the-runefathers-alloy",
     "the-trialmasters-reliquary-key",
     "the-triskelion-reforged",
     "thruds-might",

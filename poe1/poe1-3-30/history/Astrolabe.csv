@@ -1,5 +1,5 @@
 date,item,price_c,volume_c,source
-2026-11-14,chaotic-astrolabe,3.26,14.29,details
+2026-11-14,chaotic-astrolabe,5,0,details
 2026-11-14,feral-astrolabe,3.14,55,snapshot
 2026-11-14,fungal-astrolabe,7.11,21.33,details
 2026-11-14,grasping-astrolabe,7.67,0,details
@@ -9,7 +9,7 @@ date,item,price_c,volume_c,source
 2026-11-14,royal-astrolabe,2.21,42.33,snapshot
 2026-11-14,runic-astrolabe,2.9,69.67,snapshot
 2026-11-14,timeless-astrolabe,5.98,47.45,details
-2026-11-15,chaotic-astrolabe,3.95,172.6,details
+2026-11-15,chaotic-astrolabe,3.94,246,details
 2026-11-15,feral-astrolabe,2.47,106.7,snapshot
 2026-11-15,fungal-astrolabe,7.16,506.1,details
 2026-11-15,grasping-astrolabe,4.42,195.2,details
@@ -19,7 +19,7 @@ date,item,price_c,volume_c,source
 2026-11-15,royal-astrolabe,2.69,131,snapshot
 2026-11-15,runic-astrolabe,2.48,201.2,snapshot
 2026-11-15,timeless-astrolabe,4.18,186.9,details
-2026-11-16,chaotic-astrolabe,8.66,2006,details
+2026-11-16,chaotic-astrolabe,8.53,1686,details
 2026-11-16,feral-astrolabe,1.32,50.5,snapshot
 2026-11-16,fungal-astrolabe,6.32,771.8,details
 2026-11-16,grasping-astrolabe,3.53,294.3,details
@@ -29,7 +29,7 @@ date,item,price_c,volume_c,source
 2026-11-16,royal-astrolabe,1.82,76.83,snapshot
 2026-11-16,runic-astrolabe,1.42,50,snapshot
 2026-11-16,timeless-astrolabe,5.59123,687,details
-2026-11-17,chaotic-astrolabe,11.0913,2085.17,details
+2026-11-17,chaotic-astrolabe,12.0377,2550.9,details
 2026-11-17,feral-astrolabe,2.38,191,snapshot
 2026-11-17,fungal-astrolabe,4.93,660.2,details
 2026-11-17,grasping-astrolabe,4.08,429.5,details
@@ -39,7 +39,7 @@ date,item,price_c,volume_c,source
 2026-11-17,royal-astrolabe,2.77,202.2,snapshot
 2026-11-17,runic-astrolabe,1.48,66.83,snapshot
 2026-11-17,timeless-astrolabe,4.42,600.5,details
-2026-11-18,chaotic-astrolabe,13.47,4223,details
+2026-11-18,chaotic-astrolabe,11.08,2553,details
 2026-11-18,feral-astrolabe,3.25,260,snapshot
 2026-11-18,fungal-astrolabe,5.93,808.4,details
 2026-11-18,grasping-astrolabe,3.77,357.8,details
@@ -49,10 +49,15 @@ date,item,price_c,volume_c,source
 2026-11-18,royal-astrolabe,3.11,319.3,snapshot
 2026-11-18,runic-astrolabe,3.94,264.3,snapshot
 2026-11-18,timeless-astrolabe,4.88,743.1,details
-2026-11-19,chaotic-astrolabe,16.58,3679,details
+2026-11-19,chaotic-astrolabe,16.33,3240,details
 2026-11-19,feral-astrolabe,2.4,51.67,snapshot
 2026-11-19,immortal-astrolabe,6.38,246.5,snapshot
 2026-11-19,lightless-astrolabe,11.1953,1522.23,details
 2026-11-19,royal-astrolabe,3.21,240,snapshot
 2026-11-19,runic-astrolabe,1.43,67.5,snapshot
 2026-11-19,timeless-astrolabe,5.47,1007,details
+2026-11-20,chaotic-astrolabe,11.1906,2056.9,details
+2026-11-20,feral-astrolabe,4.53,338,snapshot
+2026-11-20,immortal-astrolabe,5.06,512.2,snapshot
+2026-11-20,royal-astrolabe,3.13,228.8,snapshot
+2026-11-20,runic-astrolabe,6.16,536.3,snapshot

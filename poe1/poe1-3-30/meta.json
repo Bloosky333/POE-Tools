@@ -1,7 +1,7 @@
 {
   "backfilledAt": "2026-11-13T22:37:53.286Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-11-19",
+  "lastClosedDate": "2026-11-20",
   "detailsFetched": [
     "a-fate-worse-than-death",
     "a-stone-perfected",
@@ -173,6 +173,7 @@
     "jagged-fossil",
     "jewellers",
     "jewellers-delirium-orb",
+    "journey-tattoo-of-the-mind",
     "lachrymal-necrosis",
     "legion-thread",
     "lesser-eldritch-ember",
@@ -307,6 +308,7 @@
     "shrieking-essence-of-scorn",
     "shrieking-essence-of-sorrow",
     "shrieking-essence-of-spite",
+    "shrieking-essence-of-suffering",
     "shrieking-essence-of-torment",
     "shrieking-essence-of-woe",
     "shrieking-essence-of-wrath",
@@ -436,6 +438,7 @@
     "the-soul",
     "the-spark-and-the-flame",
     "the-strategist",
+    "the-valkyrie",
     "the-void",
     "the-wilted-rose",
     "the-wretched",
@@ -471,6 +474,7 @@
     "wisdom",
     "zoraths-eye-of-authority",
     "zoraths-eye-of-malevolence",
+    "zoraths-eye-of-the-endless",
     "zoraths-eye-of-the-inevitable"
   ]
 }
