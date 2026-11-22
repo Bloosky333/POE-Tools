@@ -1,7 +1,7 @@
 {
   "backfilledAt": "2026-10-24T00:02:43.007Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-11-20",
+  "lastClosedDate": "2026-11-21",
   "detailsFetched": [
     "adaptive-alloy",
     "adaptive-catalyst",
@@ -34,6 +34,7 @@
     "atziris-communion",
     "atziris-soul-core-of-alacrity",
     "atziris-soul-core-of-devotion",
+    "atziris-soul-core-of-inoculation",
     "atziris-soul-core-of-vitality",
     "aug",
     "azmeri-reliquary-key",
@@ -117,6 +118,7 @@
     "greater-rune-of-leadership",
     "greater-rune-of-tithing",
     "greater-ward-rune",
+    "guatelitzis-soul-core-of-endurance",
     "guatelitzis-thesis",
     "head-of-the-king",
     "hedgewitch-assandras-rune-of-wisdom",
@@ -270,6 +272,7 @@
     "rune-of-accumulation",
     "rune-of-acrobatics",
     "rune-of-consistency",
+    "rune-of-culmination",
     "rune-of-foundations",
     "rune-of-the-blossom",
     "rune-of-the-prism",
