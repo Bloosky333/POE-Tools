@@ -1,7 +1,7 @@
 {
   "backfilledAt": "2026-10-24T00:02:43.007Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-11-22",
+  "lastClosedDate": "2026-11-23",
   "detailsFetched": [
     "adaptive-alloy",
     "adaptive-catalyst",
@@ -137,6 +137,7 @@
     "ixchels-torment",
     "jiquanis-soul-core-of-abundance",
     "jiquanis-soul-core-of-munitions",
+    "jiquanis-soul-core-of-quaking",
     "jiquanis-soul-core-of-rallying",
     "jiquanis-soul-core-of-rippling",
     "jiquanis-soul-core-of-severing",
@@ -151,6 +152,7 @@
     "kurgals-gaze",
     "kurgals-leash",
     "lesser-essence-of-abrasion",
+    "lesser-essence-of-enhancement",
     "lesser-iron-rune",
     "lesser-jewellers-orb",
     "lesser-robust-rune",
