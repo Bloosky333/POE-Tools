@@ -1,7 +1,7 @@
 {
   "backfilledAt": "2026-11-13T22:37:53.286Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-11-26",
+  "lastClosedDate": "2026-11-27",
   "detailsFetched": [
     "a-fate-worse-than-death",
     "a-stone-perfected",
@@ -101,6 +101,7 @@
     "diviners-delirium-orb",
     "doryanis-epiphany",
     "droxs-crest",
+    "dying-anguish",
     "echo-of-loneliness",
     "echo-of-reverence",
     "echo-of-trauma",
@@ -269,6 +270,7 @@
     "runegraft-of-restitching",
     "runegraft-of-resurgence",
     "runegraft-of-rotblood",
+    "runegraft-of-stability",
     "runegraft-of-suffering",
     "runegraft-of-the-agile",
     "runegraft-of-the-angler",
@@ -456,6 +458,7 @@
     "the-porcupine",
     "the-price-of-devotion",
     "the-price-of-loyalty",
+    "the-price-of-protection",
     "the-primordial",
     "the-prince-of-darkness",
     "the-progeny-of-lunaris",

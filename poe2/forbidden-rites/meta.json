@@ -1,7 +1,7 @@
 {
   "backfilledAt": "2026-10-24T00:02:43.007Z",
   "backfillVersion": 2,
-  "lastClosedDate": "2026-11-26",
+  "lastClosedDate": "2026-11-27",
   "detailsFetched": [
     "adaptive-alloy",
     "adaptive-catalyst",
@@ -98,6 +98,7 @@
     "expedition-logbook",
     "faded-crisis-fragment",
     "farruls-rune-of-the-chase",
+    "farruls-rune-of-the-hunt",
     "fenumus-rune-of-spinning",
     "flesh-catalyst",
     "fox-idol",
@@ -299,6 +300,7 @@
     "simulacrum-splinter",
     "siones-temper",
     "skittering-catalyst",
+    "soul-core-of-atmohua",
     "soul-core-of-azcapa",
     "soul-core-of-citaqualotl",
     "soul-core-of-jiquani",
